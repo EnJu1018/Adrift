@@ -38,7 +38,7 @@ export default function DiaryPopup({ diary, currentUser, onClose, onDelete }) {
           <span className="avatar-orb small">{(diary.user?.name || 'A').slice(0, 1).toUpperCase()}</span>
           <div>
             <p className="eyebrow">{new Date(diary.createdAt).toLocaleString()}</p>
-            <h2>{diary.user?.name || 'Unknown'} 的漂流日記</h2>
+            <h2>{diary.title?.trim() || '（未命名日記）'}</h2>
             <small>@{diary.user?.userCode || 'unknown'}</small>
           </div>
         </div>
@@ -49,7 +49,7 @@ export default function DiaryPopup({ diary, currentUser, onClose, onDelete }) {
 
       {diary.imageUrl && <img className="diary-image" src={getImageUrl(diary.imageUrl)} alt="" />}
 
-      <p className="diary-text">{diary.text}</p>
+      <p className="diary-text">{diary.text || diary.content}</p>
 
       <div className="meta-row">
         <span>

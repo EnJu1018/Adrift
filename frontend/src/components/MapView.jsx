@@ -34,7 +34,8 @@ export default function MapView({
           properties: {
             id: diary._id,
             mood: diary.mood?.type || 'other',
-            explore: Boolean(diary.isExplore)
+            explore: Boolean(diary.isExplore),
+            selected: diary._id === selectedDiary?._id
           },
           geometry: {
             type: 'Point',
@@ -42,7 +43,7 @@ export default function MapView({
           }
         }))
     };
-  }, [diaries]);
+  }, [diaries, selectedDiary?._id]);
 
   useEffect(() => {
     if (!MAPBOX_TOKEN || mapRef.current || !mapContainer.current) return;
@@ -113,13 +114,27 @@ export default function MapView({
         paint: {
           'circle-color': [
             'case',
+            ['boolean', ['get', 'selected'], false],
+            '#ffffff',
             ['boolean', ['get', 'explore'], false],
             'rgba(154, 180, 255, 0.88)',
             '#78f3dc'
           ],
-          'circle-radius': ['case', ['boolean', ['get', 'explore'], false], 8, 7],
-          'circle-stroke-color': '#f5fcff',
-          'circle-stroke-width': 1.5,
+          'circle-radius': [
+            'case',
+            ['boolean', ['get', 'selected'], false],
+            10,
+            ['boolean', ['get', 'explore'], false],
+            8,
+            7
+          ],
+          'circle-stroke-color': [
+            'case',
+            ['boolean', ['get', 'selected'], false],
+            'rgba(121, 241, 220, 1)',
+            '#f5fcff'
+          ],
+          'circle-stroke-width': ['case', ['boolean', ['get', 'selected'], false], 2.4, 1.5],
           'circle-opacity': 0.94,
           'circle-stroke-opacity': 0.86
         }
@@ -292,9 +307,9 @@ export default function MapView({
 
   return (
     <motion.section
-      className={`map-shell ${selectedDiary ? 'soft-blur' : ''}`}
+      className="map-shell"
       initial={{ opacity: 0, filter: 'blur(18px)' }}
-      animate={{ opacity: 1, filter: selectedDiary ? 'blur(5px)' : 'blur(0px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
       transition={{ duration: 1.1, ease: 'easeOut' }}
     >
       {MAPBOX_TOKEN ? (

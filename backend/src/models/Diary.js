@@ -8,6 +8,13 @@ const diarySchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 50,
+      default: '（未命名日記）'
+    },
     text: {
       type: String,
       required: true,
@@ -48,6 +55,12 @@ const diarySchema = new mongoose.Schema(
           },
           message: 'Location coordinates must be [lng, lat]'
         }
+      },
+      placeName: {
+        type: String,
+        default: '',
+        trim: true,
+        maxlength: 120
       }
     },
     locationAccuracy: {
@@ -62,7 +75,21 @@ const diarySchema = new mongoose.Schema(
       index: true
     }
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: {
+      transform(_doc, ret) {
+        if (!ret.title) ret.title = '（未命名日記）';
+        return ret;
+      }
+    },
+    toObject: {
+      transform(_doc, ret) {
+        if (!ret.title) ret.title = '（未命名日記）';
+        return ret;
+      }
+    }
+  }
 );
 
 diarySchema.index({ location: '2dsphere' });

@@ -9,6 +9,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authorFields = 'name avatar userCode';
+const fallbackTitle = '（未命名日記）';
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '..', 'uploads'),
@@ -78,6 +79,7 @@ function serializeMemory(diary) {
 
   return {
     _id: diary._id,
+    title: diary.title || fallbackTitle,
     content: diary.text,
     text: diary.text,
     mood: diary.mood,
@@ -86,7 +88,7 @@ function serializeMemory(diary) {
     location: {
       lat,
       lng,
-      placeName: ''
+      placeName: diary.location?.placeName || ''
     },
     visibility: diary.visibility,
     createdAt: diary.createdAt
@@ -126,6 +128,7 @@ function serializeExploreDiary(diary) {
 
   return {
     _id: diary._id,
+    title: diary.title || fallbackTitle,
     content: diary.text,
     text: diary.text,
     mood: diary.mood,
@@ -136,7 +139,7 @@ function serializeExploreDiary(diary) {
       coordinates: diary.location?.coordinates || [],
       lat,
       lng,
-      placeName: ''
+      placeName: diary.location?.placeName || ''
     },
     visibility: diary.visibility,
     createdAt: diary.createdAt,
@@ -291,9 +294,25 @@ router.get('/:id', requireAuth, async (req, res, next) => {
 
 router.post('/', requireAuth, upload.single('image'), async (req, res, next) => {
   try {
-    const { text, moodType, moodIntensity, lat, lng, accuracy, visibility } = req.body;
+    const { title, text, content, moodType, moodIntensity, lat, lng, accuracy, visibility, placeName } = req.body;
+    const diaryTitle = typeof title === 'string' ? title.trim() : '';
+    const diaryText = typeof text === 'string' ? text.trim() : typeof content === 'string' ? content.trim() : '';
 
-    if (!text?.trim() || !moodType || !moodIntensity || !lat || !lng) {
+    if (!diaryTitle) {
+      return res.status(400).json({
+        success: false,
+        message: '請輸入日記標題'
+      });
+    }
+
+    if (diaryTitle.length > 50) {
+      return res.status(400).json({
+        success: false,
+        message: '日記標題最多 50 字'
+      });
+    }
+
+    if (!diaryText || !moodType || !moodIntensity || !lat || !lng) {
       return res.status(400).json({
         success: false,
         message: '請填寫日記內容、心情與位置'
@@ -335,7 +354,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
 
     const diary = await Diary.create({
       user: req.user._id,
-      text: text.trim(),
+      title: diaryTitle,
+      text: diaryText,
       mood: {
         type: moodType,
         intensity: parsedIntensity
@@ -343,7 +363,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
       imageUrl: req.file ? `/uploads/${req.file.filename}` : '',
       location: {
         type: 'Point',
-        coordinates: [parsedLng, parsedLat]
+        coordinates: [parsedLng, parsedLat],
+        placeName: typeof placeName === 'string' ? placeName.trim().slice(0, 120) : ''
       },
       locationAccuracy: parsedAccuracy,
       visibility: visibility || 'private'

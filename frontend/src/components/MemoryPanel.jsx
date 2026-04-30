@@ -279,8 +279,8 @@ export default function MemoryPanel({
                       <button key={diary._id} className="memory-item" onClick={() => onSelectDiary(diary)}>
                         <span className="memory-dot">{moodIcons[diary.mood?.type] || '•'}</span>
                         <div>
-                          <strong>{moodLabels[diary.mood?.type] || diary.mood?.type || '心情'}</strong>
-                          <p>{diary.text}</p>
+                          <strong>{diary.title?.trim() || '（未命名日記）'}</strong>
+                          <p>{diary.text || diary.content}</p>
                           <small>
                             @{diary.user?.userCode || 'unknown'} · {visibilityLabels[diary.visibility] || diary.visibility} ·{' '}
                             {new Date(diary.createdAt).toLocaleString()}

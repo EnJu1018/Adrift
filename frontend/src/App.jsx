@@ -5,7 +5,7 @@ import { api, clearStoredAuth, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
 import AuthPanel from './components/AuthPanel.jsx';
 import DiaryModal from './components/DiaryModal.jsx';
-import DiaryPopup from './components/DiaryPopup.jsx';
+import DiarySidePanel from './components/DiarySidePanel.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
@@ -498,17 +498,25 @@ export default function App() {
             </div>
           </header>
 
-          <MapView
-            diaries={diaries}
-            selectedDiary={selectedDiary}
-            onSelect={setSelectedDiary}
-            onViewportChange={handleMapViewportChange}
-            focusLocation={exploreCenter}
-            mode={mapMode}
-            expanded={Boolean(user)}
-            loading={diaryLoading}
-            disabled={!user}
-          />
+          <div className="map-stage">
+            <DiarySidePanel
+              diary={selectedDiary}
+              currentUser={user}
+              onClose={() => setSelectedDiary(null)}
+              onDelete={deleteDiary}
+            />
+            <MapView
+              diaries={diaries}
+              selectedDiary={selectedDiary}
+              onSelect={setSelectedDiary}
+              onViewportChange={handleMapViewportChange}
+              focusLocation={exploreCenter}
+              mode={mapMode}
+              expanded={Boolean(user)}
+              loading={diaryLoading}
+              disabled={!user}
+            />
+          </div>
 
           <div className="status-strip glass">
             <span>
@@ -579,17 +587,6 @@ export default function App() {
         onSettings={() => navigate('/settings/account')}
         onLogout={() => logout()}
       />
-
-      <AnimatePresence>
-        {selectedDiary && (
-          <DiaryPopup
-            diary={selectedDiary}
-            currentUser={user}
-            onClose={() => setSelectedDiary(null)}
-            onDelete={deleteDiary}
-          />
-        )}
-      </AnimatePresence>
 
       <AnimatePresence>
         {draftLocation && (

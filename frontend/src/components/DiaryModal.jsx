@@ -1,6 +1,7 @@
 ﻿import { motion } from 'framer-motion';
 import { ImagePlus, LocateFixed, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 
 const moodOptions = [
   ['calm', '平靜'],
@@ -14,6 +15,7 @@ const moodOptions = [
 
 export default function DiaryModal({ location, onClose, onSubmit, loading, error }) {
   const [form, setForm] = useState({
+    title: '',
     text: '',
     moodType: 'calm',
     moodIntensity: 3,
@@ -21,6 +23,22 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     image: null
   });
   const [fieldErrors, setFieldErrors] = useState({});
+  const [placeName, setPlaceName] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    const lat = Number(location.lat);
+    const lng = Number(location.lng);
+
+    setPlaceName(formatCoordinates(lat, lng));
+    resolvePlaceName(lat, lng).then((name) => {
+      if (!cancelled) setPlaceName(name);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location.lat, location.lng]);
 
   function updateField(field, value) {
     const nextForm = { ...form, [field]: value };
@@ -29,6 +47,12 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
   }
 
   function validateField(field, values = form) {
+    if (field === 'title') {
+      const title = values.title.trim();
+      if (!title) return '請輸入日記標題';
+      if (title.length > 50) return '日記標題最多 50 字';
+    }
+
     if (field === 'text' && !values.text.trim()) {
       return '請輸入日記內容';
     }
@@ -37,8 +61,11 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
   }
 
   function validate() {
+    const titleError = validateField('title');
     const textError = validateField('text');
-    const errors = textError ? { text: textError } : {};
+    const errors = {};
+    if (titleError) errors.title = titleError;
+    if (textError) errors.text = textError;
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -49,6 +76,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     if (!validate()) return;
 
     const data = new FormData();
+    data.append('title', form.title.trim());
     data.append('text', form.text.trim());
     data.append('moodType', form.moodType);
     data.append('moodIntensity', form.moodIntensity);
@@ -56,6 +84,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     data.append('lat', location.lat);
     data.append('lng', location.lng);
     data.append('accuracy', location.accuracy);
+    data.append('placeName', placeName);
 
     if (form.image) {
       data.append('image', form.image);
@@ -64,6 +93,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     try {
       await onSubmit(data);
       setForm({
+        title: '',
         text: '',
         moodType: 'calm',
         moodIntensity: 3,
@@ -94,6 +124,20 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
             <X size={18} />
           </button>
         </header>
+
+        <label>
+          標題
+          <input
+            value={form.title}
+            onChange={(event) => updateField('title', event.target.value.slice(0, 50))}
+            placeholder="今天在海邊"
+            maxLength={50}
+            aria-invalid={Boolean(fieldErrors.title)}
+            required
+          />
+          <small className="field-hint">{form.title.trim().length} / 50</small>
+          {fieldErrors.title && <span className="field-error">{fieldErrors.title}</span>}
+        </label>
 
         <label>
           文字
@@ -164,7 +208,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
 
         <p className="location-line">
           <LocateFixed size={16} />
-          {Number(location.lat).toFixed(6)}, {Number(location.lng).toFixed(6)}
+          {placeName || formatCoordinates(Number(location.lat), Number(location.lng))}
           {Number.isFinite(location.accuracy) && ` · ±${Math.round(location.accuracy)}m`}
         </p>
 

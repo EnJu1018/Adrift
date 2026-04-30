@@ -778,6 +778,103 @@ select option {
   min-width: 0;
 }
 
+.map-stage {
+  display: grid;
+  grid-template-columns: minmax(300px, 340px) minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.diary-side-panel {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  min-width: 0;
+  min-height: 540px;
+  max-height: calc(100vh - 158px);
+  overflow: hidden;
+  border-radius: var(--panel-radius);
+}
+
+.diary-side-empty,
+.diary-side-content {
+  min-height: 0;
+  padding: 16px;
+}
+
+.diary-side-empty {
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 14px;
+  color: var(--muted-strong);
+}
+
+.diary-side-empty h2 {
+  max-width: 230px;
+  line-height: 1.25;
+}
+
+.diary-side-content {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  overflow: auto;
+}
+
+.diary-side-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diary-side-header h2 {
+  overflow: hidden;
+  max-width: 190px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.diary-side-image {
+  display: grid;
+  width: 100%;
+  max-height: 220px;
+  min-height: 150px;
+  place-items: center;
+  object-fit: cover;
+  border: 1px solid rgba(198, 236, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(2, 13, 24, 0.34);
+  color: var(--muted);
+}
+
+.diary-side-image.empty {
+  min-height: 96px;
+  border-style: dashed;
+}
+
+.diary-side-text {
+  margin: 0;
+  color: #edf8ff;
+  font-size: 0.94rem;
+  line-height: 1.72;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.diary-side-title {
+  overflow: hidden;
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.08rem;
+  font-weight: 800;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .topbar,
 .status-strip {
   display: flex;
@@ -1453,6 +1550,27 @@ select option {
   margin-top: 16px;
 }
 
+.meta-row.compact {
+  margin-top: 0;
+}
+
+.meta-row .diary-time-pill,
+.meta-row .diary-place-pill {
+  justify-content: flex-start;
+  color: #eefbff;
+}
+
+.meta-row .diary-time-pill {
+  flex: 0 1 auto;
+  background: rgba(142, 238, 220, 0.12);
+}
+
+.meta-row .diary-place-pill {
+  flex: 0 1 auto;
+  max-width: 100%;
+  background: rgba(128, 179, 255, 0.12);
+}
+
 .meta-row span,
 .location-line {
   display: inline-flex;
@@ -1631,6 +1749,21 @@ select option {
     min-height: 58vh;
   }
 
+  .map-stage {
+    position: relative;
+    display: block;
+  }
+
+  .diary-side-panel {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    bottom: 12px;
+    width: min(340px, calc(100% - 24px));
+    min-height: 0;
+    max-height: none;
+  }
+
   .topbar {
     align-items: flex-start;
     flex-direction: column;
@@ -1666,6 +1799,15 @@ select option {
 
   .topbar-actions {
     width: 100%;
+  }
+
+  .diary-side-panel {
+    top: auto;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    max-height: 58%;
   }
 
   .map-mode-switch,
