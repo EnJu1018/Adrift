@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: 2,
-      maxlength: 60
+      maxlength: 30
     },
     email: {
       type: String,
@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      match: [/^\S+@\S+\.\S+$/, 'Email is invalid']
+      match: [/^\S+@\S+\.\S+$/, 'Email 格式不正確']
     },
     userCode: {
       type: String,

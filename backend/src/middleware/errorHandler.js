@@ -30,7 +30,7 @@ export function errorHandler(error, _req, res, _next) {
   }
 
   if (error.code === 11000) {
-    const message = error.keyPattern?.userCode ? '此使用者 ID 已被使用' : '此 Email 已被註冊';
+    const message = error.keyPattern?.userCode ? '此使用者 ID 已被使用' : '此 Email 已被使用';
 
     return res.status(409).json({
       success: false,

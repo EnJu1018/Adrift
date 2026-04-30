@@ -20,7 +20,8 @@ function serializeUser(user) {
     name: user.name,
     email: user.email,
     userCode: user.userCode || '',
-    avatar: user.avatar || ''
+    avatar: user.avatar || '',
+    createdAt: user.createdAt
   };
 }
 
@@ -34,6 +35,13 @@ router.post('/register', async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: '請填寫所有必填欄位'
+      });
+    }
+
+    if (name.trim().length < 2 || name.trim().length > 30) {
+      return res.status(400).json({
+        success: false,
+        message: '使用者名稱長度需為 2 到 30 字元'
       });
     }
 

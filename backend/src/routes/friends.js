@@ -125,6 +125,92 @@ router.get('/requests', async (req, res, next) => {
   }
 });
 
+router.get('/requests/sent', async (req, res, next) => {
+  try {
+    const receivers = await User.find({
+      friendRequests: {
+        $elemMatch: {
+          from: req.user._id,
+          status: 'pending'
+        }
+      }
+    }).select(`${publicUserFields} friendRequests`);
+
+    const sentRequests = receivers.flatMap((receiver) =>
+      receiver.friendRequests
+        .filter((request) => request.status === 'pending' && request.from.toString() === req.user._id.toString())
+        .map((request) => ({
+          requestId: request._id,
+          to: {
+            _id: receiver._id,
+            name: receiver.name,
+            avatar: receiver.avatar || '',
+            userCode: receiver.userCode || ''
+          },
+          createdAt: request.createdAt
+        }))
+    );
+
+    res.json({
+      success: true,
+      message: '取得已送出邀請成功',
+      data: sentRequests
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/requests/:requestId/cancel', async (req, res, next) => {
+  try {
+    const { requestId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到好友邀請'
+      });
+    }
+
+    const receiver = await User.findOne({ 'friendRequests._id': requestId });
+
+    if (!receiver) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到好友邀請'
+      });
+    }
+
+    const request = receiver.friendRequests.id(requestId);
+
+    if (request.from.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: '你無法收回此好友邀請'
+      });
+    }
+
+    if (request.status !== 'pending') {
+      return res.status(409).json({
+        success: false,
+        message: '此好友邀請已被處理，無法收回'
+      });
+    }
+
+    await User.updateOne(
+      { _id: receiver._id },
+      { $pull: { friendRequests: { _id: request._id } } }
+    );
+
+    res.json({
+      success: true,
+      message: '好友邀請已收回'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/requests/:requestId/accept', async (req, res, next) => {
   try {
     const currentUser = await User.findById(req.user._id);

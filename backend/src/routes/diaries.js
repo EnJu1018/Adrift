@@ -72,6 +72,27 @@ function buildLocationQuery(query, res) {
   };
 }
 
+function serializeMemory(diary) {
+  const [lng, lat] = diary.location?.coordinates || [];
+  const imageUrls = diary.imageUrl ? [diary.imageUrl] : [];
+
+  return {
+    _id: diary._id,
+    content: diary.text,
+    text: diary.text,
+    mood: diary.mood,
+    images: imageUrls,
+    imageUrl: diary.imageUrl || '',
+    location: {
+      lat,
+      lng,
+      placeName: ''
+    },
+    visibility: diary.visibility,
+    createdAt: diary.createdAt
+  };
+}
+
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const locationQuery = buildLocationQuery(req.query, res);
@@ -110,6 +131,45 @@ router.get('/public', requireAuth, async (_req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.get('/memories', requireAuth, async (req, res) => {
+  try {
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentDate = today.getDate();
+    const currentYear = today.getFullYear();
+    const startOfCurrentYear = new Date(currentYear, 0, 1);
+
+    const diaries = await Diary.find({
+      user: req.user._id,
+      createdAt: { $lt: startOfCurrentYear }
+    }).sort({ createdAt: -1 });
+
+    const memories = diaries
+      .filter((diary) => {
+        const createdAt = new Date(diary.createdAt);
+
+        return (
+          createdAt.getMonth() === currentMonth &&
+          createdAt.getDate() === currentDate &&
+          createdAt.getFullYear() < currentYear
+        );
+      })
+      .map(serializeMemory);
+
+    res.json({
+      success: true,
+      message: memories.length > 0 ? '取得回憶成功' : '今天沒有過去的回憶',
+      data: memories
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: '取得回憶失敗'
+    });
   }
 });
 

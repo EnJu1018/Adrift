@@ -94,6 +94,9 @@ export const api = {
 
     return request(`/diaries${query ? `?${query}` : ''}`);
   },
+  getMemories() {
+    return request('/diaries/memories');
+  },
   createDiary(formData) {
     return request('/diaries', {
       method: 'POST',
@@ -116,6 +119,12 @@ export const api = {
   getFriendRequests() {
     return request('/friends/requests');
   },
+  getSentFriendRequests() {
+    return request('/friends/requests/sent');
+  },
+  cancelFriendRequest(requestId) {
+    return request(`/friends/requests/${requestId}/cancel`, { method: 'DELETE' });
+  },
   acceptFriendRequest(requestId) {
     return request(`/friends/requests/${requestId}/accept`, { method: 'POST' });
   },
@@ -124,5 +133,32 @@ export const api = {
   },
   getFriends() {
     return request('/friends');
+  },
+  getMe() {
+    return request('/users/me');
+  },
+  updateName(name) {
+    return request('/users/me/name', {
+      method: 'PATCH',
+      body: JSON.stringify({ name })
+    });
+  },
+  updateEmail(payload) {
+    return request('/users/me/email', {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+  updatePassword(payload) {
+    return request('/users/me/password', {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
+  deleteAccount(payload) {
+    return request('/users/me', {
+      method: 'DELETE',
+      body: JSON.stringify(payload)
+    });
   }
 };

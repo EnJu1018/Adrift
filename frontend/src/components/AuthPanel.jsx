@@ -17,14 +17,10 @@ export default function AuthPanel({
   notice
 }) {
   const isRegister = mode === 'register';
-  const [form, setForm] = useState({
-    name: '',
-    userCode: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
-  const [fieldErrors, setFieldErrors] = useState({});
+  const [form, setForm] = useState({ name: '', userCode: '', email: '', password: '', confirmPassword: '' });
+  const [touched, setTouched] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
   const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -32,7 +28,9 @@ export default function AuthPanel({
   const title = useMemo(() => (isRegister ? '建立漂流身份' : '回到 Adrift'), [isRegister]);
 
   useEffect(() => {
-    setFieldErrors({});
+    setTouched({});
+    setSubmitted(false);
+    setErrors({});
     setSuccessMessage('');
     onClearError?.();
   }, [mode]);
@@ -40,24 +38,34 @@ export default function AuthPanel({
   function updateField(field, value) {
     const nextForm = { ...form, [field]: value };
     setForm(nextForm);
-    setFieldErrors((current) => {
-      const nextErrors = { ...current, [field]: validateField(field, nextForm) };
-
-      if (field === 'password' && isRegister) {
-        nextErrors.confirmPassword = validateField('confirmPassword', nextForm);
-      }
-
-      Object.keys(nextErrors).forEach((key) => {
-        if (!nextErrors[key]) {
-          delete nextErrors[key];
-        }
-      });
-
-      return nextErrors;
-    });
     setSuccessMessage('');
     onClearError?.();
     onClearNotice?.();
+
+    setErrors((current) => {
+      const next = { ...current };
+      const message = validateField(field, nextForm);
+
+      if (!message) delete next[field];
+      if (field === 'password' && !validateField('confirmPassword', nextForm)) delete next.confirmPassword;
+
+      return next;
+    });
+  }
+
+  function blurField(field) {
+    setTouched((current) => ({ ...current, [field]: true }));
+    const message = validateField(field);
+    setErrors((current) => {
+      const next = { ...current };
+      if (message) next[field] = message;
+      else delete next[field];
+      return next;
+    });
+  }
+
+  function shouldShow(field) {
+    return Boolean(errors[field] && (touched[field] || submitted));
   }
 
   function validateField(field, values = form) {
@@ -65,8 +73,9 @@ export default function AuthPanel({
     const password = values.password;
     const userCode = values.userCode.trim();
 
-    if (field === 'name' && isRegister && !values.name.trim()) {
-      return '請輸入使用者名稱';
+    if (field === 'name' && isRegister) {
+      if (!values.name.trim()) return '請輸入使用者名稱';
+      if (values.name.trim().length < 2 || values.name.trim().length > 30) return '使用者名稱長度需為 2 到 30 字元';
     }
 
     if (field === 'userCode' && isRegister) {
@@ -91,23 +100,25 @@ export default function AuthPanel({
     return '';
   }
 
-  function validate() {
+  function validateForm() {
     const fields = isRegister ? ['name', 'userCode', 'email', 'password', 'confirmPassword'] : ['email', 'password'];
-    const errors = fields.reduce((result, field) => {
+    const nextErrors = fields.reduce((result, field) => {
       const message = validateField(field);
       if (message) result[field] = message;
       return result;
     }, {});
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setErrors(nextErrors);
+    setTouched(fields.reduce((result, field) => ({ ...result, [field]: true }), {}));
+    return Object.keys(nextErrors).length === 0;
   }
 
   async function submit(event) {
     event.preventDefault();
+    setSubmitted(true);
     setSuccessMessage('');
 
-    if (!validate()) return;
+    if (!validateForm()) return;
 
     try {
       const payload = await onAuth(mode, {
@@ -122,14 +133,10 @@ export default function AuthPanel({
         setSuccessMessage(message);
         onRegisterSuccess?.(message);
         onNavigate('/login');
-        setForm((current) => ({
-          ...current,
-          password: '',
-          confirmPassword: ''
-        }));
+        setForm((current) => ({ ...current, password: '', confirmPassword: '' }));
       }
     } catch {
-      // Error is rendered from the parent state.
+      // Parent renders API error.
     }
   }
 
@@ -171,39 +178,33 @@ export default function AuthPanel({
 
         <AnimatePresence mode="popLayout">
           {isRegister && (
-            <motion.label
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-            >
+            <motion.label initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               使用者名稱
               <input
                 value={form.name}
                 onChange={(event) => updateField('name', event.target.value)}
+                onBlur={() => blurField('name')}
                 placeholder="你的名字"
-                aria-invalid={Boolean(fieldErrors.name)}
+                aria-invalid={shouldShow('name')}
               />
-              {fieldErrors.name && <span className="field-error">{fieldErrors.name}</span>}
+              {shouldShow('name') && <span className="field-error">{errors.name}</span>}
             </motion.label>
           )}
         </AnimatePresence>
 
         <AnimatePresence mode="popLayout">
           {isRegister && (
-            <motion.label
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-            >
+            <motion.label initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               使用者 ID
               <input
                 value={form.userCode}
                 onChange={(event) => updateField('userCode', event.target.value)}
-                placeholder="ID"
-                aria-invalid={Boolean(fieldErrors.userCode)}
+                onBlur={() => blurField('userCode')}
+                placeholder="arren_123"
+                aria-invalid={shouldShow('userCode')}
               />
-              <small className="field-hint">建立後無法更改</small>
-              {fieldErrors.userCode && <span className="field-error">{fieldErrors.userCode}</span>}
+              <small className="field-hint">這是你的公開好友搜尋 ID，建立後可讓朋友用它找到你。</small>
+              {shouldShow('userCode') && <span className="field-error">{errors.userCode}</span>}
             </motion.label>
           )}
         </AnimatePresence>
@@ -214,10 +215,11 @@ export default function AuthPanel({
             type="email"
             value={form.email}
             onChange={(event) => updateField('email', event.target.value)}
+            onBlur={() => blurField('email')}
             placeholder="you@example.com"
-            aria-invalid={Boolean(fieldErrors.email)}
+            aria-invalid={shouldShow('email')}
           />
-          {fieldErrors.email && <span className="field-error">{fieldErrors.email}</span>}
+          {shouldShow('email') && <span className="field-error">{errors.email}</span>}
         </label>
 
         <label>
@@ -227,31 +229,29 @@ export default function AuthPanel({
               type={showPassword ? 'text' : 'password'}
               value={form.password}
               onChange={(event) => updateField('password', event.target.value)}
+              onBlur={() => blurField('password')}
               placeholder={isRegister ? '至少 6 個字元' : '請輸入密碼'}
-              aria-invalid={Boolean(fieldErrors.password)}
+              aria-invalid={shouldShow('password')}
             />
             <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label="切換密碼顯示">
               {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </span>
-          {fieldErrors.password && <span className="field-error">{fieldErrors.password}</span>}
+          {shouldShow('password') && <span className="field-error">{errors.password}</span>}
         </label>
 
         <AnimatePresence mode="popLayout">
           {isRegister && (
-            <motion.label
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-            >
+            <motion.label initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               確認密碼
               <span className="password-control">
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={form.confirmPassword}
                   onChange={(event) => updateField('confirmPassword', event.target.value)}
+                  onBlur={() => blurField('confirmPassword')}
                   placeholder="再次輸入密碼"
-                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                  aria-invalid={shouldShow('confirmPassword')}
                 />
                 <button
                   type="button"
@@ -261,7 +261,7 @@ export default function AuthPanel({
                   {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </span>
-              {fieldErrors.confirmPassword && <span className="field-error">{fieldErrors.confirmPassword}</span>}
+              {shouldShow('confirmPassword') && <span className="field-error">{errors.confirmPassword}</span>}
             </motion.label>
           )}
         </AnimatePresence>

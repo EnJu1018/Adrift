@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { LocateFixed, MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
+import { MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, clearStoredAuth, getStoredAuth, saveAuth } from './api/client.js';
+import AccountSettings from './components/AccountSettings.jsx';
 import AuthPanel from './components/AuthPanel.jsx';
 import DiaryModal from './components/DiaryModal.jsx';
 import DiaryPopup from './components/DiaryPopup.jsx';
@@ -17,6 +18,7 @@ export default function App() {
   const [diaries, setDiaries] = useState([]);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  const [sentFriendRequests, setSentFriendRequests] = useState([]);
   const [selectedDiary, setSelectedDiary] = useState(null);
   const [draftLocation, setDraftLocation] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
@@ -32,6 +34,7 @@ export default function App() {
   const isAuthPage = currentPath === '/login' || currentPath === '/register';
   const authMode = currentPath === '/register' ? 'register' : 'login';
   const isProfilePage = currentPath === '/profile';
+  const isSettingsPage = currentPath === '/settings/account';
 
   const navigate = useCallback((path) => {
     if (window.location.pathname !== path) {
@@ -51,6 +54,7 @@ export default function App() {
     setUser(null);
     setFriends([]);
     setFriendRequests([]);
+    setSentFriendRequests([]);
     setDiaries([]);
     setSelectedDiary(null);
     setDraftLocation(null);
@@ -63,27 +67,28 @@ export default function App() {
     navigate('/login');
   }, [navigate]);
 
+  const syncUser = useCallback((nextUser) => {
+    const { token } = getStoredAuth();
+    if (!token || !nextUser) return;
+
+    setUser(nextUser);
+    saveAuth(token, nextUser);
+  }, []);
+
   const loadDiaries = useCallback(async (params = {}, options = {}) => {
     if (!getStoredAuth().token) return;
 
     const silent = options.silent ?? true;
 
     try {
-      if (!silent) {
-        setDiaryLoading(true);
-      }
-
+      if (!silent) setDiaryLoading(true);
       setDiaryError('');
       const payload = await api.getDiaries(params);
       setDiaries(payload.data?.diaries || payload.diaries || []);
     } catch (error) {
-      if (error.status !== 401) {
-        setDiaryError(error.message);
-      }
+      if (error.status !== 401) setDiaryError(error.message);
     } finally {
-      if (!silent) {
-        setDiaryLoading(false);
-      }
+      if (!silent) setDiaryLoading(false);
     }
   }, []);
 
@@ -91,13 +96,16 @@ export default function App() {
     if (!getStoredAuth().token) return;
 
     try {
-      const [friendsPayload, requestsPayload] = await Promise.all([api.getFriends(), api.getFriendRequests()]);
+      const [friendsPayload, requestsPayload, sentRequestsPayload] = await Promise.all([
+        api.getFriends(),
+        api.getFriendRequests(),
+        api.getSentFriendRequests()
+      ]);
       setFriends(friendsPayload.data || []);
       setFriendRequests(requestsPayload.data || []);
+      setSentFriendRequests(sentRequestsPayload.data || []);
     } catch (error) {
-      if (error.status !== 401) {
-        setDiaryError(error.message);
-      }
+      if (error.status !== 401) setDiaryError(error.message);
     }
   }, []);
 
@@ -131,12 +139,26 @@ export default function App() {
     if (!user) {
       setFriends([]);
       setFriendRequests([]);
+      setSentFriendRequests([]);
       return;
     }
 
     loadDiaries({}, { silent: true });
     loadSocial();
   }, [loadDiaries, loadSocial, user]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    api
+      .getMe()
+      .then((payload) => {
+        if (payload.data) syncUser(payload.data);
+      })
+      .catch((error) => {
+        if (error.status !== 401) setDiaryError(error.message);
+      });
+  }, [syncUser, user?.id]);
 
   const stats = useMemo(() => {
     const mine = diaries.filter((diary) => diary.user?._id === user?.id || diary.user?.id === user?.id).length;
@@ -200,9 +222,7 @@ export default function App() {
       setDraftLocation(null);
       setSelectedDiary(diary);
     } catch (error) {
-      if (error.status !== 401) {
-        setDiaryError(error.message);
-      }
+      if (error.status !== 401) setDiaryError(error.message);
       throw error;
     } finally {
       setPublishing(false);
@@ -215,9 +235,7 @@ export default function App() {
       setDiaries((current) => current.filter((diary) => diary._id !== id));
       setSelectedDiary(null);
     } catch (error) {
-      if (error.status !== 401) {
-        setDiaryError(error.message);
-      }
+      if (error.status !== 401) setDiaryError(error.message);
     }
   }
 
@@ -265,6 +283,12 @@ export default function App() {
     return payload;
   }
 
+  async function cancelFriendRequest(requestId) {
+    const payload = await api.cancelFriendRequest(requestId);
+    await loadSocial();
+    return payload;
+  }
+
   async function acceptFriendRequest(requestId) {
     const payload = await api.acceptFriendRequest(requestId);
     await Promise.all([loadSocial(), loadDiaries({}, { silent: true })]);
@@ -274,6 +298,28 @@ export default function App() {
   async function rejectFriendRequest(requestId) {
     const payload = await api.rejectFriendRequest(requestId);
     await loadSocial();
+    return payload;
+  }
+
+  async function updateName(name) {
+    const payload = await api.updateName(name);
+    syncUser(payload.data?.user || { ...user, name: payload.data?.name || name });
+    return payload;
+  }
+
+  async function updateEmail(form) {
+    const payload = await api.updateEmail(form);
+    syncUser(payload.data?.user || { ...user, email: payload.data?.email || form.email });
+    return payload;
+  }
+
+  async function updatePassword(form) {
+    return api.updatePassword(form);
+  }
+
+  async function deleteAccount(form) {
+    const payload = await api.deleteAccount(form);
+    logout(payload.message || '帳號已刪除');
     return payload;
   }
 
@@ -298,11 +344,7 @@ export default function App() {
             <div className="topbar-actions">
               {user && (
                 <>
-                  <button
-                    className="icon-button"
-                    onClick={() => loadDiaries({}, { silent: true })}
-                    aria-label="Refresh diaries"
-                  >
+                  <button className="icon-button" onClick={() => loadDiaries({}, { silent: true })} aria-label="Refresh diaries">
                     <RefreshCcw size={18} />
                   </button>
                   <button className={`chip-button ${filterNearby ? 'active' : ''}`} onClick={toggleNearby} disabled={locating}>
@@ -330,7 +372,7 @@ export default function App() {
             onSelect={setSelectedDiary}
             onViewportChange={handleMapViewportChange}
             expanded={Boolean(user)}
-            loading={false}
+            loading={diaryLoading}
             disabled={!user}
           />
 
@@ -346,17 +388,31 @@ export default function App() {
         </section>
 
         <AnimatePresence mode="wait">
-          {user ? (
+          {user && isSettingsPage ? (
+            <AccountSettings
+              key="account-settings"
+              user={user}
+              friends={friends}
+              diaries={diaries}
+              onBack={() => navigate('/')}
+              onUpdateName={updateName}
+              onUpdateEmail={updateEmail}
+              onUpdatePassword={updatePassword}
+              onDeleteAccount={deleteAccount}
+            />
+          ) : user ? (
             <MemoryPanel
               key="memory-panel"
               user={user}
               diaries={diaries}
               friends={friends}
               friendRequests={friendRequests}
+              sentFriendRequests={sentFriendRequests}
               onNewDiary={openNewDiary}
               onSelectDiary={setSelectedDiary}
               onSearchUser={searchFriendUser}
               onSendFriendRequest={sendFriendRequest}
+              onCancelFriendRequest={cancelFriendRequest}
               onAcceptFriendRequest={acceptFriendRequest}
               onRejectFriendRequest={rejectFriendRequest}
               locating={locating}
@@ -382,10 +438,10 @@ export default function App() {
         user={user}
         diaries={diaries}
         friends={friends}
-        friendRequests={friendRequests}
         forceOpen={isProfilePage}
         onOpen={() => navigate('/profile')}
         onClose={() => navigate('/')}
+        onSettings={() => navigate('/settings/account')}
         onLogout={() => logout()}
       />
 

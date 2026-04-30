@@ -1,34 +1,24 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Copy, LogOut, UserRound, X } from 'lucide-react';
+import { Check, Copy, LogOut, Settings, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-export default function ProfileDock({
-  user,
-  diaries,
-  friends,
-  friendRequests,
-  forceOpen,
-  onOpen,
-  onClose,
-  onLogout
-}) {
+export default function ProfileDock({ user, diaries, friends, forceOpen, onOpen, onClose, onSettings, onLogout }) {
   const [open, setOpen] = useState(Boolean(forceOpen));
-  const [message, setMessage] = useState('');
+  const [copyMessage, setCopyMessage] = useState('');
 
   useEffect(() => {
     setOpen(Boolean(forceOpen));
   }, [forceOpen]);
 
-  const stats = useMemo(() => {
-    const mine = (diaries || []).filter((diary) => diary.user?._id === user?.id || diary.user?.id === user?.id);
+  const diaryCount = useMemo(() => {
+    return (diaries || []).filter((diary) => diary.user?._id === user?.id || diary.user?.id === user?.id).length;
+  }, [diaries, user?.id]);
 
-    return {
-      diaryCount: mine.length,
-      publicCount: mine.filter((diary) => diary.visibility === 'public').length,
-      friendCount: friends?.length || 0,
-      requestCount: friendRequests?.length || 0
-    };
-  }, [diaries, friendRequests, friends, user?.id]);
+  useEffect(() => {
+    if (!copyMessage) return undefined;
+    const timer = window.setTimeout(() => setCopyMessage(''), 2400);
+    return () => window.clearTimeout(timer);
+  }, [copyMessage]);
 
   function toggleOpen() {
     if (open) {
@@ -46,9 +36,9 @@ export default function ProfileDock({
 
     try {
       await navigator.clipboard.writeText(user.userCode);
-      setMessage('已複製使用者 ID');
+      setCopyMessage('已複製使用者 ID');
     } catch {
-      setMessage('無法複製，請手動選取 ID');
+      setCopyMessage('無法複製使用者 ID');
     }
   }
 
@@ -66,74 +56,69 @@ export default function ProfileDock({
             transition={{ duration: 0.28, ease: 'easeOut' }}
           >
             <header>
-              <div className="profile-identity">
-                <span className="avatar-orb">{(user.name || 'A').slice(0, 1).toUpperCase()}</span>
-                <div>
-                  <p className="eyebrow">Profile</p>
-                  <h2>{user.name}</h2>
-                  <span>@{user.userCode || '尚未設定'}</span>
-                </div>
+              <div>
+                <p className="eyebrow">Account</p>
+                <h2>帳號摘要</h2>
               </div>
-              <button className="icon-button" onClick={toggleOpen} aria-label="關閉 Profile">
+              <button className="icon-button" onClick={toggleOpen} aria-label="關閉帳號卡片">
                 <X size={16} />
               </button>
             </header>
 
-            <div className="profile-id-row">
-              <span>{user.userCode || '尚未設定使用者 ID'}</span>
-              <button className="chip-button" onClick={copyUserCode} disabled={!user.userCode}>
-                <Copy size={15} />
-                複製 ID
-              </button>
+            <div className="profile-summary">
+              <span>名稱</span>
+              <strong>{user.name || '未命名'}</strong>
+              <span>使用者 ID</span>
+              <span className="summary-value-row">
+                <strong>@{user.userCode || '尚未設定'}</strong>
+                <button className="copy-mini-button" type="button" onClick={copyUserCode} disabled={!user.userCode}>
+                  <Copy size={13} />
+                  複製
+                </button>
+              </span>
+              <span>Email</span>
+              <strong title={user.email}>{user.email || '尚未設定'}</strong>
+              <span>好友</span>
+              <strong>{friends?.length || 0}</strong>
+              <span>日記</span>
+              <strong>{diaryCount}</strong>
             </div>
 
-            {message && (
-              <motion.p className="form-message success" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
-                <Check size={15} />
-                {message}
-              </motion.p>
-            )}
+            <AnimatePresence>
+              {copyMessage && (
+                <motion.p
+                  className={`form-message ${copyMessage.startsWith('無法') ? 'error' : 'success'} compact`}
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                >
+                  <Check size={14} />
+                  {copyMessage}
+                </motion.p>
+              )}
+            </AnimatePresence>
 
-            <div className="profile-stats">
-              <article>
-                <strong>{stats.diaryCount}</strong>
-                <span>我的日記</span>
-              </article>
-              <article>
-                <strong>{stats.publicCount}</strong>
-                <span>公開</span>
-              </article>
-              <article>
-                <strong>{stats.friendCount}</strong>
-                <span>好友</span>
-              </article>
-              <article>
-                <strong>{stats.requestCount}</strong>
-                <span>邀請</span>
-              </article>
-            </div>
-
-            <button className="danger-button profile-logout" onClick={() => onLogout?.()}>
-              <LogOut size={16} />
-              Logout
+            <button className="primary-button compact profile-settings-button" onClick={onSettings}>
+              <Settings size={15} />
+              帳號設定
             </button>
           </motion.section>
         )}
       </AnimatePresence>
 
-      <motion.button
-        className="profile-fab glass"
-        onClick={toggleOpen}
-        whileTap={{ scale: 0.96 }}
-        aria-label="開啟 Profile"
-      >
-        <span className="avatar-orb small">{(user.name || 'A').slice(0, 1).toUpperCase()}</span>
-        <span>
-          <strong>{user.name}</strong>
-          <small>Profile</small>
-        </span>
-        <UserRound size={17} />
-      </motion.button>
+      <motion.div className="profile-fab glass" initial={false} whileHover={{ y: -1 }}>
+        <button className="profile-trigger" type="button" onClick={toggleOpen} aria-label="開啟帳號卡片">
+          <span className="avatar-orb small">{(user.name || 'A').slice(0, 1).toUpperCase()}</span>
+          <span>
+            <strong>{user.name || 'Account'}</strong>
+            <small>@{user.userCode || 'user'}</small>
+          </span>
+        </button>
+        <button className="profile-logout-button" type="button" onClick={onLogout} aria-label="Logout">
+          <LogOut size={17} />
+          <span>Logout</span>
+        </button>
+      </motion.div>
     </div>
   );
 }
