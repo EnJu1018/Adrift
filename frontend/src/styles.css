@@ -1,4 +1,11 @@
 :root {
+  --card-radius: 18px;
+  --panel-radius: 20px;
+  --control-radius: 12px;
+  --card-border: rgba(196, 235, 255, 0.15);
+  --card-bg: rgba(3, 17, 30, 0.46);
+  --muted: #94c2d6;
+  --muted-strong: #b9d9e8;
   color: #edf8ff;
   background: #02050d;
   font-family:
@@ -60,7 +67,7 @@ button {
 .boot-card {
   width: min(520px, 100%);
   padding: 24px;
-  border-radius: 8px;
+  border-radius: var(--panel-radius);
 }
 
 .boot-card h1 {
@@ -93,9 +100,9 @@ button {
   z-index: 2;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
-  gap: 20px;
+  gap: 18px;
   min-height: 100vh;
-  padding: 20px;
+  padding: 18px;
   opacity: 0;
   animation: pageEnter 720ms ease-out 120ms forwards;
 }
@@ -110,9 +117,9 @@ button {
 }
 
 .glass {
-  border: 1px solid rgba(196, 235, 255, 0.18);
-  background: linear-gradient(145deg, rgba(14, 27, 45, 0.68), rgba(8, 20, 34, 0.42));
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38), 0 0 40px rgba(77, 197, 255, 0.11);
+  border: 1px solid rgba(196, 235, 255, 0.16);
+  background: linear-gradient(145deg, rgba(14, 27, 45, 0.66), rgba(8, 20, 34, 0.44));
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34), 0 0 34px rgba(77, 197, 255, 0.09);
   backdrop-filter: blur(20px) saturate(135%);
 }
 
@@ -120,19 +127,19 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: calc(100vh - 40px);
-  padding: 24px;
-  border-radius: 8px;
+  min-height: calc(100vh - 36px);
+  padding: 22px;
+  border-radius: var(--panel-radius);
 }
 
 .memory-panel {
   position: relative;
   display: grid;
   grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 16px;
-  min-height: calc(100vh - 40px);
+  gap: 14px;
+  min-height: calc(100vh - 36px);
   padding: 18px;
-  border-radius: 8px;
+  border-radius: var(--panel-radius);
   overflow: hidden;
 }
 
@@ -159,9 +166,9 @@ button {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: 14px;
-  min-height: calc(100vh - 40px);
+  min-height: calc(100vh - 36px);
   padding: 18px;
-  border-radius: 8px;
+  border-radius: var(--panel-radius);
   overflow: hidden;
 }
 
@@ -181,9 +188,15 @@ button {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 1px solid rgba(191, 232, 255, 0.13);
-  border-radius: 8px;
-  background: rgba(2, 13, 24, 0.42);
+  border: 1px solid var(--card-border);
+  border-radius: 15px;
+  background: var(--card-bg);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.person-card:hover {
+  border-color: rgba(142, 238, 220, 0.28);
+  background: rgba(5, 24, 40, 0.58);
 }
 
 .profile-card strong,
@@ -197,11 +210,17 @@ button {
 
 .profile-card span,
 .person-card span,
+.person-card small,
 .popup-author small,
 .quiet-note,
 .field-hint {
-  color: #94c2d6;
+  color: var(--muted);
   font-size: 0.78rem;
+}
+
+.person-card small {
+  display: block;
+  margin-top: 3px;
 }
 
 .avatar-orb {
@@ -232,7 +251,7 @@ button {
   gap: 6px;
   padding: 5px;
   border: 1px solid rgba(196, 235, 255, 0.13);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(1, 8, 17, 0.35);
 }
 
@@ -241,8 +260,8 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 34px;
-  border-radius: 6px;
+  min-height: 36px;
+  border-radius: 10px;
   color: #a9c7d7;
   background: transparent;
 }
@@ -268,7 +287,7 @@ button {
 .panel-scroll {
   display: grid;
   align-content: start;
-  gap: 14px;
+  gap: 12px;
   min-height: 0;
   max-height: calc(100vh - 290px);
   overflow: auto;
@@ -282,17 +301,17 @@ button {
 }
 
 .memory-stats article {
-  min-height: 82px;
+  min-height: 76px;
   padding: 14px;
-  border: 1px solid rgba(191, 232, 255, 0.13);
-  border-radius: 8px;
-  background: rgba(2, 13, 24, 0.42);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: var(--card-bg);
 }
 
 .memory-stats span {
   display: block;
   color: #ffffff;
-  font-size: 1.85rem;
+  font-size: 1.65rem;
   font-weight: 800;
   line-height: 1;
 }
@@ -323,7 +342,7 @@ button {
   min-height: 34px;
   padding: 0 8px;
   border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 12px;
   color: #cbeafa;
   background: rgba(137, 215, 255, 0.08);
   font-size: 0.8rem;
@@ -358,7 +377,7 @@ button {
   width: 100%;
   padding: 12px;
   border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 15px;
   color: #edf8ff;
   text-align: left;
   background: rgba(2, 13, 24, 0.38);
@@ -412,7 +431,7 @@ button {
   gap: 10px;
   padding: 14px;
   border: 1px dashed rgba(191, 232, 255, 0.2);
-  border-radius: 8px;
+  border-radius: 15px;
   color: #b9d9e8;
   background: rgba(2, 13, 24, 0.32);
   font-size: 0.86rem;
@@ -451,8 +470,8 @@ h2 {
 
 h1 {
   max-width: 250px;
-  font-size: clamp(2.1rem, 3vw, 1.7rem);
-  line-height: 0.95;
+  font-size: clamp(1.8rem, 3vw, 2.2rem);
+  line-height: 1;
 }
 
 h2 {
@@ -466,7 +485,7 @@ h2 {
   padding: 5px;
   margin: 32px 0 18px;
   border: 1px solid rgba(196, 235, 255, 0.13);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(1, 8, 17, 0.35);
 }
 
@@ -485,7 +504,7 @@ h2 {
 }
 
 .segmented button {
-  border-radius: 6px;
+  border-radius: 10px;
   background: transparent;
   color: #a9c7d7;
 }
@@ -507,7 +526,7 @@ label {
   display: grid;
   gap: 7px;
   color: #bfd9e9;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
 }
 
 input,
@@ -515,7 +534,7 @@ textarea,
 select {
   width: 100%;
   border: 1px solid rgba(184, 231, 255, 0.16);
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   outline: none;
   color: #f5fcff;
   background: rgba(0, 10, 20, 0.44);
@@ -529,7 +548,7 @@ select {
 
 textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 112px;
   padding: 12px;
 }
 
@@ -555,7 +574,7 @@ select option {
 .field-error {
   margin: 0;
   color: #ffb7c3;
-  font-size: 0.86rem;
+  font-size: 0.78rem;
 }
 
 .field-error {
@@ -569,8 +588,8 @@ select option {
   margin: 0;
   padding: 10px 12px;
   border: 1px solid rgba(255, 255, 255, 0.13);
-  border-radius: 8px;
-  font-size: 0.88rem;
+  border-radius: 14px;
+  font-size: 0.84rem;
   line-height: 1.45;
   backdrop-filter: blur(14px);
 }
@@ -665,8 +684,21 @@ select option {
   gap: 12px;
 }
 
+.social-search,
+.social-section {
+  padding: 13px;
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  background: rgba(2, 13, 24, 0.34);
+}
+
+.social-search label {
+  gap: 8px;
+}
+
 .person-card {
   grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 62px;
 }
 
 .person-card .chip-button {
@@ -689,15 +721,15 @@ select option {
   margin: 0;
   padding: 12px;
   border: 1px dashed rgba(191, 232, 255, 0.16);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(2, 13, 24, 0.28);
   line-height: 1.5;
 }
 
 .primary-button {
-  min-height: 44px;
-  padding: 0 18px;
-  border-radius: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: var(--control-radius);
   background: linear-gradient(135deg, #4fc3ff, #79f1dc);
   color: #02121b;
   font-weight: 800;
@@ -719,7 +751,7 @@ select option {
   min-width: 38px;
   padding: 0 12px;
   border: 1px solid rgba(191, 232, 255, 0.16);
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   background: rgba(3, 15, 26, 0.52);
 }
 
@@ -732,7 +764,7 @@ select option {
 
 .danger-button {
   width: 100%;
-  margin-top: 16px;
+  margin-top: 10px;
   color: #ffd6dc;
   background: rgba(255, 77, 111, 0.12);
 }
@@ -752,8 +784,8 @@ select option {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 16px;
-  border-radius: 8px;
+  padding: 13px 15px;
+  border-radius: 16px;
 }
 
 .topbar-actions,
@@ -762,6 +794,11 @@ select option {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.status-strip {
+  min-height: 42px;
+  color: var(--muted);
 }
 
 .nav-user {
@@ -779,13 +816,13 @@ select option {
 
 .profile-dock {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
+  right: 18px;
+  bottom: 18px;
   z-index: 8;
   display: grid;
   justify-items: end;
   gap: 12px;
-  width: min(360px, calc(100vw - 40px));
+  width: min(360px, calc(100vw - 36px));
   pointer-events: none;
 }
 
@@ -800,9 +837,9 @@ select option {
   gap: 0;
   overflow: hidden;
   width: 100%;
-  min-height: 54px;
+  min-height: 52px;
   padding: 0;
-  border-radius: 8px;
+  border-radius: 16px;
   color: #ecfbff;
   text-align: left;
 }
@@ -813,7 +850,7 @@ select option {
   align-items: center;
   gap: 10px;
   min-width: 0;
-  min-height: 54px;
+  min-height: 52px;
   padding: 8px 12px;
   border: 0;
   border-radius: 0;
@@ -871,7 +908,7 @@ select option {
 .profile-popover {
   width: 100%;
   padding: 14px;
-  border-radius: 8px;
+  border-radius: 18px;
 }
 
 .profile-popover header,
@@ -909,7 +946,7 @@ select option {
   justify-content: space-between;
   padding: 10px 12px;
   border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(2, 13, 24, 0.42);
 }
 
@@ -926,9 +963,9 @@ select option {
   gap: 8px 12px;
   align-items: center;
   padding: 12px;
-  border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(2, 13, 24, 0.42);
+  border: 1px solid var(--card-border);
+  border-radius: 15px;
+  background: var(--card-bg);
 }
 
 .profile-summary span {
@@ -967,7 +1004,7 @@ select option {
   min-height: 26px;
   padding: 0 8px;
   border: 1px solid rgba(142, 238, 220, 0.22);
-  border-radius: 8px;
+  border-radius: 999px;
   background: rgba(142, 238, 220, 0.08);
   color: #c9fff2;
   font-size: 0.72rem;
@@ -1005,7 +1042,7 @@ select option {
   place-items: center;
   padding: 10px 6px;
   border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(137, 215, 255, 0.08);
 }
 
@@ -1038,7 +1075,7 @@ select option {
   gap: 0;
   padding: 0;
   border: 1px solid rgba(191, 232, 255, 0.13);
-  border-radius: 8px;
+  border-radius: 16px;
   background: rgba(2, 13, 24, 0.36);
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1048,7 +1085,7 @@ select option {
   gap: 11px;
   padding: 12px 14px 14px;
   border: 1px solid rgba(191, 232, 255, 0.15);
-  border-radius: 8px;
+  border-radius: 16px;
   background: rgba(3, 19, 34, 0.46);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.16), 0 0 24px rgba(78, 221, 199, 0.05);
 }
@@ -1075,7 +1112,7 @@ select option {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 12px 14px;
+  padding: 13px 14px;
   color: #e9f9ff;
   background: transparent;
   border: 0;
@@ -1150,7 +1187,7 @@ select option {
 .account-facts.compact {
   padding: 10px 12px;
   border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(2, 13, 24, 0.42);
 }
 
@@ -1185,9 +1222,9 @@ select option {
   position: relative;
   overflow: hidden;
   width: 100%;
-  min-height: 520px;
+  min-height: 540px;
   border: 1px solid rgba(194, 233, 255, 0.16);
-  border-radius: 8px;
+  border-radius: var(--panel-radius);
   background: rgba(0, 7, 15, 0.48);
   box-shadow: inset 0 0 80px rgba(62, 155, 204, 0.12), 0 30px 90px rgba(0, 0, 0, 0.32);
 }
@@ -1223,7 +1260,7 @@ select option {
   inset: 18px;
   overflow: hidden;
   border: 1px solid rgba(194, 233, 255, 0.12);
-  border-radius: 8px;
+  border-radius: 16px;
   background:
     linear-gradient(90deg, transparent, rgba(126, 221, 255, 0.12), transparent),
     rgba(1, 12, 22, 0.42);
@@ -1236,7 +1273,7 @@ select option {
   top: 50%;
   z-index: 5;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 14px;
   transform: translate(-50%, -50%);
 }
 
@@ -1325,7 +1362,7 @@ select option {
   max-height: min(78vh, 720px);
   overflow: auto;
   padding: 18px;
-  border-radius: 8px;
+  border-radius: var(--panel-radius);
 }
 
 .popup-card header,
@@ -1348,7 +1385,7 @@ select option {
   width: 100%;
   max-height: 240px;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 16px;
   margin-bottom: 14px;
   border: 1px solid rgba(198, 236, 255, 0.16);
 }
@@ -1395,7 +1432,7 @@ select option {
   max-height: min(92vh, 760px);
   overflow: auto;
   padding: 20px;
-  border-radius: 8px;
+  border-radius: var(--panel-radius);
 }
 
 .field-grid {
@@ -1416,7 +1453,7 @@ select option {
   padding: 0 12px;
   overflow: hidden;
   border: 1px solid rgba(184, 231, 255, 0.16);
-  border-radius: 8px;
+  border-radius: var(--control-radius);
   background: rgba(0, 10, 20, 0.44);
   color: #eaf8ff;
   white-space: nowrap;

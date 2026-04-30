@@ -93,6 +93,58 @@ function serializeMemory(diary) {
   };
 }
 
+function parseExploreQuery(query) {
+  const parsedLat = Number(query.lat);
+  const parsedLng = Number(query.lng);
+  const parsedRadius = query.radius === undefined || query.radius === '' ? 5000 : Number(query.radius);
+
+  if (![parsedLat, parsedLng, parsedRadius].every(Number.isFinite)) {
+    return null;
+  }
+
+  if (parsedLat < -90 || parsedLat > 90 || parsedLng < -180 || parsedLng > 180 || parsedRadius <= 0) {
+    return null;
+  }
+
+  return {
+    lat: parsedLat,
+    lng: parsedLng,
+    radius: Math.min(parsedRadius, 50000)
+  };
+}
+
+function serializeExploreDiary(diary) {
+  const [lng, lat] = diary.location?.coordinates || [];
+  const author = diary.user
+    ? {
+        _id: diary.user._id,
+        name: diary.user.name,
+        userCode: diary.user.userCode,
+        avatar: diary.user.avatar || ''
+      }
+    : null;
+
+  return {
+    _id: diary._id,
+    content: diary.text,
+    text: diary.text,
+    mood: diary.mood,
+    images: diary.imageUrl ? [diary.imageUrl] : [],
+    imageUrl: diary.imageUrl || '',
+    location: {
+      type: 'Point',
+      coordinates: diary.location?.coordinates || [],
+      lat,
+      lng,
+      placeName: ''
+    },
+    visibility: diary.visibility,
+    createdAt: diary.createdAt,
+    author,
+    user: author
+  };
+}
+
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const locationQuery = buildLocationQuery(req.query, res);
@@ -114,6 +166,46 @@ router.get('/', requireAuth, async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.get('/explore', requireAuth, async (req, res) => {
+  try {
+    const location = parseExploreQuery(req.query);
+
+    if (!location) {
+      return res.status(400).json({
+        success: false,
+        message: '請提供有效的位置資訊'
+      });
+    }
+
+    const diaries = await Diary.find({
+      visibility: 'public',
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [location.lng, location.lat]
+          },
+          $maxDistance: location.radius
+        }
+      }
+    })
+      .populate('user', authorFields)
+      .limit(200);
+
+    res.json({
+      success: true,
+      message: '取得附近日記成功',
+      data: diaries.map(serializeExploreDiary)
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: '取得附近日記失敗'
+    });
   }
 });
 

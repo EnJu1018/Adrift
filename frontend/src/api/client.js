@@ -97,6 +97,13 @@ export const api = {
   getMemories() {
     return request('/diaries/memories');
   },
+  getExploreDiaries(params = {}) {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== '')
+    ).toString();
+
+    return request(`/diaries/explore${query ? `?${query}` : ''}`);
+  },
   createDiary(formData) {
     return request('/diaries', {
       method: 'POST',
