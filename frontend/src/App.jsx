@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
+import { Compass, MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, clearStoredAuth, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
@@ -12,6 +12,12 @@ import Particles from './components/Particles.jsx';
 import ProfileDock from './components/ProfileDock.jsx';
 
 const requiredAccuracyMeters = 25;
+const exploreRadiusOptions = [
+  { label: '1km', value: 1000 },
+  { label: '5km', value: 5000 },
+  { label: '10km', value: 10000 },
+  { label: '50km', value: 50000 }
+];
 
 export default function App() {
   const [user, setUser] = useState(() => getStoredAuth().user);
@@ -29,6 +35,9 @@ export default function App() {
   const [authNotice, setAuthNotice] = useState('');
   const [diaryError, setDiaryError] = useState('');
   const [filterNearby, setFilterNearby] = useState(false);
+  const [mapMode, setMapMode] = useState('mine');
+  const [exploreRadius, setExploreRadius] = useState(5000);
+  const [exploreCenter, setExploreCenter] = useState(null);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
 
   const isAuthPage = currentPath === '/login' || currentPath === '/register';
@@ -59,6 +68,8 @@ export default function App() {
     setSelectedDiary(null);
     setDraftLocation(null);
     setFilterNearby(false);
+    setMapMode('mine');
+    setExploreCenter(null);
 
     if (message) {
       setAuthNotice(message);
@@ -87,6 +98,24 @@ export default function App() {
       setDiaries(payload.data?.diaries || payload.diaries || []);
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
+    } finally {
+      if (!silent) setDiaryLoading(false);
+    }
+  }, []);
+
+  const loadExploreDiaries = useCallback(async (params, options = {}) => {
+    if (!getStoredAuth().token) return;
+
+    const silent = options.silent ?? true;
+
+    try {
+      if (!silent) setDiaryLoading(true);
+      setDiaryError('');
+      const payload = await api.getExploreDiaries(params);
+      const exploreDiaries = Array.isArray(payload.data) ? payload.data : payload.data?.diaries || [];
+      setDiaries(exploreDiaries.map((diary) => ({ ...diary, isExplore: true })));
+    } catch (error) {
+      if (error.status !== 401) setDiaryError(error.message || '無法取得附近日記，請稍後再試');
     } finally {
       if (!silent) setDiaryLoading(false);
     }
@@ -140,12 +169,19 @@ export default function App() {
       setFriends([]);
       setFriendRequests([]);
       setSentFriendRequests([]);
+      setExploreCenter(null);
       return;
     }
 
-    loadDiaries({}, { silent: true });
+    if (mapMode === 'explore') {
+      if (exploreCenter) {
+        loadExploreDiaries({ ...exploreCenter, radius: exploreRadius }, { silent: true });
+      }
+    } else {
+      loadDiaries({}, { silent: true });
+    }
     loadSocial();
-  }, [loadDiaries, loadSocial, user]);
+  }, [exploreCenter, exploreRadius, loadDiaries, loadExploreDiaries, loadSocial, mapMode, user]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -176,6 +212,8 @@ export default function App() {
         const nextUser = payload.user || payload.data?.user;
         saveAuth(token, nextUser);
         setUser(nextUser);
+        setMapMode('mine');
+        setExploreCenter(null);
         navigate('/');
         await Promise.all([loadDiaries({}, { silent: true }), loadSocial()]);
       }
@@ -218,7 +256,11 @@ export default function App() {
       setDiaryError('');
       const payload = await api.createDiary(formData);
       const diary = payload.data?.diary || payload.diary;
-      setDiaries((current) => [diary, ...current.filter((item) => item._id !== diary._id)]);
+      if (mapMode === 'explore' && exploreCenter) {
+        await loadExploreDiaries({ ...exploreCenter, radius: exploreRadius }, { silent: true });
+      } else {
+        setDiaries((current) => [diary, ...current.filter((item) => item._id !== diary._id)]);
+      }
       setDraftLocation(null);
       setSelectedDiary(diary);
     } catch (error) {
@@ -240,6 +282,8 @@ export default function App() {
   }
 
   async function toggleNearby() {
+    if (mapMode === 'explore') return;
+
     const next = !filterNearby;
     setFilterNearby(next);
 
@@ -268,9 +312,66 @@ export default function App() {
   }
 
   const handleMapViewportChange = useCallback((params) => {
-    if (!user || filterNearby) return;
+    if (!user) return;
+
+    if (mapMode === 'explore') {
+      const nextCenter = { lat: params.lat, lng: params.lng };
+      setExploreCenter(nextCenter);
+      loadExploreDiaries({ ...nextCenter, radius: exploreRadius }, { silent: true });
+      return;
+    }
+
+    if (filterNearby) return;
     loadDiaries(params, { silent: true });
-  }, [filterNearby, loadDiaries, user]);
+  }, [exploreRadius, filterNearby, loadDiaries, loadExploreDiaries, mapMode, user]);
+
+  async function activateMineMode() {
+    setMapMode('mine');
+    setExploreCenter(null);
+    setFilterNearby(false);
+    setSelectedDiary(null);
+    await loadDiaries({}, { silent: true });
+  }
+
+  async function activateExploreMode(radius = exploreRadius) {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      setMapMode('explore');
+      setFilterNearby(false);
+      setSelectedDiary(null);
+      setDiaryLoading(true);
+      setDiaryError('');
+      const position = await getPrecisePosition();
+      const center = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude
+      };
+
+      setExploreCenter(center);
+      await loadExploreDiaries({ ...center, radius }, { silent: true });
+    } catch (error) {
+      setDiaryError(error.message || '需要開啟定位才能探索附近日記');
+    } finally {
+      setDiaryLoading(false);
+    }
+  }
+
+  async function changeExploreRadius(radius) {
+    setExploreRadius(radius);
+
+    if (mapMode !== 'explore') return;
+
+    if (exploreCenter) {
+      await loadExploreDiaries({ ...exploreCenter, radius }, { silent: false });
+      return;
+    }
+
+    await activateExploreMode(radius);
+  }
 
   async function searchFriendUser(userCode) {
     const payload = await api.searchUser(userCode);
@@ -344,13 +445,44 @@ export default function App() {
             <div className="topbar-actions">
               {user && (
                 <>
-                  <button className="icon-button" onClick={() => loadDiaries({}, { silent: true })} aria-label="Refresh diaries">
+                  <button
+                    className="icon-button"
+                    onClick={() =>
+                      mapMode === 'explore' ? activateExploreMode(exploreRadius) : loadDiaries({}, { silent: true })
+                    }
+                    aria-label="Refresh diaries"
+                  >
                     <RefreshCcw size={18} />
                   </button>
+                  <div className="map-mode-switch" aria-label="地圖模式">
+                    <button className={mapMode === 'mine' ? 'active' : ''} onClick={activateMineMode}>
+                      我的日記
+                    </button>
+                    <button className={mapMode === 'explore' ? 'active' : ''} onClick={() => activateExploreMode()}>
+                      <Compass size={15} />
+                      Explore
+                    </button>
+                  </div>
+                  {mapMode === 'explore' && (
+                    <div className="radius-switch" aria-label="Explore 半徑">
+                      {exploreRadiusOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          className={exploreRadius === option.value ? 'active' : ''}
+                          onClick={() => changeExploreRadius(option.value)}
+                          disabled={diaryLoading}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {mapMode === 'mine' && (
                   <button className={`chip-button ${filterNearby ? 'active' : ''}`} onClick={toggleNearby} disabled={locating}>
                     {locating ? <span className="button-spinner" /> : <Search size={16} />}
                     附近
                   </button>
+                  )}
                   <button className="primary-button compact" onClick={openNewDiary} disabled={locating}>
                     {locating ? <span className="button-spinner dark" /> : <Plus size={18} />}
                     {locating ? '定位中...' : '新增'}
@@ -371,6 +503,8 @@ export default function App() {
             selectedDiary={selectedDiary}
             onSelect={setSelectedDiary}
             onViewportChange={handleMapViewportChange}
+            focusLocation={exploreCenter}
+            mode={mapMode}
             expanded={Boolean(user)}
             loading={diaryLoading}
             disabled={!user}
@@ -382,6 +516,7 @@ export default function App() {
               {stats.total} memories
             </span>
             <span>{stats.mine} mine</span>
+            {mapMode === 'explore' && !diaryLoading && diaries.length === 0 && <strong>附近還沒有公開日記</strong>}
             {locating && <strong>正在取得精確位置，請允許瀏覽器定位...</strong>}
             {diaryError && <strong>{diaryError}</strong>}
           </div>

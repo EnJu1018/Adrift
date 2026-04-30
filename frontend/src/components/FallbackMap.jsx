@@ -12,7 +12,7 @@ export default function FallbackMap({ diaries, selectedId, onSelect }) {
         return (
           <motion.button
             key={diary._id}
-            className={`marker-button ${selectedId === diary._id ? 'selected' : ''}`}
+            className={`marker-button ${selectedId === diary._id ? 'selected' : ''} ${diary.isExplore ? 'explore' : ''}`}
             style={{ left: `${Math.min(94, Math.max(6, x))}%`, top: `${Math.min(90, Math.max(10, y))}%` }}
             onClick={() => onSelect(diary)}
             initial={{ opacity: 0, scale: 0, y: 18 }}

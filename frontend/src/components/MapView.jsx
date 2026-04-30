@@ -5,7 +5,17 @@ import FallbackMap from './FallbackMap.jsx';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-export default function MapView({ diaries, selectedDiary, onSelect, onViewportChange, expanded, loading, disabled }) {
+export default function MapView({
+  diaries,
+  selectedDiary,
+  onSelect,
+  onViewportChange,
+  focusLocation,
+  mode = 'mine',
+  expanded,
+  loading,
+  disabled
+}) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const moveTimerRef = useRef(null);
@@ -23,7 +33,8 @@ export default function MapView({ diaries, selectedDiary, onSelect, onViewportCh
           type: 'Feature',
           properties: {
             id: diary._id,
-            mood: diary.mood?.type || 'other'
+            mood: diary.mood?.type || 'other',
+            explore: Boolean(diary.isExplore)
           },
           geometry: {
             type: 'Point',
@@ -100,8 +111,13 @@ export default function MapView({ diaries, selectedDiary, onSelect, onViewportCh
         source: 'diaries',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': '#78f3dc',
-          'circle-radius': 7,
+          'circle-color': [
+            'case',
+            ['boolean', ['get', 'explore'], false],
+            'rgba(154, 180, 255, 0.88)',
+            '#78f3dc'
+          ],
+          'circle-radius': ['case', ['boolean', ['get', 'explore'], false], 8, 7],
           'circle-stroke-color': '#f5fcff',
           'circle-stroke-width': 1.5,
           'circle-opacity': 0.94,
@@ -126,6 +142,35 @@ export default function MapView({ diaries, selectedDiary, onSelect, onViewportCh
     const source = map.getSource('diaries');
     source?.setData(geoJson);
   }, [geoJson, mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !map.getLayer('diary-clusters')) return;
+
+    map.setPaintProperty(
+      'diary-clusters',
+      'circle-color',
+      mode === 'explore'
+        ? [
+            'step',
+            ['get', 'point_count'],
+            'rgba(154, 180, 255, 0.78)',
+            10,
+            'rgba(128, 179, 255, 0.82)',
+            40,
+            'rgba(178, 120, 255, 0.86)'
+          ]
+        : [
+            'step',
+            ['get', 'point_count'],
+            'rgba(121, 241, 220, 0.74)',
+            10,
+            'rgba(79, 195, 255, 0.78)',
+            40,
+            'rgba(178, 120, 255, 0.82)'
+          ]
+    );
+  }, [mapReady, mode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -219,6 +264,16 @@ export default function MapView({ diaries, selectedDiary, onSelect, onViewportCh
   }, [selectedDiary]);
 
   useEffect(() => {
+    if (!mapRef.current || !focusLocation) return;
+
+    mapRef.current.easeTo({
+      center: [focusLocation.lng, focusLocation.lat],
+      zoom: Math.max(mapRef.current.getZoom(), mode === 'explore' ? 12 : 8),
+      duration: 900
+    });
+  }, [focusLocation, mode]);
+
+  useEffect(() => {
     if (!mapRef.current) return;
 
     const frameId = window.requestAnimationFrame(() => {
@@ -257,7 +312,7 @@ export default function MapView({ diaries, selectedDiary, onSelect, onViewportCh
             exit={{ opacity: 0 }}
           >
             <div className="map-skeleton" />
-            <p>正在載入地圖日記...</p>
+            <p>{mode === 'explore' ? '正在探索附近日記...' : '正在載入地圖日記...'}</p>
           </motion.div>
         )}
 
