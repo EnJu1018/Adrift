@@ -517,11 +517,10 @@ function AccordionSection({ id, icon, title, danger = false, activeSection, onTo
           <motion.div
             key={id}
             className="settings-section-body"
-            initial={{ height: 0, opacity: 0, y: -6 }}
-            animate={{ height: 'auto', opacity: 1, y: 0 }}
-            exit={{ height: 0, opacity: 0, y: -6 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
-            style={{ overflow: 'hidden' }}
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.28, ease: 'easeOut' }}
           >
             <div className="settings-section-content">{children}</div>
           </motion.div>

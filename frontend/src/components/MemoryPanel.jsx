@@ -272,14 +272,15 @@ export default function MemoryPanel({
                           title={title}
                         >
                           <strong>{title}</strong>
-                          <span className="memory-item-sub memory-reactions-row">
+                          <span className="memory-reactions-row">
                             <span>❤️ {diary.reactions?.understand || 0}</span>
                             <span>🤗 {diary.reactions?.hug || 0}</span>
                             <span>🌧 {diary.reactions?.relate || 0}</span>
                           </span>
                           <span className="memory-item-meta">
-                            <span className="memory-author">@{authorCode}</span>
-                            <span>{diary.visibility || 'public'}</span>
+                            <span className="memory-author-line">
+                              <span className="memory-author">@{authorCode}</span>
+                            </span>
                             <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt, timeNow)}</time>
                           </span>
                         </button>
