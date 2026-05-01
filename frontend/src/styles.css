@@ -1040,7 +1040,7 @@ select option {
 
 .diary-side-title {
   overflow: hidden;
-  margin: 0;
+  margin: 0 0 -8px;
   color: #ffffff;
   font-size: 1.08rem;
   font-weight: 800;
