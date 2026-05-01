@@ -281,6 +281,35 @@ export default function App() {
     }
   }
 
+  async function reactToDiary(id, type, optimisticDiary) {
+    const previousSelected = selectedDiary?._id === id ? selectedDiary : null;
+    const previousDiary = diaries.find((diary) => diary._id === id) || null;
+
+    if (optimisticDiary) {
+      setSelectedDiary((current) => (current?._id === id ? optimisticDiary : current));
+      setDiaries((current) => current.map((diary) => (diary._id === id ? { ...diary, ...optimisticDiary } : diary)));
+    }
+
+    try {
+      const payload = await api.reactToDiary(id, type);
+      const nextData = {
+        reactions: payload.data?.reactions || payload.reactions,
+        userReaction: payload.data?.userReaction ?? payload.userReaction ?? null
+      };
+
+      setSelectedDiary((current) => (current?._id === id ? { ...current, ...nextData } : current));
+      setDiaries((current) => current.map((diary) => (diary._id === id ? { ...diary, ...nextData } : diary)));
+      return payload;
+    } catch (error) {
+      if (previousSelected) setSelectedDiary(previousSelected);
+      if (previousDiary) {
+        setDiaries((current) => current.map((diary) => (diary._id === id ? previousDiary : diary)));
+      }
+      if (error.status !== 401) setDiaryError(error.message);
+      throw error;
+    }
+  }
+
   async function toggleNearby() {
     if (mapMode === 'explore') return;
 
@@ -504,6 +533,7 @@ export default function App() {
               currentUser={user}
               onClose={() => setSelectedDiary(null)}
               onDelete={deleteDiary}
+              onReact={reactToDiary}
             />
             <MapView
               diaries={diaries}
@@ -551,6 +581,7 @@ export default function App() {
               friends={friends}
               friendRequests={friendRequests}
               sentFriendRequests={sentFriendRequests}
+              selectedDiaryId={selectedDiary?._id}
               onNewDiary={openNewDiary}
               onSelectDiary={setSelectedDiary}
               onSearchUser={searchFriendUser}

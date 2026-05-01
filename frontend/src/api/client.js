@@ -113,6 +113,12 @@ export const api = {
   deleteDiary(id) {
     return request(`/diaries/${id}`, { method: 'DELETE' });
   },
+  reactToDiary(id, type) {
+    return request(`/diaries/${id}/react`, {
+      method: 'POST',
+      body: JSON.stringify({ type })
+    });
+  },
   searchUser(userCode) {
     const query = new URLSearchParams({ userCode }).toString();
     return request(`/users/search?${query}`);

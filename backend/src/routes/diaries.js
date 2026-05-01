@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +10,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authorFields = 'name avatar userCode';
+const reactionTypes = ['understand', 'hug', 'relate'];
 const fallbackTitle = '（未命名日記）';
 
 const storage = multer.diskStorage({
@@ -42,6 +44,30 @@ function diaryQueryForViewer(user) {
       }
     ]
   };
+}
+
+function getReactionCounts(diary) {
+  return {
+    understand: Math.max(0, diary.reactions?.understand || 0),
+    hug: Math.max(0, diary.reactions?.hug || 0),
+    relate: Math.max(0, diary.reactions?.relate || 0)
+  };
+}
+
+function getUserReaction(diary, userId) {
+  if (!userId) return null;
+
+  const reaction = diary.reactedUsers?.find((item) => item.userId?.toString() === userId.toString());
+  return reaction?.type || null;
+}
+
+function serializeDiary(diary, userId) {
+  const output = diary.toObject ? diary.toObject() : { ...diary };
+  output.title = output.title || fallbackTitle;
+  output.reactions = getReactionCounts(diary);
+  output.userReaction = getUserReaction(diary, userId);
+  delete output.reactedUsers;
+  return output;
 }
 
 function buildLocationQuery(query, res) {
@@ -83,6 +109,8 @@ function serializeMemory(diary) {
     content: diary.text,
     text: diary.text,
     mood: diary.mood,
+    reactions: getReactionCounts(diary),
+    userReaction: getUserReaction(diary, diary.user),
     images: imageUrls,
     imageUrl: diary.imageUrl || '',
     location: {
@@ -115,7 +143,7 @@ function parseExploreQuery(query) {
   };
 }
 
-function serializeExploreDiary(diary) {
+function serializeExploreDiary(diary, userId) {
   const [lng, lat] = diary.location?.coordinates || [];
   const author = diary.user
     ? {
@@ -132,6 +160,8 @@ function serializeExploreDiary(diary) {
     content: diary.text,
     text: diary.text,
     mood: diary.mood,
+    reactions: getReactionCounts(diary),
+    userReaction: getUserReaction(diary, userId),
     images: diary.imageUrl ? [diary.imageUrl] : [],
     imageUrl: diary.imageUrl || '',
     location: {
@@ -165,7 +195,7 @@ router.get('/', requireAuth, async (req, res, next) => {
     res.json({
       success: true,
       message: '日記讀取成功',
-      data: { diaries }
+      data: { diaries: diaries.map((diary) => serializeDiary(diary, req.user._id)) }
     });
   } catch (error) {
     next(error);
@@ -201,7 +231,7 @@ router.get('/explore', requireAuth, async (req, res) => {
     res.json({
       success: true,
       message: '取得附近日記成功',
-      data: diaries.map(serializeExploreDiary)
+      data: diaries.map((diary) => serializeExploreDiary(diary, req.user._id))
     });
   } catch (error) {
     console.error(error);
@@ -222,7 +252,7 @@ router.get('/public', requireAuth, async (_req, res, next) => {
     res.json({
       success: true,
       message: '公開日記讀取成功',
-      data: { diaries }
+      data: { diaries: diaries.map((diary) => serializeDiary(diary, _req.user._id)) }
     });
   } catch (error) {
     next(error);
@@ -268,6 +298,67 @@ router.get('/memories', requireAuth, async (req, res) => {
   }
 });
 
+router.post('/:id/react', requireAuth, async (req, res, next) => {
+  try {
+    const { type } = req.body;
+
+    if (!reactionTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: '不支援的共鳴類型'
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到日記'
+      });
+    }
+
+    const diary = await Diary.findOne({
+      _id: req.params.id,
+      ...diaryQueryForViewer(req.user)
+    });
+
+    if (!diary) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到日記'
+      });
+    }
+
+    const reactions = getReactionCounts(diary);
+    const existingReaction = diary.reactedUsers.find((item) => item.userId?.toString() === req.user._id.toString());
+
+    if (!existingReaction) {
+      reactions[type] += 1;
+      diary.reactedUsers.push({ userId: req.user._id, type });
+    } else if (existingReaction.type === type) {
+      reactions[type] = Math.max(0, reactions[type] - 1);
+      diary.reactedUsers.pull(existingReaction._id);
+    } else {
+      reactions[existingReaction.type] = Math.max(0, reactions[existingReaction.type] - 1);
+      reactions[type] += 1;
+      existingReaction.type = type;
+    }
+
+    diary.reactions = reactions;
+    await diary.save();
+
+    res.json({
+      success: true,
+      message: '已更新共鳴',
+      data: {
+        reactions: getReactionCounts(diary),
+        userReaction: getUserReaction(diary, req.user._id)
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/:id', requireAuth, async (req, res, next) => {
   try {
     const diary = await Diary.findOne({
@@ -285,7 +376,7 @@ router.get('/:id', requireAuth, async (req, res, next) => {
     res.json({
       success: true,
       message: '日記讀取成功',
-      data: { diary }
+      data: { diary: serializeDiary(diary, req.user._id) }
     });
   } catch (error) {
     next(error);
@@ -374,7 +465,7 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
     res.status(201).json({
       success: true,
       message: '日記新增成功',
-      data: { diary: populatedDiary }
+      data: { diary: serializeDiary(populatedDiary, req.user._id) }
     });
   } catch (error) {
     next(error);

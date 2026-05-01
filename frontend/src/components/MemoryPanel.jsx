@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { formatDiaryTime } from '../utils/diaryTime.js';
 
 const visibilityLabels = {
   private: '私人',
@@ -49,6 +50,7 @@ export default function MemoryPanel({
   friends,
   friendRequests,
   sentFriendRequests,
+  selectedDiaryId,
   onNewDiary,
   onSelectDiary,
   onSearchUser,
@@ -285,6 +287,10 @@ export default function MemoryPanel({
                             @{diary.user?.userCode || 'unknown'} · {visibilityLabels[diary.visibility] || diary.visibility} ·{' '}
                             {new Date(diary.createdAt).toLocaleString()}
                           </small>
+                          <span className="reaction-summary">
+                            ❤️ {diary.reactions?.understand || 0} · 🫂 {diary.reactions?.hug || 0} · 🌧{' '}
+                            {diary.reactions?.relate || 0}
+                          </span>
                         </div>
                       </button>
                     ))}

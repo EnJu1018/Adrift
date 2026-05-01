@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 
+const reactionTypes = ['understand', 'hug', 'relate'];
+
 const diarySchema = new mongoose.Schema(
   {
     user: {
@@ -73,7 +75,38 @@ const diarySchema = new mongoose.Schema(
       enum: ['private', 'friends', 'public'],
       default: 'private',
       index: true
-    }
+    },
+    reactions: {
+      understand: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      hug: {
+        type: Number,
+        default: 0,
+        min: 0
+      },
+      relate: {
+        type: Number,
+        default: 0,
+        min: 0
+      }
+    },
+    reactedUsers: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true
+        },
+        type: {
+          type: String,
+          enum: reactionTypes,
+          required: true
+        }
+      }
+    ]
   },
   {
     timestamps: true,

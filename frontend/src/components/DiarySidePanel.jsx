@@ -27,9 +27,15 @@ const moodLabels = {
 };
 
 const fallbackTitle = '（未命名日記）';
+const reactionOptions = [
+  { type: 'understand', icon: '❤️', label: '我懂' },
+  { type: 'hug', icon: '🫂', label: '抱抱' },
+  { type: 'relate', icon: '🌧', label: '有同感' }
+];
 
-export default function DiarySidePanel({ diary, currentUser, onClose, onDelete }) {
+export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, onReact }) {
   const [resolvedPlaceName, setResolvedPlaceName] = useState('');
+  const [reactingType, setReactingType] = useState('');
   const hasDiary = Boolean(diary);
   const VisibilityIcon = hasDiary ? visibilityIcons[diary.visibility] || Waves : Waves;
   const coordinates = diary?.location?.coordinates || [];
@@ -42,6 +48,11 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete }
   const locationText = resolvedPlaceName || diary?.location?.placeName || formatCoordinates(lat, lng);
   const timeText = hasDiary ? formatDiaryDateTime(diary.createdAt) : '';
   const titleText = diary?.title?.trim() || fallbackTitle;
+  const reactionCounts = {
+    understand: diary?.reactions?.understand || 0,
+    hug: diary?.reactions?.hug || 0,
+    relate: diary?.reactions?.relate || 0
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -65,6 +76,21 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete }
       cancelled = true;
     };
   }, [diary?._id, diary?.location?.placeName, hasDiary, lat, lng]);
+
+  async function handleReact(type) {
+    if (!diary?._id || !onReact || reactingType) return;
+
+    const optimisticDiary = buildOptimisticReaction(diary, type);
+
+    try {
+      setReactingType(type);
+      await onReact(diary._id, type, optimisticDiary);
+    } catch {
+      // Parent shows the API error in the page status strip.
+    } finally {
+      setReactingType('');
+    }
+  }
 
   return (
     <motion.aside
@@ -145,6 +171,22 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete }
               </span>
             </div>
 
+            <div className="reaction-row" aria-label="共鳴">
+              {reactionOptions.map((reaction) => (
+                <button
+                  key={reaction.type}
+                  className={`reaction-button ${diary.userReaction === reaction.type ? 'active' : ''}`}
+                  onClick={() => handleReact(reaction.type)}
+                  disabled={Boolean(reactingType)}
+                  title={reaction.label}
+                  type="button"
+                >
+                  <span>{reaction.icon}</span>
+                  <strong>{reactionCounts[reaction.type]}</strong>
+                </button>
+              ))}
+            </div>
+
             <p className="diary-side-text">{diary.text || diary.content}</p>
 
             {isOwner && (
@@ -171,5 +213,30 @@ function formatDiaryDateTime(value) {
   const minute = String(date.getMinutes()).padStart(2, '0');
 
   return `${year}/${month}/${day} ${hour}:${minute}`;
+}
+
+function buildOptimisticReaction(diary, type) {
+  const currentType = diary.userReaction || null;
+  const reactions = {
+    understand: diary.reactions?.understand || 0,
+    hug: diary.reactions?.hug || 0,
+    relate: diary.reactions?.relate || 0
+  };
+
+  let userReaction = type;
+
+  if (currentType === type) {
+    reactions[type] = Math.max(0, reactions[type] - 1);
+    userReaction = null;
+  } else {
+    if (currentType) reactions[currentType] = Math.max(0, reactions[currentType] - 1);
+    reactions[type] += 1;
+  }
+
+  return {
+    ...diary,
+    reactions,
+    userReaction
+  };
 }
 
