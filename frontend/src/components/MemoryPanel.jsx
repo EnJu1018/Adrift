@@ -40,6 +40,7 @@ export default function MemoryPanel({
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
   const [busyAction, setBusyAction] = useState('');
+  const [timeNow, setTimeNow] = useState(() => Date.now());
 
   useEffect(() => {
     if (!message) return undefined;
@@ -50,6 +51,14 @@ export default function MemoryPanel({
 
     return () => window.clearTimeout(timer);
   }, [message, messageType]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setTimeNow(Date.now());
+    }, 30000);
+
+    return () => window.clearInterval(timer);
+  }, []);
 
   const visibleDiaries = diaries || [];
   const friendList = friends || [];
@@ -271,7 +280,7 @@ export default function MemoryPanel({
                           <span className="memory-item-meta">
                             <span className="memory-author">@{authorCode}</span>
                             <span>{diary.visibility || 'public'}</span>
-                            <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt)}</time>
+                            <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt, timeNow)}</time>
                           </span>
                         </button>
                       );

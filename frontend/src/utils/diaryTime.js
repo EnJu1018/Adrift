@@ -1,8 +1,8 @@
-export function formatDiaryTime(createdAt) {
+export function formatDiaryTime(createdAt, nowValue = Date.now()) {
   const date = new Date(createdAt);
   if (Number.isNaN(date.getTime())) return '';
 
-  const now = new Date();
+  const now = new Date(nowValue);
   const diff = now.getTime() - date.getTime();
   const minute = 60 * 1000;
   const hour = 60 * minute;
