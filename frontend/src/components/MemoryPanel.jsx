@@ -16,32 +16,6 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDiaryTime } from '../utils/diaryTime.js';
 
-const visibilityLabels = {
-  private: '私人',
-  friends: '朋友',
-  public: '公開'
-};
-
-const moodLabels = {
-  calm: '平靜',
-  joy: '喜悅',
-  sad: '低落',
-  wonder: '驚奇',
-  anxious: '焦慮',
-  nostalgic: '懷舊',
-  other: '其他'
-};
-
-const moodIcons = {
-  calm: '○',
-  joy: '✦',
-  sad: '◌',
-  wonder: '◇',
-  anxious: '△',
-  nostalgic: '◐',
-  other: '•'
-};
-
 const userCodePattern = /^[a-zA-Z0-9_-]{4,20}$/;
 
 export default function MemoryPanel({
@@ -277,23 +251,31 @@ export default function MemoryPanel({
 
                 {recent.length > 0 ? (
                   <div className="memory-list">
-                    {recent.map((diary) => (
-                      <button key={diary._id} className="memory-item" onClick={() => onSelectDiary(diary)}>
-                        <span className="memory-dot">{moodIcons[diary.mood?.type] || '•'}</span>
-                        <div>
-                          <strong>{diary.title?.trim() || '（未命名日記）'}</strong>
-                          <p>{diary.text || diary.content}</p>
-                          <small>
-                            @{diary.user?.userCode || 'unknown'} · {visibilityLabels[diary.visibility] || diary.visibility} ·{' '}
-                            {new Date(diary.createdAt).toLocaleString()}
-                          </small>
-                          <span className="reaction-summary">
-                            ❤️ {diary.reactions?.understand || 0} · 🫂 {diary.reactions?.hug || 0} · 🌧{' '}
-                            {diary.reactions?.relate || 0}
+                    {recent.map((diary) => {
+                      const title = getDiaryTitle(diary);
+                      const authorCode = getDiaryAuthorCode(diary, user);
+
+                      return (
+                        <button
+                          key={diary._id}
+                          className={`memory-item compact ${sameId(selectedDiaryId, diary._id) ? 'selected' : ''}`}
+                          onClick={() => onSelectDiary(diary)}
+                          title={title}
+                        >
+                          <strong>{title}</strong>
+                          <span className="memory-item-sub memory-reactions-row">
+                            <span>❤️ {diary.reactions?.understand || 0}</span>
+                            <span>🤗 {diary.reactions?.hug || 0}</span>
+                            <span>🌧 {diary.reactions?.relate || 0}</span>
                           </span>
-                        </div>
-                      </button>
-                    ))}
+                          <span className="memory-item-meta">
+                            <span className="memory-author">@{authorCode}</span>
+                            <span>{diary.visibility || 'public'}</span>
+                            <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt)}</time>
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="empty-memory">
@@ -459,6 +441,14 @@ export default function MemoryPanel({
       </motion.aside>
     </>
   );
+}
+
+function getDiaryTitle(diary) {
+  return diary?.title?.trim() || '（未命名日記）';
+}
+
+function getDiaryAuthorCode(diary, currentUser) {
+  return diary?.author?.userCode || diary?.user?.userCode || currentUser?.userCode || 'unknown';
 }
 
 function sameId(left, right) {

@@ -1,4 +1,4 @@
-﻿import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Clock3, ImageIcon, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getImageUrl } from '../api/client.js';
@@ -29,7 +29,7 @@ const moodLabels = {
 const fallbackTitle = '（未命名日記）';
 const reactionOptions = [
   { type: 'understand', icon: '❤️', label: '我懂' },
-  { type: 'hug', icon: '🫂', label: '抱抱' },
+  { type: 'hug', icon: '🤗', label: '抱抱' },
   { type: 'relate', icon: '🌧', label: '有同感' }
 ];
 
@@ -128,12 +128,14 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
             transition={{ duration: 0.26, ease: 'easeOut' }}
           >
             <header className="diary-side-header">
-              <div className="popup-author">
-                <span className="avatar-orb small">{(author.name || 'A').slice(0, 1).toUpperCase()}</span>
-                <div>
-                  <p className="eyebrow">Selected diary</p>
-                  <h2>{author.name || 'Unknown'}</h2>
-                  <small>@{author.userCode || 'unknown'}</small>
+              <div className="diary-author-block">
+                <p className="eyebrow diary-detail-eyebrow">Selected diary</p>
+                <div className="popup-author diary-popup-author-inline">
+                  <span className="avatar-orb small">{(author.name || 'A').slice(0, 1).toUpperCase()}</span>
+                  <div>
+                    <h2>{author.name || 'Unknown'}</h2>
+                    <small>@{author.userCode || 'unknown'}</small>
+                  </div>
                 </div>
               </div>
               <button className="icon-button" onClick={onClose} aria-label="Close diary">
@@ -149,45 +151,52 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
               </div>
             )}
 
-            <h3 className="diary-side-title" title={titleText}>
-              {titleText}
-            </h3>
+            <div className="diary-detail-stack">
+              <div className="meta-row compact diary-meta-primary">
+                <span className="diary-time-pill">
+                  <Clock3 size={14} />
+                  {timeText}
+                </span>
+                <span className="diary-place-pill" title={locationText}>
+                  <MapPin size={14} />
+                  {locationText}
+                </span>
+              </div>
 
-            <div className="meta-row compact">
-              <span className="diary-time-pill">
-                <Clock3 size={14} />
-                {timeText}
-              </span>
-              <span className="diary-place-pill">
-                <MapPin size={14} />
-                {locationText}
-              </span>
-              <span>
-                {moodLabels[diary.mood?.type] || diary.mood?.type || '心情'} / {diary.mood?.intensity || '-'}
-              </span>
-              <span>
-                <VisibilityIcon size={14} />
-                {visibilityLabels[diary.visibility] || diary.visibility}
-              </span>
+              <div className="meta-row compact diary-meta-secondary">
+                <span>
+                  {moodLabels[diary.mood?.type] || diary.mood?.type || '心情'} / {diary.mood?.intensity || '-'}
+                </span>
+                <span>
+                  <VisibilityIcon size={14} />
+                  {visibilityLabels[diary.visibility] || diary.visibility}
+                </span>
+              </div>
+
+              <section className="diary-mood-section" aria-label="Mood">
+                <div className="reaction-row" aria-label="共鳴">
+                  {reactionOptions.map((reaction) => (
+                    <button
+                      key={reaction.type}
+                      className={`reaction-button ${diary.userReaction === reaction.type ? 'active' : ''}`}
+                      onClick={() => handleReact(reaction.type)}
+                      disabled={Boolean(reactingType)}
+                      title={reaction.label}
+                      type="button"
+                    >
+                      <span>{reaction.icon}</span>
+                      <strong>{reactionCounts[reaction.type]}</strong>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <h3 className="diary-side-title" title={titleText}>
+                {titleText}
+              </h3>
+
+              <p className="diary-side-text">{diary.text || diary.content}</p>
             </div>
-
-            <div className="reaction-row" aria-label="共鳴">
-              {reactionOptions.map((reaction) => (
-                <button
-                  key={reaction.type}
-                  className={`reaction-button ${diary.userReaction === reaction.type ? 'active' : ''}`}
-                  onClick={() => handleReact(reaction.type)}
-                  disabled={Boolean(reactingType)}
-                  title={reaction.label}
-                  type="button"
-                >
-                  <span>{reaction.icon}</span>
-                  <strong>{reactionCounts[reaction.type]}</strong>
-                </button>
-              ))}
-            </div>
-
-            <p className="diary-side-text">{diary.text || diary.content}</p>
 
             {isOwner && (
               <button className="danger-button" onClick={() => onDelete(diary._id)}>
