@@ -66,8 +66,9 @@ const diarySchema = new mongoose.Schema(
       }
     },
     locationAccuracy: {
-      type: Number,
-      min: 0
+      type: String,
+      enum: ['precise', 'approximate'],
+      default: 'precise'
     },
     visibility: {
       type: String,

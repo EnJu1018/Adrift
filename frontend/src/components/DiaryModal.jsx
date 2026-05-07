@@ -30,7 +30,12 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     const lat = Number(location.lat);
     const lng = Number(location.lng);
 
-    setPlaceName(formatCoordinates(lat, lng));
+    setPlaceName(location.placeName || formatCoordinates(lat, lng));
+
+    if (location.source === 'ip') {
+      return undefined;
+    }
+
     resolvePlaceName(lat, lng).then((name) => {
       if (!cancelled) setPlaceName(name);
     });
@@ -38,7 +43,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     return () => {
       cancelled = true;
     };
-  }, [location.lat, location.lng]);
+  }, [location.lat, location.lng, location.placeName, location.source]);
 
   function updateField(field, value) {
     const nextForm = { ...form, [field]: value };
@@ -83,8 +88,12 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     data.append('visibility', form.visibility);
     data.append('lat', location.lat);
     data.append('lng', location.lng);
-    data.append('accuracy', location.accuracy);
     data.append('placeName', placeName);
+    data.append('locationAccuracy', location.accuracyType === 'approximate' ? 'approximate' : 'precise');
+
+    if (Number.isFinite(location.accuracy)) {
+      data.append('accuracy', location.accuracy);
+    }
 
     if (form.image) {
       data.append('image', form.image);
@@ -209,6 +218,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
         <p className="location-line">
           <LocateFixed size={16} />
           {placeName || formatCoordinates(Number(location.lat), Number(location.lng))}
+          {location.accuracyType === 'approximate' && ' · 目前為大略位置'}
           {Number.isFinite(location.accuracy) && ` · ±${Math.round(location.accuracy)}m`}
         </p>
 

@@ -6,9 +6,11 @@ import morgan from 'morgan';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { connectDb } from './config/db.js';
+import aiRoutes from './routes/ai.js';
 import authRoutes from './routes/auth.js';
 import diaryRoutes from './routes/diaries.js';
 import friendRoutes from './routes/friends.js';
+import locationRoutes from './routes/location.js';
 import userRoutes from './routes/users.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
@@ -21,6 +23,16 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  return /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]):5173$/.test(origin) || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/.test(origin);
+}
 
 app.use(
   helmet({
@@ -29,7 +41,14 @@ app.use(
 );
 app.use(
   cors({
-    origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
+    origin(origin, callback) {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error(`CORS blocked origin: ${origin}`));
+    },
     credentials: true
   })
 );
@@ -49,6 +68,8 @@ app.use('/auth', authRoutes);
 app.use('/diaries', diaryRoutes);
 app.use('/users', userRoutes);
 app.use('/friends', friendRoutes);
+app.use('/ai', aiRoutes);
+app.use('/location', locationRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

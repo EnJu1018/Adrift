@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const TOKEN_KEY = 'adrift_token';
 const USER_KEY = 'adrift_user';
 
@@ -146,6 +146,9 @@ export const api = {
   },
   getFriends() {
     return request('/friends');
+  },
+  getLifeMapInsight() {
+    return request('/ai/life-map');
   },
   getMe() {
     return request('/users/me');

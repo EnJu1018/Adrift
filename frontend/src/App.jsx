@@ -1,17 +1,18 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Compass, MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
+import { Brain, Compass, MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, clearStoredAuth, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
 import AuthPanel from './components/AuthPanel.jsx';
 import DiaryModal from './components/DiaryModal.jsx';
 import DiarySidePanel from './components/DiarySidePanel.jsx';
+import LifeMapAI from './components/LifeMapAI.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
 import ProfileDock from './components/ProfileDock.jsx';
+import { useUserLocation } from './hooks/useUserLocation.js';
 
-const requiredAccuracyMeters = 25;
 const exploreRadiusOptions = [
   { label: '1km', value: 1000 },
   { label: '5km', value: 5000 },
@@ -30,7 +31,6 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [diaryLoading, setDiaryLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [locating, setLocating] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authNotice, setAuthNotice] = useState('');
   const [diaryError, setDiaryError] = useState('');
@@ -38,12 +38,16 @@ export default function App() {
   const [mapMode, setMapMode] = useState('mine');
   const [exploreRadius, setExploreRadius] = useState(5000);
   const [exploreCenter, setExploreCenter] = useState(null);
+  const [mapFocusLocation, setMapFocusLocation] = useState(null);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+  const userLocation = useUserLocation();
+  const locating = userLocation.loading;
 
   const isAuthPage = currentPath === '/login' || currentPath === '/register';
   const authMode = currentPath === '/register' ? 'register' : 'login';
   const isProfilePage = currentPath === '/profile';
   const isSettingsPage = currentPath === '/settings/account';
+  const isAiPage = currentPath === '/ai/life-map';
 
   const navigate = useCallback((path) => {
     if (window.location.pathname !== path) {
@@ -70,6 +74,7 @@ export default function App() {
     setFilterNearby(false);
     setMapMode('mine');
     setExploreCenter(null);
+    setMapFocusLocation(null);
 
     if (message) {
       setAuthNotice(message);
@@ -170,6 +175,7 @@ export default function App() {
       setFriendRequests([]);
       setSentFriendRequests([]);
       setExploreCenter(null);
+      setMapFocusLocation(null);
       return;
     }
 
@@ -214,6 +220,7 @@ export default function App() {
         setUser(nextUser);
         setMapMode('mine');
         setExploreCenter(null);
+        setMapFocusLocation(null);
         navigate('/');
         await Promise.all([loadDiaries({}, { silent: true }), loadSocial()]);
       }
@@ -234,19 +241,23 @@ export default function App() {
     }
 
     try {
-      setLocating(true);
       setDiaryError('');
-      const position = await getPrecisePosition();
+      const location = await userLocation.locate();
+      setMapFocusLocation(location);
+      if (mapMode === 'explore') {
+        setExploreCenter({ lat: location.lat, lng: location.lng });
+      }
       setDraftLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-        accuracy: position.coords.accuracy
+        lat: location.lat,
+        lng: location.lng,
+        accuracy: location.accuracy,
+        accuracyType: location.accuracyType,
+        source: location.source,
+        placeName: buildApproximatePlaceName(location)
       });
     } catch (error) {
       setDraftLocation(null);
       setDiaryError(error.message);
-    } finally {
-      setLocating(false);
     }
   }
 
@@ -322,12 +333,12 @@ export default function App() {
     }
 
     try {
-      setLocating(true);
-      const position = await getPrecisePosition();
+      const location = await userLocation.locate();
+      setMapFocusLocation(location);
       await loadDiaries(
         {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
+          lat: location.lat,
+          lng: location.lng,
           radius: 50000
         },
         { silent: true }
@@ -335,8 +346,6 @@ export default function App() {
     } catch (error) {
       setFilterNearby(false);
       setDiaryError(error.message);
-    } finally {
-      setLocating(false);
     }
   }
 
@@ -359,6 +368,7 @@ export default function App() {
     setExploreCenter(null);
     setFilterNearby(false);
     setSelectedDiary(null);
+    setMapFocusLocation(null);
     await loadDiaries({}, { silent: true });
   }
 
@@ -374,16 +384,17 @@ export default function App() {
       setSelectedDiary(null);
       setDiaryLoading(true);
       setDiaryError('');
-      const position = await getPrecisePosition();
+      const location = await userLocation.locate();
       const center = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
+        lat: location.lat,
+        lng: location.lng
       };
 
       setExploreCenter(center);
+      setMapFocusLocation(center);
       await loadExploreDiaries({ ...center, radius }, { silent: true });
     } catch (error) {
-      setDiaryError(error.message || '需要開啟定位才能探索附近日記');
+      setDiaryError(error.message || '無法取得位置，請稍後再試');
     } finally {
       setDiaryLoading(false);
     }
@@ -483,6 +494,10 @@ export default function App() {
                   >
                     <RefreshCcw size={18} />
                   </button>
+                  <button className={`chip-button ${isAiPage ? 'active' : ''}`} onClick={() => navigate('/ai/life-map')}>
+                    <Brain size={15} />
+                    Adrift AI
+                  </button>
                   <div className="map-mode-switch" aria-label="地圖模式">
                     <button className={mapMode === 'mine' ? 'active' : ''} onClick={activateMineMode}>
                       我的日記
@@ -540,7 +555,7 @@ export default function App() {
               selectedDiary={selectedDiary}
               onSelect={setSelectedDiary}
               onViewportChange={handleMapViewportChange}
-              focusLocation={exploreCenter}
+              focusLocation={exploreCenter || mapFocusLocation}
               mode={mapMode}
               expanded={Boolean(user)}
               loading={diaryLoading}
@@ -555,7 +570,10 @@ export default function App() {
             </span>
             <span>{stats.mine} mine</span>
             {mapMode === 'explore' && !diaryLoading && diaries.length === 0 && <strong>附近還沒有公開日記</strong>}
-            {locating && <strong>正在取得精確位置，請允許瀏覽器定位...</strong>}
+            {locating && <strong>正在取得位置...</strong>}
+            {userLocation.message && <strong className={userLocation.accuracyType === 'approximate' ? 'location-approximate' : 'location-success'}>{userLocation.message}</strong>}
+            {userLocation.accuracyType === 'approximate' && !userLocation.message && <strong className="location-approximate">目前為大略位置</strong>}
+            {userLocation.error && <strong>{userLocation.error}</strong>}
             {diaryError && <strong>{diaryError}</strong>}
           </div>
         </section>
@@ -573,6 +591,8 @@ export default function App() {
               onUpdatePassword={updatePassword}
               onDeleteAccount={deleteAccount}
             />
+          ) : user && isAiPage ? (
+            <LifeMapAI key="life-map-ai" onBack={() => navigate('/')} />
           ) : user ? (
             <MemoryPanel
               key="memory-panel"
@@ -634,58 +654,8 @@ export default function App() {
   );
 }
 
-async function getPrecisePosition() {
-  let bestPosition = null;
+function buildApproximatePlaceName(location) {
+  if (location?.source !== 'ip') return '';
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    const position = await getCurrentPosition();
-
-    if (!bestPosition || position.coords.accuracy < bestPosition.coords.accuracy) {
-      bestPosition = position;
-    }
-
-    if (position.coords.accuracy <= requiredAccuracyMeters) {
-      return position;
-    }
-  }
-
-  throw new Error(
-    `目前定位精度約 ±${Math.round(bestPosition.coords.accuracy)}m，請開啟瀏覽器/系統的精確位置權限後再試一次。`
-  );
-}
-
-function getCurrentPosition() {
-  return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
-      reject(new Error('此瀏覽器不支援定位功能'));
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      resolve,
-      (error) => {
-        if (error.code === error.PERMISSION_DENIED) {
-          reject(new Error('定位權限被拒絕，請在瀏覽器網址列允許 Adrift 使用精確位置。'));
-          return;
-        }
-
-        if (error.code === error.POSITION_UNAVAILABLE) {
-          reject(new Error('目前無法取得位置，請確認系統定位服務已開啟。'));
-          return;
-        }
-
-        if (error.code === error.TIMEOUT) {
-          reject(new Error('取得精確位置逾時，請移到 GPS 或 Wi-Fi 訊號較好的地方再試一次。'));
-          return;
-        }
-
-        reject(new Error('無法取得精確位置，請稍後再試。'));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-      }
-    );
-  });
+  return [location.city, location.region, location.country].filter(Boolean).join(', ');
 }
