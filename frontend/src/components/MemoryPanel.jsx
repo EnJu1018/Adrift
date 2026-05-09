@@ -14,9 +14,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { USER_CODE_PATTERN } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
-
-const userCodePattern = /^[a-zA-Z0-9_-]{4,20}$/;
 
 export default function MemoryPanel({
   user,
@@ -94,7 +93,7 @@ export default function MemoryPanel({
       return;
     }
 
-    if (!userCodePattern.test(normalized)) {
+    if (!USER_CODE_PATTERN.test(normalized)) {
       setSearchResult(null);
       showMessage('使用者 ID 只能包含英文、數字、底線、減號，長度需為 4 到 20 字元', 'error');
       return;

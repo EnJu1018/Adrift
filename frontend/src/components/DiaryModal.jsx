@@ -1,17 +1,8 @@
 ﻿import { motion } from 'framer-motion';
 import { ImagePlus, LocateFixed, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { MOOD_OPTIONS, VISIBILITY_OPTIONS } from '../constants/app.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
-
-const moodOptions = [
-  ['calm', '平靜'],
-  ['joy', '喜悅'],
-  ['sad', '低落'],
-  ['wonder', '驚奇'],
-  ['anxious', '焦慮'],
-  ['nostalgic', '懷舊'],
-  ['other', '其他']
-];
 
 export default function DiaryModal({ location, onClose, onSubmit, loading, error }) {
   const [form, setForm] = useState({
@@ -168,7 +159,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
               value={form.moodType}
               onChange={(event) => updateField('moodType', event.target.value)}
             >
-              {moodOptions.map(([value, label]) => (
+              {MOOD_OPTIONS.map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -195,9 +186,11 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
               value={form.visibility}
               onChange={(event) => updateField('visibility', event.target.value)}
             >
-              <option value="private">private</option>
-              <option value="friends">friends</option>
-              <option value="public">public</option>
+              {VISIBILITY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
           </label>
 

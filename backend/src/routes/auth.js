@@ -1,11 +1,10 @@
 import bcrypt from 'bcryptjs';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { EMAIL_PATTERN, USER_CODE_PATTERN } from '../constants/app.js';
 import User from '../models/User.js';
 
 const router = express.Router();
-const emailPattern = /^\S+@\S+\.\S+$/;
-const userCodePattern = /^[a-zA-Z0-9_-]{4,20}$/;
 
 function createToken(user) {
   return jwt.sign({ sub: user._id.toString(), email: user.email }, process.env.JWT_SECRET, {
@@ -20,9 +19,20 @@ function serializeUser(user) {
     name: user.name,
     email: user.email,
     userCode: user.userCode || '',
+    role: user.role || 'user',
     avatar: user.avatar || '',
     createdAt: user.createdAt
   };
+}
+
+function shouldBeAdmin(email) {
+  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase().trim();
+  return Boolean(adminEmail && email === adminEmail);
+}
+
+function shouldBeOwner(email) {
+  const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase().trim();
+  return Boolean(ownerEmail && email === ownerEmail);
 }
 
 router.post('/register', async (req, res, next) => {
@@ -45,7 +55,7 @@ router.post('/register', async (req, res, next) => {
       });
     }
 
-    if (!emailPattern.test(normalizedEmail)) {
+    if (!EMAIL_PATTERN.test(normalizedEmail)) {
       return res.status(400).json({
         success: false,
         message: 'Email 格式不正確'
@@ -59,7 +69,7 @@ router.post('/register', async (req, res, next) => {
       });
     }
 
-    if (!userCodePattern.test(normalizedUserCode)) {
+    if (!USER_CODE_PATTERN.test(normalizedUserCode)) {
       return res.status(400).json({
         success: false,
         message: '使用者 ID 只能包含英文、數字、底線、減號，長度需為 4 到 20 字元'
@@ -90,6 +100,7 @@ router.post('/register', async (req, res, next) => {
       name: name.trim(),
       email: normalizedEmail,
       userCode: normalizedUserCode,
+      role: shouldBeOwner(normalizedEmail) ? 'owner' : shouldBeAdmin(normalizedEmail) ? 'admin' : 'user',
       passwordHash
     });
 
@@ -120,9 +131,9 @@ router.post('/login', async (req, res, next) => {
     const user = await User.findOne({ email: normalizedEmail });
 
     if (!user) {
-      return res.status(404).json({
+      return res.status(401).json({
         success: false,
-        message: '此帳號不存在'
+        message: 'Email 不存在或密碼錯誤'
       });
     }
 
@@ -131,8 +142,16 @@ router.post('/login', async (req, res, next) => {
     if (!passwordMatches) {
       return res.status(401).json({
         success: false,
-        message: '密碼錯誤'
+        message: 'Email 不存在或密碼錯誤'
       });
+    }
+
+    if (shouldBeOwner(user.email) && user.role !== 'owner') {
+      user.role = 'owner';
+      await user.save();
+    } else if (shouldBeAdmin(user.email) && user.role === 'user') {
+      user.role = 'admin';
+      await user.save();
     }
 
     const token = createToken(user);

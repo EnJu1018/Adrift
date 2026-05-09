@@ -32,3 +32,27 @@ export async function requireAuth(req, res, next) {
     });
   }
 }
+
+export function requireAdminOrOwner(req, res, next) {
+  if (req.user?.role === 'admin' || req.user?.role === 'owner') {
+    next();
+    return;
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: '沒有管理員權限'
+  });
+}
+
+export function requireOwner(req, res, next) {
+  if (req.user?.role === 'owner') {
+    next();
+    return;
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: '只有 Owner 可以修改使用者權限'
+  });
+}

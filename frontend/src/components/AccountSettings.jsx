@@ -12,8 +12,7 @@ import {
   UserRound
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-
-const emailPattern = /^\S+@\S+\.\S+$/;
+import { EMAIL_PATTERN } from '../constants/app.js';
 
 const passwordVisibility = {
   emailPassword: false,
@@ -123,7 +122,7 @@ export default function AccountSettings({ user, onBack, onUpdateName, onUpdateEm
   function validateEmail(value = emailForm.email) {
     const trimmed = value.trim().toLowerCase();
     if (!trimmed) return '請輸入 Email';
-    if (!emailPattern.test(trimmed)) return 'Email 格式不正確';
+    if (!EMAIL_PATTERN.test(trimmed)) return 'Email 格式不正確';
     return '';
   }
 

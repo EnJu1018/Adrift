@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Clock3, ImageIcon, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getImageUrl } from '../api/client.js';
+import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constants/app.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 
 const visibilityIcons = {
@@ -15,23 +16,6 @@ const visibilityLabels = {
   friends: 'friends',
   public: 'public'
 };
-
-const moodLabels = {
-  calm: '○ 平靜',
-  joy: '✦ 喜悅',
-  sad: '◌ 低落',
-  wonder: '◇ 驚奇',
-  anxious: '△ 焦慮',
-  nostalgic: '◐ 懷舊',
-  other: '• 其他'
-};
-
-const fallbackTitle = '（未命名日記）';
-const reactionOptions = [
-  { type: 'understand', icon: '❤️', label: '我懂' },
-  { type: 'hug', icon: '🤗', label: '抱抱' },
-  { type: 'relate', icon: '🌧', label: '有同感' }
-];
 
 export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, onReact }) {
   const [resolvedPlaceName, setResolvedPlaceName] = useState('');
@@ -47,7 +31,7 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
   const author = diary?.user || diary?.author || {};
   const locationText = resolvedPlaceName || diary?.location?.placeName || formatCoordinates(lat, lng);
   const timeText = hasDiary ? formatDiaryDateTime(diary.createdAt) : '';
-  const titleText = diary?.title?.trim() || fallbackTitle;
+  const titleText = diary?.title?.trim() || FALLBACK_DIARY_TITLE;
   const reactionCounts = {
     understand: diary?.reactions?.understand || 0,
     hug: diary?.reactions?.hug || 0,
@@ -165,7 +149,7 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
 
               <div className="meta-row compact diary-meta-secondary">
                 <span>
-                  {moodLabels[diary.mood?.type] || diary.mood?.type || '心情'} / {diary.mood?.intensity || '-'}
+                  {MOOD_LABELS[diary.mood?.type] || diary.mood?.type || '心情'} / {diary.mood?.intensity || '-'}
                 </span>
                 <span>
                   <VisibilityIcon size={14} />
@@ -175,7 +159,7 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
 
               <section className="diary-mood-section" aria-label="Mood">
                 <div className="reaction-row" aria-label="共鳴">
-                  {reactionOptions.map((reaction) => (
+                  {REACTION_OPTIONS.map((reaction) => (
                     <button
                       key={reaction.type}
                       className={`reaction-button ${diary.userReaction === reaction.type ? 'active' : ''}`}

@@ -126,6 +126,14 @@ const diarySchema = new mongoose.Schema(
   }
 );
 
+diarySchema.pre('validate', function normalizeLocationAccuracy(next) {
+  if (this.locationAccuracy !== 'approximate') {
+    this.locationAccuracy = 'precise';
+  }
+
+  next();
+});
+
 diarySchema.index({ location: '2dsphere' });
 
 export default mongoose.model('Diary', diarySchema);

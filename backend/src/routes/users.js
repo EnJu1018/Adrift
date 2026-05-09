@@ -3,9 +3,9 @@ import express from 'express';
 import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
+import { EMAIL_PATTERN } from '../constants/app.js';
 
 const router = express.Router();
-const emailPattern = /^\S+@\S+\.\S+$/;
 const publicUserFields = '_id name avatar userCode';
 
 function serializeUser(user) {
@@ -15,6 +15,7 @@ function serializeUser(user) {
     name: user.name,
     email: user.email,
     userCode: user.userCode || '',
+    role: user.role || 'user',
     avatar: user.avatar || '',
     createdAt: user.createdAt
   };
@@ -77,7 +78,7 @@ router.patch('/me/email', requireAuth, async (req, res, next) => {
       });
     }
 
-    if (!emailPattern.test(email)) {
+    if (!EMAIL_PATTERN.test(email)) {
       return res.status(400).json({
         success: false,
         message: 'Email 格式不正確'

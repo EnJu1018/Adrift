@@ -150,6 +150,30 @@ export const api = {
   getLifeMapInsight() {
     return request('/ai/life-map');
   },
+  getAdminStats() {
+    return request('/admin/stats');
+  },
+  getAdminUsers(params = {}) {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== '' && value !== 'all')
+    ).toString();
+    return request(`/admin/users${query ? `?${query}` : ''}`);
+  },
+  getAdminDiaries(params = {}) {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, value]) => value !== undefined && value !== '' && value !== 'all')
+    ).toString();
+    return request(`/admin/diaries${query ? `?${query}` : ''}`);
+  },
+  updateAdminUserRole(id, role) {
+    return request(`/admin/users/${id}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role })
+    });
+  },
+  deleteAdminDiary(id) {
+    return request(`/admin/diaries/${id}`, { method: 'DELETE' });
+  },
   getMe() {
     return request('/users/me');
   },

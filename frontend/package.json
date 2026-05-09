@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
-    "adrift": "file:..",
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.468.0",
     "mapbox-gl": "^3.9.3",

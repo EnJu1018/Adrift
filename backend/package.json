@@ -6,11 +6,11 @@
   "main": "src/server.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:owner": "node scripts/seedOwner.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "adrift": "file:..",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

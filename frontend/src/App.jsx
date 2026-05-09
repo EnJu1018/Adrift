@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Brain, Compass, MapPin, Plus, RefreshCcw, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Brain, Compass, MapPin, Plus, RefreshCcw, Search, Shield } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearStoredAuth, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
+import AdminDashboard, { AdminForbidden } from './components/AdminDashboard.jsx';
 import AuthPanel from './components/AuthPanel.jsx';
 import DiaryModal from './components/DiaryModal.jsx';
 import DiarySidePanel from './components/DiarySidePanel.jsx';
@@ -42,12 +43,15 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const userLocation = useUserLocation();
   const locating = userLocation.loading;
+  const autoLocateRequestedRef = useRef(false);
 
   const isAuthPage = currentPath === '/login' || currentPath === '/register';
   const authMode = currentPath === '/register' ? 'register' : 'login';
   const isProfilePage = currentPath === '/profile';
   const isSettingsPage = currentPath === '/settings/account';
   const isAiPage = currentPath === '/ai/life-map';
+  const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
+  const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   const navigate = useCallback((path) => {
     if (window.location.pathname !== path) {
@@ -63,6 +67,7 @@ export default function App() {
   }, []);
 
   const logout = useCallback((message = '') => {
+    autoLocateRequestedRef.current = false;
     clearStoredAuth();
     setUser(null);
     setFriends([]);
@@ -207,6 +212,47 @@ export default function App() {
     return { total: diaries.length, mine };
   }, [diaries, user?.id]);
 
+  const currentLocationMarker = useMemo(() => {
+    const lat = Number(userLocation.lat);
+    const lng = Number(userLocation.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+    return {
+      lat,
+      lng,
+      accuracy: Number.isFinite(userLocation.accuracy) ? userLocation.accuracy : null,
+      accuracyType: userLocation.accuracyType || 'precise',
+      source: userLocation.source || 'browser'
+    };
+  }, [userLocation.accuracy, userLocation.accuracyType, userLocation.lat, userLocation.lng, userLocation.source]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      autoLocateRequestedRef.current = false;
+      return;
+    }
+
+    if (autoLocateRequestedRef.current) return;
+    autoLocateRequestedRef.current = true;
+
+    let active = true;
+
+    userLocation
+      .locate()
+      .then((location) => {
+        if (!active) return;
+        setMapFocusLocation(location);
+      })
+      .catch(() => {
+        // useUserLocation already stores the visible error message.
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [user?.id, userLocation.locate]);
+
   async function handleAuth(mode, form) {
     try {
       setAuthLoading(true);
@@ -227,7 +273,7 @@ export default function App() {
 
       return payload;
     } catch (error) {
-      setAuthError(error.message);
+      setAuthError(mode === 'login' && (error.status === 401 || error.status === 404) ? 'Email 不存在或密碼錯誤' : error.message);
       throw error;
     } finally {
       setAuthLoading(false);
@@ -470,11 +516,32 @@ export default function App() {
       <Particles />
 
       <motion.div
-        className={`app-layout ${user ? 'authenticated' : ''} ${!user && !isAuthPage ? 'guest' : ''}`}
+        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage ? 'guest' : ''} ${isAdminPage ? 'admin-mode' : ''}`}
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: 'easeOut' }}
       >
+        {user && isAdminPage ? (
+          isAdmin ? (
+            <AdminDashboard user={user} onBack={() => navigate('/')} onLogout={() => logout()} />
+          ) : (
+            <AdminForbidden onBack={() => navigate('/')} />
+          )
+        ) : !user && isAuthPage ? (
+          <AuthPanel
+            key={authMode}
+            mode={authMode}
+            onAuth={handleAuth}
+            onNavigate={navigate}
+            onClearError={() => setAuthError('')}
+            onClearNotice={() => setAuthNotice('')}
+            onRegisterSuccess={(message) => setAuthNotice(message)}
+            loading={authLoading}
+            error={authError}
+            notice={authNotice}
+          />
+        ) : (
+        <>
         <section className="experience-panel">
           <header className="topbar glass">
             <div>
@@ -498,6 +565,12 @@ export default function App() {
                     <Brain size={15} />
                     Adrift AI
                   </button>
+                  {isAdmin && (
+                    <button className="chip-button" onClick={() => navigate('/admin/dashboard')}>
+                      <Shield size={15} />
+                      Admin
+                    </button>
+                  )}
                   <div className="map-mode-switch" aria-label="地圖模式">
                     <button className={mapMode === 'mine' ? 'active' : ''} onClick={activateMineMode}>
                       我的日記
@@ -556,6 +629,7 @@ export default function App() {
               onSelect={setSelectedDiary}
               onViewportChange={handleMapViewportChange}
               focusLocation={exploreCenter || mapFocusLocation}
+              currentLocation={currentLocationMarker}
               mode={mapMode}
               expanded={Boolean(user)}
               loading={diaryLoading}
@@ -611,33 +685,24 @@ export default function App() {
               onRejectFriendRequest={rejectFriendRequest}
               locating={locating}
             />
-          ) : isAuthPage ? (
-            <AuthPanel
-              key={authMode}
-              mode={authMode}
-              onAuth={handleAuth}
-              onNavigate={navigate}
-              onClearError={() => setAuthError('')}
-              onClearNotice={() => setAuthNotice('')}
-              onRegisterSuccess={(message) => setAuthNotice(message)}
-              loading={authLoading}
-              error={authError}
-              notice={authNotice}
-            />
           ) : null}
         </AnimatePresence>
+        </>
+        )}
       </motion.div>
 
-      <ProfileDock
-        user={user}
-        diaries={diaries}
-        friends={friends}
-        forceOpen={isProfilePage}
-        onOpen={() => navigate('/profile')}
-        onClose={() => navigate('/')}
-        onSettings={() => navigate('/settings/account')}
-        onLogout={() => logout()}
-      />
+      {!isAdminPage && (
+        <ProfileDock
+          user={user}
+          diaries={diaries}
+          friends={friends}
+          forceOpen={isProfilePage}
+          onOpen={() => navigate('/profile')}
+          onClose={() => navigate('/')}
+          onSettings={() => navigate('/settings/account')}
+          onLogout={() => logout()}
+        />
+      )}
 
       <AnimatePresence>
         {draftLocation && (

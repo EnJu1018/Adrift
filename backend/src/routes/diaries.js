@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FALLBACK_DIARY_TITLE, REACTION_TYPES } from '../constants/app.js';
 import Diary from '../models/Diary.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -10,8 +11,6 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authorFields = 'name avatar userCode';
-const reactionTypes = ['understand', 'hug', 'relate'];
-const fallbackTitle = '（未命名日記）';
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '..', 'uploads'),
@@ -61,9 +60,14 @@ function getUserReaction(diary, userId) {
   return reaction?.type || null;
 }
 
+function normalizeLocationAccuracy(value) {
+  return value === 'approximate' ? 'approximate' : 'precise';
+}
+
 function serializeDiary(diary, userId) {
   const output = diary.toObject ? diary.toObject() : { ...diary };
-  output.title = output.title || fallbackTitle;
+  output.title = output.title || FALLBACK_DIARY_TITLE;
+  output.locationAccuracy = normalizeLocationAccuracy(output.locationAccuracy);
   output.reactions = getReactionCounts(diary);
   output.userReaction = getUserReaction(diary, userId);
   delete output.reactedUsers;
@@ -105,7 +109,7 @@ function serializeMemory(diary) {
 
   return {
     _id: diary._id,
-    title: diary.title || fallbackTitle,
+    title: diary.title || FALLBACK_DIARY_TITLE,
     content: diary.text,
     text: diary.text,
     mood: diary.mood,
@@ -118,6 +122,7 @@ function serializeMemory(diary) {
       lng,
       placeName: diary.location?.placeName || ''
     },
+    locationAccuracy: normalizeLocationAccuracy(diary.locationAccuracy),
     visibility: diary.visibility,
     createdAt: diary.createdAt
   };
@@ -156,7 +161,7 @@ function serializeExploreDiary(diary, userId) {
 
   return {
     _id: diary._id,
-    title: diary.title || fallbackTitle,
+    title: diary.title || FALLBACK_DIARY_TITLE,
     content: diary.text,
     text: diary.text,
     mood: diary.mood,
@@ -171,6 +176,7 @@ function serializeExploreDiary(diary, userId) {
       lng,
       placeName: diary.location?.placeName || ''
     },
+    locationAccuracy: normalizeLocationAccuracy(diary.locationAccuracy),
     visibility: diary.visibility,
     createdAt: diary.createdAt,
     author,
@@ -234,7 +240,6 @@ router.get('/explore', requireAuth, async (req, res) => {
       data: diaries.map((diary) => serializeExploreDiary(diary, req.user._id))
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: '取得附近日記失敗'
@@ -290,7 +295,6 @@ router.get('/memories', requireAuth, async (req, res) => {
       data: memories
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({
       success: false,
       message: '取得回憶失敗'
@@ -302,7 +306,7 @@ router.post('/:id/react', requireAuth, async (req, res, next) => {
   try {
     const { type } = req.body;
 
-    if (!reactionTypes.includes(type)) {
+    if (!REACTION_TYPES.includes(type)) {
       return res.status(400).json({
         success: false,
         message: '不支援的共鳴類型'
@@ -385,9 +389,10 @@ router.get('/:id', requireAuth, async (req, res, next) => {
 
 router.post('/', requireAuth, upload.single('image'), async (req, res, next) => {
   try {
-    const { title, text, content, moodType, moodIntensity, lat, lng, accuracy, visibility, placeName } = req.body;
+    const { title, text, content, moodType, moodIntensity, lat, lng, visibility, placeName, locationAccuracy, accuracyType } = req.body;
     const diaryTitle = typeof title === 'string' ? title.trim() : '';
     const diaryText = typeof text === 'string' ? text.trim() : typeof content === 'string' ? content.trim() : '';
+    const diaryLocationAccuracy = normalizeLocationAccuracy(locationAccuracy || accuracyType);
 
     if (!diaryTitle) {
       return res.status(400).json({
@@ -413,7 +418,6 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
     const parsedLat = Number(lat);
     const parsedLng = Number(lng);
     const parsedIntensity = Number(moodIntensity);
-    const parsedAccuracy = accuracy === undefined ? undefined : Number(accuracy);
 
     if (![parsedLat, parsedLng, parsedIntensity].every(Number.isFinite)) {
       return res.status(400).json({
@@ -436,13 +440,6 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
       });
     }
 
-    if (parsedAccuracy !== undefined && (!Number.isFinite(parsedAccuracy) || parsedAccuracy < 0)) {
-      return res.status(400).json({
-        success: false,
-        message: '定位精度必須是有效數字'
-      });
-    }
-
     const diary = await Diary.create({
       user: req.user._id,
       title: diaryTitle,
@@ -457,7 +454,7 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
         coordinates: [parsedLng, parsedLat],
         placeName: typeof placeName === 'string' ? placeName.trim().slice(0, 120) : ''
       },
-      locationAccuracy: parsedAccuracy,
+      locationAccuracy: diaryLocationAccuracy,
       visibility: visibility || 'private'
     });
 

@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const requiredDiaryCount = 3;
-const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+const defaultModelName = 'gemini-2.0-flash';
+const fallbackModelNames = ['gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-2.5-flash'];
 
 const systemPrompt = `
 你是 Adrift 的 Life Map AI。
@@ -43,7 +44,13 @@ const outputShape = {
   suggestions: []
 };
 
-function getModel() {
+function getCandidateModelNames() {
+  return [process.env.GEMINI_MODEL || defaultModelName, ...fallbackModelNames].filter(
+    (name, index, list) => name && list.indexOf(name) === index
+  );
+}
+
+function getModel(modelName) {
   if (!process.env.GEMINI_API_KEY) {
     throw new Error('GEMINI_API_KEY is not configured');
   }
@@ -84,7 +91,6 @@ export function serializeDiaryForAi(diary) {
 }
 
 export async function generateLifeMapInsight(diaries) {
-  const model = getModel();
   const serializedDiaries = diaries.map(serializeDiaryForAi);
 
   const prompt = [
@@ -97,10 +103,32 @@ export async function generateLifeMapInsight(diaries) {
     JSON.stringify(serializedDiaries)
   ].join('\n\n');
 
-  const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  let lastError;
 
-  return parseGeminiJson(text);
+  for (const modelName of getCandidateModelNames()) {
+    try {
+      const model = getModel(modelName);
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+
+      return parseGeminiJson(text);
+    } catch (error) {
+      lastError = error;
+
+      if (!isRetryableGeminiError(error)) {
+        break;
+      }
+
+      console.warn(`Gemini model ${modelName} failed, trying fallback model if available.`);
+    }
+  }
+
+  throw lastError;
+}
+
+function isRetryableGeminiError(error) {
+  const status = Number(error?.status);
+  return [429, 500, 502, 503, 504].includes(status);
 }
 
 export function parseGeminiJson(text) {
