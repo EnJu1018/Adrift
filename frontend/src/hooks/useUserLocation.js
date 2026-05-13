@@ -1,5 +1,4 @@
 import { useCallback, useState } from 'react';
-import { API_URL } from '../api/client.js';
 
 const ipLocationUrl = 'https://ipwho.is/?fields=success,latitude,longitude,city,region,country,message';
 
@@ -38,7 +37,9 @@ export function useUserLocation() {
       return location;
     } catch {
       try {
-        const location = await getBackendIpLocation();
+        // This must run in the browser. A backend IP lookup sees the VPS/proxy IP,
+        // which is not the user's location.
+        const location = await getIpLocation();
         setState({
           ...location,
           loading: false,
@@ -47,25 +48,14 @@ export function useUserLocation() {
         });
         return location;
       } catch {
-        try {
-          const location = await getIpLocation();
-          setState({
-            ...location,
-            loading: false,
-            error: '',
-            message: '已使用大略位置'
-          });
-          return location;
-        } catch {
-          const error = '無法取得位置，請稍後再試';
-          setState((current) => ({
-            ...current,
-            loading: false,
-            error,
-            message: ''
-          }));
-          throw new Error(error);
-        }
+        const error = '無法取得位置，請稍後再試';
+        setState((current) => ({
+          ...current,
+          loading: false,
+          error,
+          message: ''
+        }));
+        throw new Error(error);
       }
     }
   }, []);
@@ -147,38 +137,5 @@ async function getIpLocation() {
     city: payload.city || '',
     region: payload.region || '',
     country: payload.country || ''
-  };
-}
-
-async function getBackendIpLocation() {
-  const response = await fetch(`${API_URL}/location/ip`, {
-    headers: {
-      Accept: 'application/json'
-    }
-  });
-
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok || payload?.success === false) {
-    throw new Error(payload?.message || 'Backend IP location request failed');
-  }
-
-  const data = payload.data || {};
-  const lat = Number(data.lat);
-  const lng = Number(data.lng);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    throw new Error('Backend IP location response is invalid');
-  }
-
-  return {
-    lat,
-    lng,
-    accuracy: null,
-    accuracyType: 'approximate',
-    source: 'ip',
-    city: data.city || '',
-    region: data.region || '',
-    country: data.country || ''
   };
 }
