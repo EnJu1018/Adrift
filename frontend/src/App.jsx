@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Brain, Compass, MapPin, Plus, RefreshCcw, Search, Shield } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, clearStoredAuth, getStoredAuth, saveAuth } from './api/client.js';
+import { api, clearStoredAuth, getDiaryEventsUrl, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
 import AdminDashboard, { AdminForbidden } from './components/AdminDashboard.jsx';
 import AuthPanel from './components/AuthPanel.jsx';
@@ -148,6 +148,28 @@ export default function App() {
     }
   }, []);
 
+  const applyRealtimeDiary = useCallback((diary) => {
+    if (!diary?._id) return;
+
+    if (mapMode === 'explore') {
+      if (diary.visibility === 'public' && exploreCenter) {
+        loadExploreDiaries({ ...exploreCenter, radius: exploreRadius }, { silent: true });
+      }
+      return;
+    }
+
+    setDiaries((current) => {
+      return [diary, ...current.filter((item) => item._id !== diary._id)];
+    });
+  }, [exploreCenter, exploreRadius, loadExploreDiaries, mapMode]);
+
+  const removeRealtimeDiary = useCallback((diaryId) => {
+    if (!diaryId) return;
+
+    setDiaries((current) => current.filter((diary) => diary._id !== diaryId));
+    setSelectedDiary((current) => (current?._id === diaryId ? null : current));
+  }, []);
+
   useEffect(() => {
     const syncPath = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', syncPath);
@@ -206,6 +228,41 @@ export default function App() {
         if (error.status !== 401) setDiaryError(error.message);
       });
   }, [syncUser, user?.id]);
+
+  useEffect(() => {
+    const { token } = getStoredAuth();
+
+    if (!user?.id || !token || typeof EventSource === 'undefined') return undefined;
+
+    const events = new EventSource(getDiaryEventsUrl());
+
+    function handleCreated(event) {
+      try {
+        const payload = JSON.parse(event.data);
+        applyRealtimeDiary(payload.diary);
+      } catch {
+        // Ignore malformed event payloads; the next normal refresh will recover.
+      }
+    }
+
+    function handleDeleted(event) {
+      try {
+        const payload = JSON.parse(event.data);
+        removeRealtimeDiary(payload.diaryId);
+      } catch {
+        // Ignore malformed event payloads; the next normal refresh will recover.
+      }
+    }
+
+    events.addEventListener('diary:created', handleCreated);
+    events.addEventListener('diary:deleted', handleDeleted);
+
+    return () => {
+      events.removeEventListener('diary:created', handleCreated);
+      events.removeEventListener('diary:deleted', handleDeleted);
+      events.close();
+    };
+  }, [applyRealtimeDiary, removeRealtimeDiary, user?.id]);
 
   const stats = useMemo(() => {
     const mine = diaries.filter((diary) => diary.user?._id === user?.id || diary.user?.id === user?.id).length;

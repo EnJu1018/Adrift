@@ -33,6 +33,18 @@ export function getImageUrl(path) {
   return `${API_URL}${path}`;
 }
 
+export function getDiaryEventsUrl() {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const baseUrl = API_URL.startsWith('http') ? API_URL : `${window.location.origin}${API_URL}`;
+  const url = new URL(`${baseUrl}/diaries/events`);
+
+  if (token) {
+    url.searchParams.set('token', token);
+  }
+
+  return url.toString();
+}
+
 async function request(path, options = {}) {
   const token = localStorage.getItem(TOKEN_KEY);
   const headers = new Headers(options.headers || {});

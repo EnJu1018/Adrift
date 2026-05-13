@@ -1,16 +1,19 @@
 import express from 'express';
+import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FALLBACK_DIARY_TITLE, REACTION_TYPES } from '../constants/app.js';
 import Diary from '../models/Diary.js';
+import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authorFields = 'name avatar userCode';
+const diaryEventClients = new Map();
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '..', 'uploads'),
@@ -43,6 +46,56 @@ function diaryQueryForViewer(user) {
       }
     ]
   };
+}
+
+async function authenticateEventUser(token) {
+  const payload = jwt.verify(token, process.env.JWT_SECRET);
+  return User.findById(payload.sub).select('-passwordHash');
+}
+
+function sameId(a, b) {
+  return a?.toString?.() === b?.toString?.();
+}
+
+function getDiaryAuthorId(diary) {
+  return diary.user?._id || diary.user;
+}
+
+function canViewDiary(user, diary) {
+  const authorId = getDiaryAuthorId(diary);
+
+  if (sameId(authorId, user._id)) return true;
+  if (diary.visibility === 'public') return true;
+  if (diary.visibility === 'friends') {
+    return (user.friends || []).some((friendId) => sameId(friendId, authorId));
+  }
+
+  return false;
+}
+
+function sendDiaryEvent(client, event, data) {
+  client.res.write(`event: ${event}\n`);
+  client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function broadcastDiaryEvent(event, diary) {
+  for (const client of diaryEventClients.values()) {
+    if (canViewDiary(client.user, diary)) {
+      sendDiaryEvent(client, event, {
+        diary: serializeDiary(diary, client.user._id)
+      });
+    }
+  }
+}
+
+function broadcastDiaryDeleted(diary) {
+  for (const client of diaryEventClients.values()) {
+    if (canViewDiary(client.user, diary)) {
+      sendDiaryEvent(client, 'diary:deleted', {
+        diaryId: diary._id
+      });
+    }
+  }
 }
 
 function getReactionCounts(diary) {
@@ -205,6 +258,54 @@ router.get('/', requireAuth, async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+  }
+});
+
+router.get('/events', async (req, res) => {
+  try {
+    const token = req.query.token;
+
+    if (!token || typeof token !== 'string') {
+      return res.status(401).json({
+        success: false,
+        message: '請先登入'
+      });
+    }
+
+    const user = await authenticateEventUser(token);
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: '登入狀態已失效，請重新登入'
+      });
+    }
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no'
+    });
+    res.write('retry: 3000\n\n');
+
+    const clientId = `${user._id}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const heartbeat = setInterval(() => {
+      res.write(': keep-alive\n\n');
+    }, 25000);
+
+    diaryEventClients.set(clientId, { res, user });
+    sendDiaryEvent({ res }, 'connected', { ok: true });
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      diaryEventClients.delete(clientId);
+    });
+  } catch {
+    return res.status(401).json({
+      success: false,
+      message: '登入狀態已失效，請重新登入'
+    });
   }
 });
 
@@ -459,6 +560,8 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
     });
 
     const populatedDiary = await diary.populate('user', authorFields);
+    broadcastDiaryEvent('diary:created', populatedDiary);
+
     res.status(201).json({
       success: true,
       message: '日記新增成功',
@@ -487,7 +590,10 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
       });
     }
 
+    const populatedDiary = await diary.populate('user', authorFields);
     await diary.deleteOne();
+    broadcastDiaryDeleted(populatedDiary);
+
     res.json({
       success: true,
       message: '日記已刪除'
