@@ -165,6 +165,9 @@ export default function MapView({
         type: 'circle',
         source: 'diaries',
         filter: ['!', ['has', 'point_count']],
+        layout: {
+          'circle-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1]
+        },
         paint: {
           'circle-color': ['get', 'markerGlowColor'],
           'circle-radius': [
@@ -196,6 +199,9 @@ export default function MapView({
         type: 'circle',
         source: 'diaries',
         filter: ['!', ['has', 'point_count']],
+        layout: {
+          'circle-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1]
+        },
         paint: {
           'circle-color': ['get', 'markerGlassColor'],
           'circle-radius': [
@@ -237,6 +243,9 @@ export default function MapView({
         type: 'circle',
         source: 'diaries',
         filter: ['!', ['has', 'point_count']],
+        layout: {
+          'circle-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1]
+        },
         paint: {
           'circle-color': ['get', 'markerCoreColor'],
           'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 8, 7],
@@ -268,6 +277,7 @@ export default function MapView({
         layout: {
           'text-field': ['get', 'moodIcon'],
           'text-font': ['Arial Unicode MS Regular', 'DIN Offc Pro Medium'],
+          'symbol-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1],
           'text-size': [
             'case',
             ['boolean', ['get', 'selected'], false],
@@ -436,24 +446,36 @@ export default function MapView({
       map.getCanvas().style.cursor = '';
     }
 
+    map.on('click', 'diary-cluster-glow', openCluster);
     map.on('click', 'diary-clusters', openCluster);
+    map.on('click', 'diary-cluster-count', openCluster);
     map.on('click', 'diary-marker-shell', openDiary);
     map.on('click', 'diary-marker-icon', openDiary);
+    map.on('mouseenter', 'diary-cluster-glow', updateCursor);
     map.on('mouseenter', 'diary-clusters', updateCursor);
+    map.on('mouseenter', 'diary-cluster-count', updateCursor);
     map.on('mouseenter', 'diary-marker-shell', showDiaryHover);
     map.on('mouseenter', 'diary-marker-icon', showDiaryHover);
+    map.on('mouseleave', 'diary-cluster-glow', resetCursor);
     map.on('mouseleave', 'diary-clusters', resetCursor);
+    map.on('mouseleave', 'diary-cluster-count', resetCursor);
     map.on('mouseleave', 'diary-marker-shell', hideDiaryHover);
     map.on('mouseleave', 'diary-marker-icon', hideDiaryHover);
 
     return () => {
+      map.off('click', 'diary-cluster-glow', openCluster);
       map.off('click', 'diary-clusters', openCluster);
+      map.off('click', 'diary-cluster-count', openCluster);
       map.off('click', 'diary-marker-shell', openDiary);
       map.off('click', 'diary-marker-icon', openDiary);
+      map.off('mouseenter', 'diary-cluster-glow', updateCursor);
       map.off('mouseenter', 'diary-clusters', updateCursor);
+      map.off('mouseenter', 'diary-cluster-count', updateCursor);
       map.off('mouseenter', 'diary-marker-shell', showDiaryHover);
       map.off('mouseenter', 'diary-marker-icon', showDiaryHover);
+      map.off('mouseleave', 'diary-cluster-glow', resetCursor);
       map.off('mouseleave', 'diary-clusters', resetCursor);
+      map.off('mouseleave', 'diary-cluster-count', resetCursor);
       map.off('mouseleave', 'diary-marker-shell', hideDiaryHover);
       map.off('mouseleave', 'diary-marker-icon', hideDiaryHover);
       tooltipRef.current?.remove();

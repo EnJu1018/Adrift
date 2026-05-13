@@ -39,7 +39,7 @@ export default function AuthPanel({
     : {
         eyebrow: 'Adrift',
         title: 'A quiet place for memories left along the way.',
-        body: '一個安放旅途中留下回憶的安靜角落。',
+        body: '一個在旅途中留下回憶的安靜角落。',
         cardTitle: '歡迎回來',
         cardSubtitle: '登入你的 Adrift 帳號',
         submit: '登入',

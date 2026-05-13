@@ -31,7 +31,14 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
             key={diary._id}
             className={`marker-button diary-memory-marker ${selectedId === diary._id ? 'selected' : ''} ${diary.isExplore ? 'explore' : ''} ${approximate ? 'approximate' : ''}`}
             data-mood={diary.mood?.type || 'other'}
-            style={{ left: `${Math.min(94, Math.max(6, x))}%`, top: `${Math.min(90, Math.max(10, y))}%` }}
+            style={{
+              left: `${Math.min(94, Math.max(6, x))}%`,
+              top: `${Math.min(90, Math.max(10, y))}%`,
+              '--marker-color': markerStyle.color,
+              '--marker-glow': markerStyle.glow,
+              '--marker-glass': markerStyle.glass,
+              '--marker-core': markerStyle.core
+            }}
             onClick={() => onSelect(diary)}
             initial={{ opacity: 0, scale: 0, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -40,16 +47,7 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
             title={approximate ? '此日記使用大略位置' : '開啟日記'}
           >
             {approximate && <i className="marker-radius" />}
-            <span
-              style={{
-                '--marker-color': markerStyle.color,
-                '--marker-glow': markerStyle.glow,
-                '--marker-glass': markerStyle.glass,
-                '--marker-core': markerStyle.core
-              }}
-            >
-              {markerStyle.icon}
-            </span>
+            <span>{markerStyle.icon}</span>
           </motion.button>
         );
       })}

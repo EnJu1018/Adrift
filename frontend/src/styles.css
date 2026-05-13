@@ -16,6 +16,32 @@
 
 * {
   box-sizing: border-box;
+  scrollbar-color: rgba(125, 211, 252, 0.35) rgba(15, 23, 42, 0.28);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.28);
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 2px solid rgba(15, 23, 42, 0.45);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.42), rgba(129, 140, 248, 0.35));
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.65), rgba(129, 140, 248, 0.55));
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 body {
@@ -651,6 +677,10 @@ h2 {
   gap: 14px;
 }
 
+.diary-modal {
+  gap: 18px;
+}
+
 label {
   display: grid;
   gap: 7px;
@@ -675,10 +705,20 @@ select {
   padding: 0 12px;
 }
 
+select {
+  appearance: none;
+  padding-right: 34px;
+  background:
+    linear-gradient(45deg, transparent 50%, rgba(210, 239, 255, 0.78) 50%) calc(100% - 18px) 50% / 6px 6px no-repeat,
+    linear-gradient(135deg, rgba(8, 18, 32, 0.82), rgba(3, 12, 23, 0.74));
+  backdrop-filter: blur(12px);
+}
+
 textarea {
   resize: vertical;
   min-height: 112px;
   padding: 12px;
+  scrollbar-gutter: stable;
 }
 
 input:focus,
@@ -696,7 +736,8 @@ select[aria-invalid="true"] {
 }
 
 select option {
-  color: #071321;
+  color: #f3fbff;
+  background: #071321;
 }
 
 .form-error,
@@ -708,6 +749,142 @@ select option {
 
 .field-error {
   color: #ffc1cb;
+}
+
+.ui-select-field {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  color: #cfe6f3;
+  font-size: 0.84rem;
+  font-weight: 750;
+}
+
+.ui-select-field.full {
+  width: 100%;
+}
+
+.ui-select-label {
+  display: block;
+}
+
+.ui-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(140, 220, 255, 0.18);
+  border-radius: 14px;
+  color: #f3fbff;
+  background: linear-gradient(145deg, rgba(8, 18, 32, 0.84), rgba(3, 13, 24, 0.76));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.015);
+  backdrop-filter: blur(12px);
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.ui-select-trigger.sm {
+  height: 38px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.ui-select-trigger:hover:not(:disabled),
+.ui-select-trigger.open {
+  border-color: rgba(121, 241, 220, 0.36);
+  background: linear-gradient(145deg, rgba(13, 28, 45, 0.9), rgba(4, 18, 32, 0.82));
+  box-shadow: 0 0 20px rgba(77, 197, 255, 0.08);
+}
+
+.ui-select-trigger:focus-visible {
+  border-color: rgba(121, 241, 220, 0.64);
+  box-shadow: 0 0 0 3px rgba(121, 241, 220, 0.12), 0 0 24px rgba(77, 197, 255, 0.1);
+}
+
+.ui-select-trigger.invalid {
+  border-color: rgba(255, 110, 137, 0.72);
+  box-shadow: 0 0 0 3px rgba(255, 83, 114, 0.1);
+}
+
+.ui-select-trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.ui-select-value {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+}
+
+.ui-select-value span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ui-select-icon {
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.ui-select-menu {
+  position: fixed;
+  z-index: 9999;
+  display: grid;
+  gap: 4px;
+  padding: 6px;
+  overflow: auto;
+  border: 1px solid rgba(140, 220, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(7, 18, 32, 0.96);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 28px rgba(76, 202, 255, 0.1);
+  backdrop-filter: blur(16px);
+  transform-origin: top center;
+  scrollbar-color: rgba(125, 211, 252, 0.32) rgba(15, 23, 42, 0.18);
+}
+
+.ui-select-menu.open-up {
+  transform-origin: bottom center;
+}
+
+.ui-select-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ui-select-menu::-webkit-scrollbar-thumb {
+  border-width: 1px;
+}
+
+.ui-select-menu.sm {
+  border-radius: 12px;
+}
+
+.ui-select-menu button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: #dceef7;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 750;
+  text-align: left;
+}
+
+.ui-select-menu button:hover,
+.ui-select-menu button.active {
+  color: #ffffff;
+  background: rgba(114, 207, 255, 0.12);
 }
 
 .form-message {
@@ -964,15 +1141,6 @@ select option {
   padding: 32px;
 }
 
-.admin-page::-webkit-scrollbar {
-  width: 8px;
-}
-
-.admin-page::-webkit-scrollbar-thumb {
-  border-radius: 999px;
-  background: rgba(152, 216, 255, 0.22);
-}
-
 .admin-hero {
   display: flex;
   align-items: center;
@@ -1097,6 +1265,7 @@ select option {
   min-width: 94px;
   height: 28px;
   cursor: pointer;
+  box-shadow: 0 0 0 rgba(0, 0, 0, 0);
   transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
@@ -1115,15 +1284,15 @@ select option {
   position: absolute;
   top: calc(100% + 7px);
   left: 0;
-  z-index: 35;
+  z-index: 80;
   display: grid;
   gap: 4px;
   min-width: 126px;
   padding: 6px;
-  border: 1px solid rgba(196, 235, 255, 0.16);
+  border: 1px solid rgba(140, 220, 255, 0.2);
   border-radius: 14px;
-  background: rgba(4, 17, 30, 0.96);
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28), 0 0 24px rgba(76, 202, 255, 0.08);
+  background: rgba(7, 18, 32, 0.96);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34), 0 0 28px rgba(76, 202, 255, 0.1);
   backdrop-filter: blur(16px);
 }
 
@@ -2830,6 +2999,10 @@ select option {
   margin-bottom: 16px;
 }
 
+.diary-modal header {
+  margin-bottom: 2px;
+}
+
 .popup-author {
   display: flex;
   align-items: flex-start;
@@ -2899,23 +3072,45 @@ select option {
   z-index: 7;
   display: grid;
   place-items: center;
-  padding: 18px;
+  padding: 24px;
   background: rgba(0, 5, 12, 0.52);
   backdrop-filter: blur(10px);
 }
 
 .diary-modal {
-  width: min(560px, 100%);
-  max-height: min(92vh, 760px);
+  width: min(680px, calc(100vw - 48px));
+  max-height: min(88vh, 820px);
   overflow: auto;
-  padding: 20px;
-  border-radius: var(--panel-radius);
+  padding: 28px;
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(12, 27, 44, 0.82), rgba(5, 17, 29, 0.66));
+  border-color: rgba(196, 235, 255, 0.2);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.46), 0 0 48px rgba(77, 197, 255, 0.1);
+  scrollbar-gutter: stable;
+}
+
+.diary-modal input:not([type="range"]) {
+  height: 46px;
+  padding: 0 14px;
+}
+
+.diary-modal textarea {
+  min-height: 190px;
+  padding: 14px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.diary-modal .primary-button {
+  min-height: 46px;
+  margin-top: 2px;
+  border-radius: 14px;
 }
 
 .field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .file-input input {
@@ -2926,8 +3121,8 @@ select option {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
-  padding: 0 12px;
+  min-height: 46px;
+  padding: 0 14px;
   overflow: hidden;
   border: 1px solid rgba(184, 231, 255, 0.16);
   border-radius: var(--control-radius);
@@ -3007,6 +3202,16 @@ select option {
   50% {
     transform: scale(1.12);
     opacity: 1;
+  }
+}
+
+@keyframes memoryMarkerBreathe {
+  0%,
+  100% {
+    transform: scale(0.98);
+  }
+  50% {
+    transform: scale(1.04);
   }
 }
 
@@ -3300,11 +3505,21 @@ select option {
     border-left: 0;
   }
 
-  .users-table,
-  .diaries-table {
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
+.users-table,
+.diaries-table {
+  scrollbar-gutter: stable;
+}
+
+.users-table::-webkit-scrollbar,
+.diaries-table::-webkit-scrollbar {
+  height: 8px;
+}
+
+.users-table,
+.diaries-table {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
 
   .users-table .admin-table-row {
     grid-template-columns: 130px 130px 200px 150px 112px;
@@ -3377,6 +3592,22 @@ select option {
 @media (max-width: 560px) {
   .field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding: 12px;
+    place-items: start center;
+  }
+
+  .diary-modal {
+    width: min(100%, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    padding: 20px;
+    border-radius: 20px;
+  }
+
+  .diary-modal textarea {
+    min-height: 160px;
   }
 
   .topbar-actions {

@@ -3,6 +3,37 @@ import { ImagePlus, LocateFixed, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MOOD_OPTIONS, VISIBILITY_OPTIONS } from '../constants/app.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
+import Select from './ui/Select.jsx';
+
+const moodIcons = {
+  calm: '🌿',
+  joy: '😊',
+  happy: '😊',
+  sad: '🌧',
+  anxious: '◌',
+  wonder: '✨',
+  excited: '✨',
+  nostalgic: '◐',
+  other: '✦'
+};
+
+const visibilityIcons = {
+  private: '🔒',
+  friends: '👥',
+  public: '🌐'
+};
+
+const moodSelectOptions = MOOD_OPTIONS.map(([value, label]) => ({
+  value,
+  label,
+  icon: moodIcons[value] || moodIcons.other
+}));
+
+const visibilitySelectOptions = VISIBILITY_OPTIONS.map((value) => ({
+  value,
+  label: value,
+  icon: visibilityIcons[value]
+}));
 
 export default function DiaryModal({ location, onClose, onSubmit, loading, error }) {
   const [form, setForm] = useState({
@@ -153,19 +184,12 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
         </label>
 
         <div className="field-grid">
-          <label>
-            心情
-            <select
-              value={form.moodType}
-              onChange={(event) => updateField('moodType', event.target.value)}
-            >
-              {MOOD_OPTIONS.map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="心情"
+            value={form.moodType}
+            options={moodSelectOptions}
+            onChange={(value) => updateField('moodType', value)}
+          />
 
           <label>
             強度 {form.moodIntensity}
@@ -180,19 +204,12 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
         </div>
 
         <div className="field-grid">
-          <label>
-            可見性
-            <select
-              value={form.visibility}
-              onChange={(event) => updateField('visibility', event.target.value)}
-            >
-              {VISIBILITY_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label="可見性"
+            value={form.visibility}
+            options={visibilitySelectOptions}
+            onChange={(value) => updateField('visibility', value)}
+          />
 
           <label className="file-input">
             圖片
