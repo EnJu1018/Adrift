@@ -299,7 +299,7 @@ export default function App() {
       .locate()
       .then((location) => {
         if (!active) return;
-        setMapFocusLocation(location);
+        setMapFocusLocation({ ...location, focusId: Date.now() });
       })
       .catch(() => {
         // useUserLocation already stores the visible error message.
@@ -345,8 +345,8 @@ export default function App() {
 
     try {
       setDiaryError('');
-      const location = await userLocation.locate();
-      setMapFocusLocation(location);
+      const location = await userLocation.refreshLocation();
+      setMapFocusLocation({ ...location, focusId: Date.now() });
       if (mapMode === 'explore') {
         setExploreCenter({ lat: location.lat, lng: location.lng });
       }
@@ -361,6 +361,27 @@ export default function App() {
     } catch (error) {
       setDraftLocation(null);
       setDiaryError(error.message);
+    }
+  }
+
+  async function centerOnUserLocation() {
+    if (!user) return;
+
+    try {
+      setDiaryError('');
+      const location = await userLocation.refreshLocation({
+        preciseMessage: '已回到目前位置',
+        approximateMessage: '已使用大略位置'
+      });
+      const focus = { ...location, focusId: Date.now() };
+
+      setMapFocusLocation(focus);
+
+      if (mapMode === 'explore') {
+        setExploreCenter({ lat: location.lat, lng: location.lng });
+      }
+    } catch (error) {
+      setDiaryError(error.message || '無法取得目前位置');
     }
   }
 
@@ -437,7 +458,7 @@ export default function App() {
 
     try {
       const location = await userLocation.locate();
-      setMapFocusLocation(location);
+      setMapFocusLocation({ ...location, focusId: Date.now() });
       await loadDiaries(
         {
           lat: location.lat,
@@ -494,7 +515,7 @@ export default function App() {
       };
 
       setExploreCenter(center);
-      setMapFocusLocation(center);
+      setMapFocusLocation({ ...location, focusId: Date.now() });
       await loadExploreDiaries({ ...center, radius }, { silent: true });
     } catch (error) {
       setDiaryError(error.message || '無法取得位置，請稍後再試');
@@ -685,11 +706,13 @@ export default function App() {
               selectedDiary={selectedDiary}
               onSelect={setSelectedDiary}
               onViewportChange={handleMapViewportChange}
-              focusLocation={exploreCenter || mapFocusLocation}
+              focusLocation={mapFocusLocation}
               currentLocation={currentLocationMarker}
               mode={mapMode}
               expanded={Boolean(user)}
               loading={diaryLoading}
+              locating={locating}
+              onLocateUser={centerOnUserLocation}
               disabled={!user}
             />
           </div>

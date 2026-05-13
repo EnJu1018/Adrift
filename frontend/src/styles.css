@@ -6,6 +6,12 @@
   --card-bg: rgba(3, 17, 30, 0.46);
   --muted: #94c2d6;
   --muted-strong: #b9d9e8;
+  --z-map-ui: 10;
+  --z-panel: 20;
+  --z-dock: 35;
+  --z-dropdown: 120;
+  --z-modal: 100;
+  --z-toast: 200;
   color: #edf8ff;
   background: #02050d;
   font-family:
@@ -47,11 +53,15 @@
 body {
   margin: 0;
   min-width: 320px;
+  width: 100%;
+  height: 100vh;
   min-height: 100vh;
   overflow: hidden;
 }
 
 #root {
+  width: 100%;
+  height: 100vh;
   min-height: 100vh;
   background:
     radial-gradient(circle at 20% 20%, rgba(45, 183, 255, 0.14), transparent 26%),
@@ -73,6 +83,7 @@ button {
 .app-frame {
   position: relative;
   isolation: isolate;
+  height: 100vh;
   min-height: 100vh;
   overflow: hidden;
   background: #000;
@@ -127,7 +138,8 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
   gap: 18px;
-  min-height: 100vh;
+  height: 100%;
+  min-height: 0;
   padding: 18px;
   opacity: 0;
   animation: pageEnter 720ms ease-out 120ms forwards;
@@ -183,7 +195,7 @@ button {
   top: 210px;
   right: 38px;
   left: auto;
-  z-index: 30;
+  z-index: var(--z-toast);
   display: flex;
   justify-content: flex-end;
   pointer-events: none;
@@ -401,8 +413,8 @@ button {
   align-content: start;
   gap: 10px;
   min-height: 0;
-  overflow: auto;
-  padding-right: 4px;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .memory-item {
@@ -536,20 +548,6 @@ button {
   color: #b5d7e6;
 }
 
-.memory-dot {
-  display: inline-grid;
-  width: 22px;
-  height: 22px;
-  place-items: center;
-  margin-top: 2px;
-  border-radius: 50%;
-  background: #78f3dc;
-  box-shadow: 0 0 18px rgba(120, 243, 220, 0.72);
-  color: #02121b;
-  font-size: 0.72rem;
-  font-weight: 900;
-}
-
 .memory-item strong {
   display: block;
   margin-bottom: 4px;
@@ -573,13 +571,6 @@ button {
   font-size: 0.75rem;
 }
 
-.reaction-summary {
-  display: block;
-  margin-top: 7px;
-  color: #a9c7d7;
-  font-size: 0.74rem;
-}
-
 .empty-memory {
   display: flex;
   align-items: center;
@@ -590,23 +581,6 @@ button {
   color: #b9d9e8;
   background: rgba(2, 13, 24, 0.32);
   font-size: 0.86rem;
-}
-
-.brand-lockup {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-}
-
-.brand-mark {
-  display: inline-grid;
-  width: 46px;
-  height: 46px;
-  place-items: center;
-  border-radius: 50%;
-  color: #dff8ff;
-  background: radial-gradient(circle, rgba(118, 224, 255, 0.32), rgba(56, 90, 173, 0.12));
-  box-shadow: 0 0 30px rgba(104, 205, 255, 0.38);
 }
 
 .eyebrow {
@@ -836,7 +810,7 @@ select option {
 
 .ui-select-menu {
   position: fixed;
-  z-index: 9999;
+  z-index: var(--z-dropdown);
   display: grid;
   gap: 4px;
   padding: 6px;
@@ -879,6 +853,13 @@ select option {
   font-size: 0.8rem;
   font-weight: 750;
   text-align: left;
+}
+
+.ui-select-menu button span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ui-select-menu button:hover,
@@ -1028,6 +1009,7 @@ select option {
 .person-card {
   grid-template-columns: auto minmax(0, 1fr) auto;
   min-height: 62px;
+  align-items: center;
 }
 
 .person-card .chip-button {
@@ -1038,6 +1020,8 @@ select option {
 .person-actions {
   display: flex;
   gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .person-actions .icon-button {
@@ -1131,8 +1115,9 @@ select option {
   width: 100%;
   max-height: calc(100vh - 36px);
   min-width: 0;
-  overflow-y: scroll;
+  overflow-y: auto;
   overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 .admin-dashboard-container {
@@ -1166,8 +1151,7 @@ select option {
 }
 
 .admin-hero p:not(.eyebrow),
-.admin-card p,
-.admin-diary-meta {
+.admin-card p {
   color: var(--muted);
 }
 
@@ -1281,10 +1265,8 @@ select option {
 }
 
 .role-menu {
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 0;
-  z-index: 80;
+  position: fixed;
+  z-index: var(--z-dropdown);
   display: grid;
   gap: 4px;
   min-width: 126px;
@@ -1411,22 +1393,6 @@ select option {
   min-height: 520px;
 }
 
-.section-heading {
-  display: grid;
-  gap: 3px;
-  margin-bottom: 10px;
-}
-
-.section-heading.inline {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-.section-heading h2 {
-  font-size: 1rem;
-  font-weight: 800;
-}
-
 .admin-stats {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1480,6 +1446,10 @@ select option {
   align-content: start;
   min-height: 420px;
   min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 4px;
+  scrollbar-gutter: stable;
 }
 
 .admin-table-row {
@@ -1526,11 +1496,11 @@ select option {
 }
 
 .users-table .admin-table-row {
-  grid-template-columns: 1fr 1fr minmax(160px, 1.4fr) 80px 128px;
+  grid-template-columns: 1fr 1fr minmax(160px, 1.4fr) 80px 128px 88px;
 }
 
 .diaries-table .admin-table-row {
-  grid-template-columns: minmax(160px, 1.5fr) minmax(100px, 0.8fr) 86px 128px 44px;
+  grid-template-columns: minmax(180px, 1.6fr) minmax(110px, 0.8fr) 78px 82px 118px 104px;
 }
 
 .admin-diary-row {
@@ -1541,11 +1511,6 @@ select option {
 
 .admin-diary-row.active {
   box-shadow: inset 3px 0 0 rgba(121, 241, 220, 0.68);
-}
-
-.admin-diary-meta {
-  margin: 8px 0 12px;
-  font-size: 0.82rem;
 }
 
 .admin-empty {
@@ -1694,17 +1659,30 @@ select option {
 }
 
 .users-table .admin-table-row {
-  grid-template-columns: minmax(140px, 1fr) minmax(120px, 0.8fr) minmax(200px, 1.3fr) 142px 118px;
+  grid-template-columns: minmax(136px, 1fr) minmax(116px, 0.75fr) minmax(190px, 1.25fr) 142px 112px 92px;
+  min-width: 840px;
 }
 
 .diaries-table .admin-table-row {
   grid-template-columns: minmax(180px, 1.6fr) minmax(110px, 0.8fr) 78px 82px 118px 104px;
+  min-width: 720px;
 }
 
 .admin-row-actions {
   display: inline-flex;
   gap: 6px;
   justify-content: flex-end;
+}
+
+.admin-row-actions.user-actions {
+  align-items: center;
+}
+
+.admin-row-note {
+  width: 100%;
+  color: rgba(192, 214, 226, 0.68);
+  font-size: 0.72rem;
+  text-align: right;
 }
 
 .compact-action {
@@ -1724,12 +1702,14 @@ select option {
 .admin-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 30;
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
   padding: 18px;
+  overflow: auto;
   background: rgba(0, 7, 15, 0.58);
   backdrop-filter: blur(10px);
+  overscroll-behavior: contain;
 }
 
 .admin-detail-modal {
@@ -1740,6 +1720,53 @@ select option {
   overflow: auto;
   padding: 18px;
   border-radius: var(--panel-radius);
+  overscroll-behavior: contain;
+}
+
+.admin-danger-modal {
+  width: min(560px, 100%);
+}
+
+.admin-danger-copy {
+  margin: 0;
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 128, 151, 0.18);
+  border-radius: 16px;
+  color: #ffd8dd;
+  background: rgba(255, 77, 111, 0.08);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.admin-user-delete-summary {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 9px 12px;
+  padding: 14px;
+  border: 1px solid rgba(196, 235, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(2, 13, 24, 0.28);
+}
+
+.admin-user-delete-summary span,
+.admin-confirm-field span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.admin-user-delete-summary strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #f2fbff;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-confirm-field {
+  display: grid;
+  gap: 7px;
 }
 
 .auth-page {
@@ -1779,15 +1806,6 @@ select option {
   border-radius: 999px;
   filter: blur(8px);
   opacity: 0.9;
-}
-
-.auth-card-icon {
-  display: inline-grid;
-  place-items: center;
-  color: #e9fbff;
-  background: radial-gradient(circle, rgba(121, 241, 220, 0.24), rgba(77, 197, 255, 0.12));
-  border: 1px solid rgba(196, 235, 255, 0.2);
-  box-shadow: 0 0 34px rgba(77, 197, 255, 0.22);
 }
 
 .auth-brand-panel h1 {
@@ -1882,13 +1900,6 @@ select option {
 
 .auth-card-header {
   display: block;
-}
-
-.auth-card-icon {
-  flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
-  border-radius: 15px;
 }
 
 .auth-card-header h1 {
@@ -2312,7 +2323,7 @@ select option {
   position: fixed;
   right: 18px;
   bottom: 18px;
-  z-index: 8;
+  z-index: var(--z-dock);
   display: grid;
   justify-items: end;
   gap: 12px;
@@ -2737,8 +2748,49 @@ select option {
   inset: 0;
 }
 
+.map-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: var(--z-map-ui);
+  display: grid;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(4, 16, 28, 0.68);
+}
+
+.map-controls button {
+  display: inline-grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid rgba(191, 232, 255, 0.16);
+  border-radius: 12px;
+  color: #e9fbff;
+  background: rgba(3, 15, 26, 0.64);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.map-controls button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: rgba(130, 222, 255, 0.38);
+  background: rgba(10, 31, 50, 0.78);
+  box-shadow: 0 0 20px rgba(77, 197, 255, 0.14);
+}
+
+.map-controls button.locate {
+  color: #d5fff3;
+}
+
+.map-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+  transform: none;
+}
+
 .mapboxgl-popup.approximate-tooltip {
-  z-index: 7;
+  z-index: var(--z-map-ui);
   pointer-events: none;
 }
 
@@ -2761,7 +2813,7 @@ select option {
 .map-loading {
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: var(--z-map-ui);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -2794,7 +2846,7 @@ select option {
   position: absolute;
   left: 18px;
   bottom: 18px;
-  z-index: 5;
+  z-index: var(--z-map-ui);
   padding: 9px 12px;
   border-radius: 999px;
   color: #b9d9e8;
@@ -2978,19 +3030,6 @@ select option {
   pointer-events: none;
 }
 
-.popup-card {
-  position: fixed;
-  right: 28px;
-  bottom: 110px;
-  z-index: 6;
-  width: min(420px, calc(100vw - 32px));
-  max-height: min(78vh, 720px);
-  overflow: auto;
-  padding: 18px;
-  border-radius: var(--panel-radius);
-}
-
-.popup-card header,
 .diary-modal header {
   display: flex;
   align-items: flex-start;
@@ -3069,12 +3108,14 @@ select option {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 7;
+  z-index: var(--z-modal);
   display: grid;
   place-items: center;
   padding: 24px;
+  overflow: auto;
   background: rgba(0, 5, 12, 0.52);
   backdrop-filter: blur(10px);
+  overscroll-behavior: contain;
 }
 
 .diary-modal {
@@ -3087,6 +3128,7 @@ select option {
   border-color: rgba(196, 235, 255, 0.2);
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.46), 0 0 48px rgba(77, 197, 255, 0.1);
   scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 }
 
 .diary-modal input:not([type="range"]) {
@@ -3396,7 +3438,19 @@ select option {
 
 @media (max-width: 920px) {
   body {
+    height: auto;
     overflow: auto;
+  }
+
+  #root,
+  .app-frame,
+  .app-layout {
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .app-frame {
+    overflow: visible;
   }
 
   .app-layout {
@@ -3412,6 +3466,7 @@ select option {
     grid-template-columns: 1fr;
     align-content: start;
     gap: 22px;
+    max-height: none;
     padding: 24px;
   }
 
@@ -3522,8 +3577,8 @@ select option {
 }
 
   .users-table .admin-table-row {
-    grid-template-columns: 130px 130px 200px 150px 112px;
-    min-width: 760px;
+    grid-template-columns: 130px 130px 200px 150px 112px 92px;
+    min-width: 860px;
   }
 
   .diaries-table .admin-table-row {
@@ -3564,11 +3619,6 @@ select option {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .popup-card {
-    right: 14px;
-    bottom: 96px;
   }
 
   .profile-dock {

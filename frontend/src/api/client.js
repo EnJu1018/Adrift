@@ -183,6 +183,9 @@ export const api = {
       body: JSON.stringify({ role })
     });
   },
+  deleteAdminUser(id) {
+    return request(`/admin/users/${id}`, { method: 'DELETE' });
+  },
   deleteAdminDiary(id) {
     return request(`/admin/diaries/${id}`, { method: 'DELETE' });
   },

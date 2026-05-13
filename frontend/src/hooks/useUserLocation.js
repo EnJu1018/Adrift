@@ -19,7 +19,7 @@ const initialState = {
 export function useUserLocation() {
   const [state, setState] = useState(initialState);
 
-  const locate = useCallback(async () => {
+  const locate = useCallback(async (options = {}) => {
     setState((current) => ({
       ...current,
       loading: true,
@@ -33,7 +33,7 @@ export function useUserLocation() {
         ...location,
         loading: false,
         error: '',
-        message: '定位成功'
+        message: options.preciseMessage || '定位成功'
       });
       return location;
     } catch {
@@ -43,7 +43,7 @@ export function useUserLocation() {
           ...location,
           loading: false,
           error: '',
-          message: '已使用大略位置'
+          message: options.approximateMessage || '已使用大略位置'
         });
         return location;
       } catch {
@@ -53,7 +53,7 @@ export function useUserLocation() {
             ...location,
             loading: false,
             error: '',
-            message: '已使用大略位置'
+            message: options.approximateMessage || '已使用大略位置'
           });
           return location;
         } catch {
@@ -81,6 +81,7 @@ export function useUserLocation() {
   return {
     ...state,
     locate,
+    refreshLocation: locate,
     clearLocationMessage
   };
 }

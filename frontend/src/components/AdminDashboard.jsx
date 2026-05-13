@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ChevronDown, Eye, RefreshCcw, Search, Shield, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api/client.js';
 import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
 import Select from './ui/Select.jsx';
@@ -47,6 +48,8 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
   const [diaryPage, setDiaryPage] = useState(1);
   const [loading, setLoading] = useState({ overview: true, users: false, diaries: false });
   const [deleteLoadingId, setDeleteLoadingId] = useState('');
+  const [userDeleteTarget, setUserDeleteTarget] = useState(null);
+  const [userDeleteLoadingId, setUserDeleteLoadingId] = useState('');
   const [roleLoadingId, setRoleLoadingId] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -196,6 +199,29 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
     }
   }
 
+  async function deleteUser(id) {
+    try {
+      setUserDeleteLoadingId(id);
+      setError('');
+      const payload = await api.deleteAdminUser(id);
+      setNotice(payload.message || '使用者已刪除');
+      window.setTimeout(() => setNotice(''), 2200);
+      setUserDeleteTarget(null);
+
+      if (users.length <= 1 && userPage > 1) {
+        setUserPage((current) => Math.max(1, current - 1));
+      } else {
+        await loadUsers();
+      }
+
+      await loadStats();
+    } catch (err) {
+      setError(err.message || '刪除使用者失敗');
+    } finally {
+      setUserDeleteLoadingId('');
+    }
+  }
+
   return (
     <motion.section
       className="admin-page admin-dashboard-container"
@@ -331,7 +357,9 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
               currentUser={user}
               loading={loading.users}
               roleLoadingId={roleLoadingId}
+              userDeleteLoadingId={userDeleteLoadingId}
               onUpdateRole={updateUserRole}
+              onDeleteUser={setUserDeleteTarget}
             />
             <Pagination pagination={usersPagination} onPageChange={setUserPage} />
             </motion.section>
@@ -398,6 +426,14 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
             onDelete={() => deleteDiary(selectedDiary._id)}
           />
         )}
+        {userDeleteTarget && (
+          <DeleteUserModal
+            user={userDeleteTarget}
+            loading={userDeleteLoadingId === userDeleteTarget._id}
+            onClose={() => setUserDeleteTarget(null)}
+            onConfirm={() => deleteUser(userDeleteTarget._id)}
+          />
+        )}
       </AnimatePresence>
     </motion.section>
   );
@@ -433,8 +469,9 @@ function Stat({ label, value }) {
   );
 }
 
-function UsersTable({ users, currentUser, loading, roleLoadingId, onUpdateRole }) {
+function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoadingId, onUpdateRole, onDeleteUser }) {
   const canManageRoles = currentUser?.role === 'owner';
+  const canDeleteUsers = currentUser?.role === 'owner';
 
   return (
     <div className="admin-table users-table">
@@ -444,23 +481,45 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, onUpdateRole }
         <span>Email</span>
         <span>Role</span>
         <span>Created</span>
+        <span>操作</span>
       </div>
       {loading && <p className="admin-empty">載入管理資料中...</p>}
-      {!loading && users.map((item) => (
-        <div className="admin-table-row" key={item._id}>
-          <span title={item.name}>{item.name}</span>
-          <span title={item.userCode}>@{item.userCode}</span>
-          <span title={item.email}>{item.email}</span>
-          <RoleControl
-            user={item}
-            currentUser={currentUser}
-            canManageRoles={canManageRoles}
-            loading={roleLoadingId === item._id}
-            onUpdateRole={onUpdateRole}
-          />
-          <span>{formatDate(item.createdAt)}</span>
-        </div>
-      ))}
+      {!loading && users.map((item) => {
+        const isSelf = item._id === currentUser?._id || item.id === currentUser?.id;
+
+        return (
+          <div className="admin-table-row" key={item._id}>
+            <span title={item.name}>{item.name}</span>
+            <span title={item.userCode}>@{item.userCode}</span>
+            <span title={item.email}>{item.email}</span>
+            <RoleControl
+              user={item}
+              currentUser={currentUser}
+              canManageRoles={canManageRoles}
+              loading={roleLoadingId === item._id}
+              onUpdateRole={onUpdateRole}
+            />
+            <span>{formatDate(item.createdAt)}</span>
+            <span className="admin-row-actions user-actions">
+              {isSelf ? (
+                <span className="admin-row-note">目前帳號</span>
+              ) : canDeleteUsers ? (
+                <button
+                  className="icon-button danger compact-action"
+                  type="button"
+                  onClick={() => onDeleteUser(item)}
+                  disabled={userDeleteLoadingId === item._id}
+                  aria-label="刪除使用者"
+                >
+                  {userDeleteLoadingId === item._id ? <span className="button-spinner" /> : <Trash2 size={14} />}
+                </button>
+              ) : (
+                <span className="admin-row-note">-</span>
+              )}
+            </span>
+          </div>
+        );
+      })}
       {!loading && users.length === 0 && <p className="admin-empty">找不到符合條件的使用者</p>}
     </div>
   );
@@ -468,16 +527,38 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, onUpdateRole }
 
 function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole }) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState(null);
+  const controlRef = useRef(null);
+  const triggerRef = useRef(null);
   const menuRef = useRef(null);
   const role = user.role || 'user';
   const isSelf = user._id === currentUser?._id || user.id === currentUser?.id;
   const roleChoices = ROLE_OPTIONS;
 
+  function updateMenuPlacement() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const menuWidth = 136;
+    const left = Math.min(Math.max(12, rect.left), Math.max(12, window.innerWidth - menuWidth - 12));
+    const below = rect.bottom + 7;
+    const openUp = below + 126 > window.innerHeight - 12 && rect.top > 140;
+
+    setPlacement({
+      left,
+      top: openUp ? rect.top - 126 - 7 : below,
+      width: Math.max(menuWidth, rect.width),
+      openUp
+    });
+  }
+
   useEffect(() => {
     if (!open) return;
 
+    updateMenuPlacement();
+
     function closeOnOutsideClick(event) {
-      if (!menuRef.current?.contains(event.target)) {
+      if (!controlRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
         setOpen(false);
       }
     }
@@ -488,12 +569,20 @@ function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole 
       }
     }
 
+    function syncPosition() {
+      updateMenuPlacement();
+    }
+
     document.addEventListener('mousedown', closeOnOutsideClick);
     document.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('resize', syncPosition);
+    window.addEventListener('scroll', syncPosition, true);
 
     return () => {
       document.removeEventListener('mousedown', closeOnOutsideClick);
       document.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', syncPosition);
+      window.removeEventListener('scroll', syncPosition, true);
     };
   }, [open]);
 
@@ -513,11 +602,15 @@ function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole 
 
   return (
     <span className="role-editor">
-      <span className="role-selector" ref={menuRef}>
+      <span className="role-selector" ref={controlRef}>
         <button
+          ref={triggerRef}
           className={`role-pill role-trigger ${role}`}
           type="button"
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => {
+            updateMenuPlacement();
+            setOpen((current) => !current);
+          }}
           disabled={loading}
           aria-haspopup="menu"
           aria-expanded={open}
@@ -525,10 +618,17 @@ function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole 
           {formatRole(role)}
           <ChevronDown size={13} />
         </button>
-        <AnimatePresence>
-          {open && (
+        {createPortal(
+          <AnimatePresence>
+            {open && placement && (
             <motion.div
+              ref={menuRef}
               className="role-menu"
+              style={{
+                left: placement.left,
+                top: placement.top,
+                minWidth: placement.width
+              }}
               initial={{ opacity: 0, y: -6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
@@ -549,8 +649,10 @@ function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole 
                 </button>
               ))}
             </motion.div>
-          )}
-        </AnimatePresence>
+            )}
+          </AnimatePresence>,
+          document.body
+        )}
       </span>
       {loading && <span className="button-spinner" />}
     </span>
@@ -621,6 +723,68 @@ function Pagination({ pagination, onPageChange }) {
         </button>
       </div>
     </div>
+  );
+}
+
+function DeleteUserModal({ user, loading, onClose, onConfirm }) {
+  const [confirmText, setConfirmText] = useState('');
+  const canConfirm = confirmText === 'DELETE';
+
+  return (
+    <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <motion.article
+        className="admin-detail-modal admin-danger-modal glass"
+        initial={{ opacity: 0, y: 24, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 18, scale: 0.98 }}
+        transition={{ duration: 0.24, ease: 'easeOut' }}
+      >
+        <header>
+          <div>
+            <p className="eyebrow">Delete User</p>
+            <h2>確定要刪除此使用者嗎？</h2>
+          </div>
+          <button className="icon-button" type="button" onClick={onClose} aria-label="關閉" disabled={loading}>
+            <X size={18} />
+          </button>
+        </header>
+
+        <p className="admin-danger-copy">
+          此操作會刪除該使用者、他的所有日記、好友關係與相關資料，且無法復原。
+        </p>
+
+        <div className="admin-user-delete-summary">
+          <span>Name</span>
+          <strong>{user.name}</strong>
+          <span>User ID</span>
+          <strong>@{user.userCode}</strong>
+          <span>Email</span>
+          <strong>{user.email}</strong>
+          <span>Role</span>
+          <strong>{formatRole(user.role)}</strong>
+        </div>
+
+        <label className="admin-confirm-field">
+          <span>輸入 DELETE 以確認刪除</span>
+          <input
+            value={confirmText}
+            onChange={(event) => setConfirmText(event.target.value)}
+            placeholder="DELETE"
+            disabled={loading}
+          />
+        </label>
+
+        <footer>
+          <button className="ghost-button" type="button" onClick={onClose} disabled={loading}>
+            取消
+          </button>
+          <button className="danger-button compact-danger" type="button" onClick={onConfirm} disabled={!canConfirm || loading}>
+            {loading ? <span className="button-spinner" /> : <Trash2 size={15} />}
+            確認刪除
+          </button>
+        </footer>
+      </motion.article>
+    </motion.div>
   );
 }
 

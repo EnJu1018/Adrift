@@ -40,11 +40,16 @@ export default function Select({
     const openUp = spaceBelow < Math.min(estimatedHeight, 180) && spaceAbove > spaceBelow;
     const availableHeight = Math.max(MENU_MIN_HEIGHT, Math.min(MENU_MAX_HEIGHT, openUp ? spaceAbove : spaceBelow));
     const renderedHeight = Math.min(estimatedHeight, availableHeight);
+    const width = Math.min(rect.width, window.innerWidth - VIEWPORT_PADDING * 2);
+    const left = Math.min(
+      Math.max(VIEWPORT_PADDING, rect.left),
+      Math.max(VIEWPORT_PADDING, window.innerWidth - VIEWPORT_PADDING - width)
+    );
 
     setPlacement({
-      left: rect.left,
+      left,
       top: openUp ? Math.max(VIEWPORT_PADDING, rect.top - MENU_GAP - renderedHeight) : Math.min(window.innerHeight - VIEWPORT_PADDING - renderedHeight, rect.bottom + MENU_GAP),
-      width: rect.width,
+      width,
       maxHeight: availableHeight,
       openUp
     });

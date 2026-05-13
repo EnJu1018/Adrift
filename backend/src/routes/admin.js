@@ -196,6 +196,98 @@ router.patch('/users/:id/role', requireOwner, async (req, res, next) => {
   }
 });
 
+function requireOwnerForUserDelete(req, res, next) {
+  if (req.user?.role === 'owner') {
+    next();
+    return;
+  }
+
+  return res.status(403).json({
+    success: false,
+    message: '只有 Owner 可以刪除使用者'
+  });
+}
+
+async function removeUserReactions(targetUserId) {
+  const diaries = await Diary.find({ 'reactedUsers.userId': targetUserId });
+
+  await Promise.all(
+    diaries.map(async (diary) => {
+      const remainingReactions = [];
+
+      for (const reaction of diary.reactedUsers || []) {
+        if (reaction.userId?.toString() === targetUserId.toString()) {
+          const type = reaction.type;
+
+          if (type && diary.reactions?.[type] !== undefined) {
+            diary.reactions[type] = Math.max(0, (diary.reactions[type] || 0) - 1);
+          }
+
+          continue;
+        }
+
+        remainingReactions.push(reaction);
+      }
+
+      diary.reactedUsers = remainingReactions;
+      diary.markModified('reactions');
+      await diary.save();
+    })
+  );
+}
+
+router.delete('/users/:id', requireOwnerForUserDelete, async (req, res, next) => {
+  try {
+    if (req.params.id === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: '不可刪除自己的帳號'
+      });
+    }
+
+    const targetUser = await User.findById(req.params.id);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到使用者'
+      });
+    }
+
+    await removeUserReactions(targetUser._id);
+
+    await Promise.all([
+      Diary.deleteMany({ user: targetUser._id }),
+      User.updateMany(
+        {
+          $or: [
+            { friends: targetUser._id },
+            { 'friendRequests.from': targetUser._id }
+          ]
+        },
+        {
+          $pull: {
+            friends: targetUser._id,
+            friendRequests: { from: targetUser._id }
+          }
+        }
+      )
+    ]);
+
+    await targetUser.deleteOne();
+
+    res.json({
+      success: true,
+      message: '使用者已刪除',
+      data: {
+        deletedUserId: req.params.id
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.get('/diaries', requireAdminOrOwner, async (req, res, next) => {
   try {
     const search = req.query.search?.toString().trim();

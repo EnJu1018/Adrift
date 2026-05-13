@@ -1,5 +1,6 @@
 import mapboxgl from 'mapbox-gl';
 import { AnimatePresence, motion } from 'framer-motion';
+import { LocateFixed, Minus, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getMoodMarkerStyle } from '../constants/moodStyles.js';
 import FallbackMap from './FallbackMap.jsx';
@@ -16,6 +17,8 @@ export default function MapView({
   mode = 'mine',
   expanded,
   loading,
+  locating = false,
+  onLocateUser,
   disabled
 }) {
   const mapContainer = useRef(null);
@@ -77,7 +80,6 @@ export default function MapView({
     });
 
     mapRef.current = map;
-    map.addControl(new mapboxgl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
     map.on('load', () => {
       map.addSource('diaries', {
@@ -525,14 +527,19 @@ export default function MapView({
   }, [selectedDiary]);
 
   useEffect(() => {
-    if (!mapRef.current || !focusLocation) return;
+    const lat = Number(focusLocation?.lat);
+    const lng = Number(focusLocation?.lng);
 
-    mapRef.current.easeTo({
-      center: [focusLocation.lng, focusLocation.lat],
-      zoom: Math.max(mapRef.current.getZoom(), mode === 'explore' ? 12 : 8),
-      duration: 900
+    if (!mapRef.current || !mapReady || !Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    mapRef.current.flyTo({
+      center: [lng, lat],
+      zoom: getLocationZoom(focusLocation),
+      speed: 1.2,
+      curve: 1.4,
+      essential: true
     });
-  }, [focusLocation, mode]);
+  }, [focusLocation, mapReady]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -563,6 +570,24 @@ export default function MapView({
       ) : (
         <FallbackMap diaries={diaries} selectedId={selectedDiary?._id} currentLocation={currentLocation} onSelect={onSelect} />
       )}
+
+      <div className="map-controls glass" aria-label="地圖控制">
+        <button type="button" onClick={() => zoomMap(1)} disabled={!MAPBOX_TOKEN || !mapReady} aria-label="放大地圖">
+          <Plus size={17} />
+        </button>
+        <button type="button" onClick={() => zoomMap(-1)} disabled={!MAPBOX_TOKEN || !mapReady} aria-label="縮小地圖">
+          <Minus size={17} />
+        </button>
+        <button
+          type="button"
+          className="locate"
+          onClick={onLocateUser}
+          disabled={locating}
+          aria-label="定位目前位置"
+        >
+          {locating ? <span className="button-spinner" /> : <LocateFixed size={17} />}
+        </button>
+      </div>
 
       <AnimatePresence>
         {!loading && !disabled && diaries.length === 0 && (
@@ -601,6 +626,21 @@ export default function MapView({
       </AnimatePresence>
     </motion.section>
   );
+
+  function zoomMap(delta) {
+    const map = mapRef.current;
+    if (!map) return;
+
+    map.easeTo({
+      zoom: map.getZoom() + delta,
+      duration: 260,
+      essential: true
+    });
+  }
+}
+
+function getLocationZoom(location) {
+  return location?.accuracyType === 'approximate' || location?.source === 'ip' ? 11 : 15;
 }
 
 function buildDiaryFeatures(diaries, selectedId, hoveredId) {
