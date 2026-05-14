@@ -296,7 +296,7 @@ export default function App() {
     let active = true;
 
     userLocation
-      .locate()
+      .getLocation({ showMessage: true })
       .then((location) => {
         if (!active) return;
         setMapFocusLocation({ ...location, focusId: Date.now() });
@@ -308,7 +308,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, [user?.id, userLocation.locate]);
+  }, [user?.id, userLocation.getLocation]);
 
   async function handleAuth(mode, form) {
     try {
@@ -345,11 +345,7 @@ export default function App() {
 
     try {
       setDiaryError('');
-      const location = await userLocation.refreshLocation();
-      setMapFocusLocation({ ...location, focusId: Date.now() });
-      if (mapMode === 'explore') {
-        setExploreCenter({ lat: location.lat, lng: location.lng });
-      }
+      const location = await userLocation.getLocation();
       setDraftLocation({
         lat: location.lat,
         lng: location.lng,
@@ -379,6 +375,7 @@ export default function App() {
 
       if (mapMode === 'explore') {
         setExploreCenter({ lat: location.lat, lng: location.lng });
+        await loadExploreDiaries({ lat: location.lat, lng: location.lng, radius: exploreRadius }, { silent: true });
       }
     } catch (error) {
       setDiaryError(error.message || '無法取得目前位置');
@@ -457,8 +454,7 @@ export default function App() {
     }
 
     try {
-      const location = await userLocation.locate();
-      setMapFocusLocation({ ...location, focusId: Date.now() });
+      const location = await userLocation.getLocation();
       await loadDiaries(
         {
           lat: location.lat,
@@ -508,14 +504,13 @@ export default function App() {
       setSelectedDiary(null);
       setDiaryLoading(true);
       setDiaryError('');
-      const location = await userLocation.locate();
+      const location = await userLocation.getLocation();
       const center = {
         lat: location.lat,
         lng: location.lng
       };
 
       setExploreCenter(center);
-      setMapFocusLocation({ ...location, focusId: Date.now() });
       await loadExploreDiaries({ ...center, radius }, { silent: true });
     } catch (error) {
       setDiaryError(error.message || '無法取得位置，請稍後再試');
@@ -804,3 +799,4 @@ function buildApproximatePlaceName(location) {
 
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
 }
+
