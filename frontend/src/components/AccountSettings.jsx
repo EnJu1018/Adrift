@@ -12,6 +12,7 @@ import {
   UserRound
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { accordionTransition, panelSlideRight, toastMotion } from '../constants/animations.js';
 import { EMAIL_PATTERN } from '../constants/app.js';
 
 const passwordVisibility = {
@@ -227,10 +228,7 @@ export default function AccountSettings({ user, onBack, onUpdateName, onUpdateEm
   return (
     <motion.aside
       className="settings-panel glass"
-      initial={{ opacity: 0, x: 24 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 24 }}
-      transition={{ duration: 0.42, ease: 'easeOut' }}
+      {...panelSlideRight}
     >
       <header className="settings-header">
         <div>
@@ -246,9 +244,7 @@ export default function AccountSettings({ user, onBack, onUpdateName, onUpdateEm
         {message && (
           <motion.p
             className={`form-message ${messageType}`}
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
+            {...toastMotion}
           >
             {messageType === 'error' ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
             {message}
@@ -519,7 +515,7 @@ function AccordionSection({ id, icon, title, danger = false, activeSection, onTo
             initial={{ height: 0, opacity: 0, y: -6 }}
             animate={{ height: 'auto', opacity: 1, y: 0 }}
             exit={{ height: 0, opacity: 0, y: -6 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
+            transition={accordionTransition}
           >
             <div className="settings-section-content">{children}</div>
           </motion.div>

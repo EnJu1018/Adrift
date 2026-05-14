@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Lightbulb, MapPin, Sparkles, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../api/client.js';
+import { fadeUpMotion, listItemMotion, panelSlideRight, toastMotion } from '../constants/animations.js';
 
 export default function LifeMapAI({ onBack }) {
   const [insight, setInsight] = useState(null);
@@ -31,10 +32,7 @@ export default function LifeMapAI({ onBack }) {
   return (
     <motion.aside
       className="life-map-panel glass"
-      initial={{ opacity: 0, x: 24 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 24 }}
-      transition={{ duration: 0.42, ease: 'easeOut' }}
+      {...panelSlideRight}
     >
       <header className="life-map-header">
         <button className="icon-button" onClick={onBack} aria-label="返回日記">
@@ -59,10 +57,7 @@ export default function LifeMapAI({ onBack }) {
         {loading && (
           <motion.div
             className="life-map-loading"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.26, ease: 'easeOut' }}
+            {...fadeUpMotion}
           >
             <span className="ai-orbit" />
             <p>AI 正在分析你的生活地圖...</p>
@@ -72,10 +67,7 @@ export default function LifeMapAI({ onBack }) {
         {error && (
           <motion.p
             className="form-message error"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.24, ease: 'easeOut' }}
+            {...toastMotion}
           >
             {error}
           </motion.p>
@@ -84,10 +76,7 @@ export default function LifeMapAI({ onBack }) {
         {!loading && notEnoughData && (
           <motion.section
             className="life-map-card"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.26, ease: 'easeOut' }}
+            {...fadeUpMotion}
           >
             <p className="eyebrow">Data Warmup</p>
             <h3>日記數量不足</h3>
@@ -100,10 +89,7 @@ export default function LifeMapAI({ onBack }) {
         {!loading && insight && !notEnoughData && (
           <motion.div
             className="life-map-results"
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
+            {...fadeUpMotion}
           >
             {notice && <p className="quiet-note">{notice}</p>}
 
@@ -154,13 +140,13 @@ export default function LifeMapAI({ onBack }) {
 
 function InsightCard({ icon, title, children }) {
   return (
-    <section className="life-map-card">
+    <motion.section className="life-map-card" {...listItemMotion(0, false)}>
       <div className="section-title">
         {icon}
         <span>{title}</span>
       </div>
       {children}
-    </section>
+    </motion.section>
   );
 }
 

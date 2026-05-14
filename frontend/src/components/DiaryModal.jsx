@@ -2,6 +2,7 @@
 import { ImagePlus, LocateFixed, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MOOD_OPTIONS, VISIBILITY_OPTIONS } from '../constants/app.js';
+import { modalBackdropMotion, modalPopMotion } from '../constants/animations.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 import Select from './ui/Select.jsx';
 
@@ -137,14 +138,11 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
   }
 
   return (
-    <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.div className="modal-backdrop" {...modalBackdropMotion}>
       <motion.form
         className="diary-modal glass"
         onSubmit={submit}
-        initial={{ opacity: 0, y: 48, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 32, scale: 0.98 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        {...modalPopMotion}
       >
         <header>
           <div>

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Clock3, ImageIcon, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getImageUrl } from '../api/client.js';
+import { fadeUpMotion, panelSlideLeft } from '../constants/animations.js';
 import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constants/app.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 
@@ -79,20 +80,14 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
   return (
     <motion.aside
       className="diary-side-panel glass"
-      initial={{ opacity: 0, x: -24 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -24 }}
-      transition={{ duration: 0.32, ease: 'easeOut' }}
+      {...panelSlideLeft}
     >
       <AnimatePresence mode="wait">
         {!hasDiary ? (
           <motion.div
             key="empty"
             className="diary-side-empty"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.24, ease: 'easeOut' }}
+            {...fadeUpMotion}
           >
             <span className="brand-mark">
               <MapPin size={20} />
@@ -106,10 +101,7 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
           <motion.div
             key={diary._id}
             className="diary-side-content"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.26, ease: 'easeOut' }}
+            {...fadeUpMotion}
           >
             <header className="diary-side-header">
               <div className="diary-author-block">

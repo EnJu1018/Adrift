@@ -12,6 +12,8 @@ import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
 import ProfileDock from './components/ProfileDock.jsx';
+import { pageFadeUp } from './constants/animations.js';
+import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
 
 const exploreRadiusOptions = [
@@ -42,6 +44,7 @@ export default function App() {
   const [mapFocusLocation, setMapFocusLocation] = useState(null);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const userLocation = useUserLocation();
+  const performanceMode = usePerformanceMode(diaries.length);
   const locating = userLocation.loading;
   const autoLocateRequestedRef = useRef(false);
 
@@ -584,15 +587,15 @@ export default function App() {
   }
 
   return (
-    <main className="app-frame">
+    <main
+      className={`app-frame ${performanceMode.lowPerformance ? 'low-performance' : ''} ${performanceMode.reducedMotion ? 'reduced-motion' : ''}`}
+    >
       <div className="ambient-bg" />
-      <Particles />
+      <Particles lowPerformance={performanceMode.lowPerformance} reducedMotion={performanceMode.reducedMotion} />
 
       <motion.div
         className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage ? 'guest' : ''} ${isAdminPage ? 'admin-mode' : ''}`}
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
+        {...pageFadeUp}
       >
         {user && isAdminPage ? (
           isAdmin ? (
@@ -709,6 +712,8 @@ export default function App() {
               locating={locating}
               onLocateUser={centerOnUserLocation}
               disabled={!user}
+              lowPerformance={performanceMode.lowPerformance}
+              reducedMotion={performanceMode.reducedMotion}
             />
           </div>
 
@@ -759,6 +764,7 @@ export default function App() {
               onAcceptFriendRequest={acceptFriendRequest}
               onRejectFriendRequest={rejectFriendRequest}
               locating={locating}
+              lowPerformance={performanceMode.lowPerformance}
             />
           ) : null}
         </AnimatePresence>

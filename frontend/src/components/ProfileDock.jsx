@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Copy, LogOut, Settings, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { modalPopMotion } from '../constants/animations.js';
 
 export default function ProfileDock({ user, diaries, friends, forceOpen, onOpen, onClose, onSettings, onLogout }) {
   const [open, setOpen] = useState(Boolean(forceOpen));
@@ -50,10 +51,7 @@ export default function ProfileDock({ user, diaries, friends, forceOpen, onOpen,
         {open && (
           <motion.section
             className="profile-popover glass"
-            initial={{ opacity: 0, y: 18, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.97 }}
-            transition={{ duration: 0.28, ease: 'easeOut' }}
+            {...modalPopMotion}
           >
             <header>
               <div>

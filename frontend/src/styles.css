@@ -125,6 +125,12 @@ button {
   animation: gradientDrift 24s ease-in-out infinite alternate;
 }
 
+.app-frame.low-performance .ambient-bg,
+.app-frame.reduced-motion .ambient-bg {
+  filter: blur(10px);
+  animation: none;
+}
+
 .particles {
   position: fixed;
   inset: 0;
@@ -168,6 +174,11 @@ button {
   background: linear-gradient(145deg, rgba(14, 27, 45, 0.66), rgba(8, 20, 34, 0.44));
   box-shadow: 0 22px 70px rgba(0, 0, 0, 0.34), 0 0 34px rgba(77, 197, 255, 0.09);
   backdrop-filter: blur(20px) saturate(135%);
+}
+
+.app-frame.low-performance .glass {
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28), 0 0 18px rgba(77, 197, 255, 0.05);
+  backdrop-filter: blur(10px) saturate(120%);
 }
 
 .auth-panel {
@@ -629,7 +640,13 @@ h2 {
   gap: 8px;
   min-height: 38px;
   color: #ecfbff;
-  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+  will-change: transform;
 }
 
 .segmented button {
@@ -1075,6 +1092,17 @@ select option {
   transform: translateY(-1px);
 }
 
+.segmented button:active:not(:disabled),
+.chip-button:active:not(:disabled),
+.icon-button:active:not(:disabled),
+.primary-button:active:not(:disabled),
+.danger-button:active:not(:disabled),
+.ghost-button:active:not(:disabled),
+.map-controls button:active:not(:disabled),
+.ui-select-trigger:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .danger-button {
   width: 100%;
   margin-top: 10px;
@@ -1100,6 +1128,49 @@ select option {
   transform: translateY(-1px);
   border-color: rgba(130, 222, 255, 0.34);
   background: rgba(8, 27, 44, 0.68);
+}
+
+.memory-item,
+.person-card,
+.life-map-card,
+.admin-stat,
+.settings-section,
+.profile-popover,
+.quiet-note,
+.admin-card,
+.ui-select-menu button {
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    background-color 180ms ease,
+    background 180ms ease,
+    opacity 180ms ease;
+}
+
+@media (hover: hover) {
+  .person-card:hover,
+  .life-map-card:hover,
+  .admin-stat:hover,
+  .settings-section:hover {
+    transform: translateY(-2px);
+    border-color: rgba(125, 211, 252, 0.24);
+    background-color: rgba(11, 31, 50, 0.46);
+  }
+}
+
+.app-frame.low-performance .memory-item,
+.app-frame.low-performance .person-card,
+.app-frame.low-performance .life-map-card,
+.app-frame.low-performance .admin-stat,
+.app-frame.low-performance .settings-section {
+  transition-duration: 80ms;
+}
+
+.app-frame.low-performance .person-card:hover,
+.app-frame.low-performance .life-map-card:hover,
+.app-frame.low-performance .admin-stat:hover,
+.app-frame.low-performance .settings-section:hover {
+  transform: none;
 }
 
 .ghost-button.danger {
@@ -2826,157 +2897,6 @@ select option {
   transform: none;
 }
 
-.diary-dom-marker,
-.diary-dom-cluster {
-  position: relative;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 0;
-  appearance: none;
-  background: transparent;
-  pointer-events: auto;
-  cursor: pointer;
-  outline: none;
-}
-
-.diary-dom-marker {
-  width: 48px;
-  height: 48px;
-}
-
-.diary-dom-marker::after {
-  content: "";
-  position: absolute;
-  inset: 6px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--marker-color) 66%, transparent);
-  opacity: 0.42;
-  filter: blur(0.2px);
-}
-
-.diary-marker-pulse {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, var(--marker-glow), rgba(125, 211, 252, 0.1) 46%, transparent 72%);
-  filter: blur(1px);
-  opacity: 0.78;
-  animation: diaryMemoryPulse 2.5s ease-in-out infinite;
-}
-
-.diary-marker-orb {
-  position: absolute;
-  inset: 8px;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border: 2px solid color-mix(in srgb, var(--marker-color) 84%, white 16%);
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.42), transparent 25%),
-    linear-gradient(145deg, color-mix(in srgb, var(--marker-color) 68%, #0b1724 32%), rgba(6, 18, 31, 0.92));
-  box-shadow:
-    0 0 0 2px rgba(2, 8, 18, 0.72),
-    0 0 24px color-mix(in srgb, var(--marker-color) 56%, transparent),
-    inset 0 0 14px rgba(255, 255, 255, 0.12);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
-}
-
-.diary-marker-symbol {
-  position: relative;
-  z-index: 1;
-  color: rgba(244, 253, 255, 0.96);
-  font-size: 0.8rem;
-  font-weight: 900;
-  line-height: 1;
-  text-shadow: 0 0 8px color-mix(in srgb, var(--marker-color) 76%, white 10%);
-}
-
-.diary-dom-marker:hover .diary-marker-orb,
-.diary-dom-marker.is-hovered .diary-marker-orb {
-  transform: translateY(-2px) scale(1.08);
-  border-color: rgba(255, 255, 255, 0.86);
-  box-shadow:
-    0 0 0 2px rgba(2, 8, 18, 0.72),
-    0 0 30px color-mix(in srgb, var(--marker-color) 68%, transparent),
-    inset 0 0 16px rgba(255, 255, 255, 0.16);
-}
-
-.diary-dom-marker.is-selected .diary-marker-pulse {
-  opacity: 0.96;
-  animation-duration: 1.8s;
-}
-
-.diary-dom-marker.is-selected .diary-marker-orb {
-  transform: scale(1.16);
-  border-color: rgba(255, 255, 255, 0.96);
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.36),
-    0 0 34px color-mix(in srgb, var(--marker-color) 74%, transparent),
-    inset 0 0 18px rgba(255, 255, 255, 0.18);
-}
-
-.diary-dom-marker.is-approximate {
-  opacity: 0.82;
-}
-
-.diary-dom-marker.is-approximate .diary-marker-orb {
-  border-style: dashed;
-}
-
-.diary-dom-marker.is-explore .diary-marker-pulse {
-  opacity: 0.64;
-}
-
-.diary-dom-cluster {
-  width: 56px;
-  height: 56px;
-}
-
-.diary-cluster-halo {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(125, 211, 252, 0.42), rgba(167, 139, 250, 0.16) 48%, transparent 72%);
-  filter: blur(1px);
-  animation: diaryMemoryPulse 2.8s ease-in-out infinite;
-}
-
-.diary-cluster-body {
-  position: absolute;
-  inset: 8px;
-  display: grid;
-  place-items: center;
-  border: 2px solid rgba(186, 244, 255, 0.78);
-  border-radius: 999px;
-  color: #effcff;
-  background:
-    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.28), transparent 24%),
-    rgba(7, 22, 34, 0.9);
-  box-shadow:
-    0 0 0 2px rgba(2, 8, 18, 0.7),
-    0 0 26px rgba(80, 200, 255, 0.36),
-    inset 0 0 14px rgba(255, 255, 255, 0.1);
-  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
-}
-
-.diary-dom-cluster:hover .diary-cluster-body {
-  transform: translateY(-2px) scale(1.06);
-  border-color: rgba(255, 255, 255, 0.9);
-  box-shadow:
-    0 0 0 2px rgba(2, 8, 18, 0.7),
-    0 0 32px rgba(80, 200, 255, 0.46),
-    inset 0 0 16px rgba(255, 255, 255, 0.14);
-}
-
-.diary-cluster-body strong {
-  font-size: 0.88rem;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
 .map-memory-legend {
   position: absolute;
   left: 18px;
@@ -3081,6 +3001,48 @@ select option {
   border: 1px solid rgba(196, 235, 255, 0.12);
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.app-frame.reduced-motion *,
+.app-frame.reduced-motion *::before,
+.app-frame.reduced-motion *::after {
+  scroll-behavior: auto !important;
+}
+
+.app-frame.reduced-motion .ambient-bg,
+.app-frame.reduced-motion .particles,
+.app-frame.reduced-motion .diary-marker-pulse,
+.app-frame.reduced-motion .diary-marker-glow,
+.app-frame.reduced-motion .diary-cluster-halo,
+.app-frame.reduced-motion .selection-ripple {
+  animation: none !important;
+}
+
+.app-frame.reduced-motion .diary-marker-orb,
+.app-frame.reduced-motion .diary-marker-visual,
+.app-frame.reduced-motion .diary-marker-core,
+.app-frame.reduced-motion .diary-cluster-body,
+.app-frame.reduced-motion .diary-cluster-visual,
+.app-frame.reduced-motion .map-controls button,
+.app-frame.reduced-motion .ui-select-menu,
+.app-frame.reduced-motion .modal-card,
+.app-frame.reduced-motion .memory-item,
+.app-frame.reduced-motion .person-card,
+.app-frame.reduced-motion .life-map-card,
+.app-frame.reduced-motion .admin-stat,
+.app-frame.reduced-motion .settings-section {
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-bg,
+  .particles,
+  .diary-marker-pulse,
+  .diary-marker-glow,
+  .diary-cluster-halo,
+  .selection-ripple {
+    animation: none !important;
+  }
 }
 
 .fallback-map {

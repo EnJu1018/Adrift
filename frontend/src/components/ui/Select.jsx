@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { dropdownMotion, dropdownTransition } from '../../constants/animations.js';
 
 const MENU_GAP = 8;
 const MENU_MAX_HEIGHT = 240;
@@ -114,7 +115,7 @@ export default function Select({
           {selected?.icon || icon ? <span className="ui-select-icon">{selected?.icon || icon}</span> : null}
           <span>{selected?.label || placeholder}</span>
         </span>
-        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18, ease: 'easeOut' }}>
+        <motion.span animate={{ rotate: open ? 180 : 0 }} transition={dropdownTransition}>
           <ChevronDown size={15} />
         </motion.span>
       </button>
@@ -131,10 +132,7 @@ export default function Select({
                 width: placement.width,
                 maxHeight: placement.maxHeight
               }}
-              initial={{ opacity: 0, y: placement.openUp ? 4 : -4, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: placement.openUp ? 4 : -4, scale: 0.98 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
+              {...dropdownMotion(placement.openUp)}
               role="listbox"
             >
               {normalizedOptions.map((option) => (

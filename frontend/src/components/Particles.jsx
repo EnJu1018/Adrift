@@ -1,33 +1,49 @@
 import { useEffect, useRef } from 'react';
 
-export default function Particles() {
+export default function Particles({ lowPerformance = false, reducedMotion = false }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
+    if (reducedMotion) return undefined;
+
     const canvas = canvasRef.current;
     const context = canvas.getContext('2d');
     let frameId;
     let particles = [];
+    let visible = !document.hidden;
 
     function resize() {
-      const ratio = window.devicePixelRatio || 1;
+      const ratio = Math.min(window.devicePixelRatio || 1, lowPerformance ? 1 : 1.5);
+      const isSmallScreen = window.innerWidth <= 640;
+      const targetCount = lowPerformance
+        ? isSmallScreen
+          ? 12
+          : 24
+        : Math.min(48, Math.max(30, Math.floor(window.innerWidth / 36)));
+
       canvas.width = window.innerWidth * ratio;
       canvas.height = window.innerHeight * ratio;
       canvas.style.width = `${window.innerWidth}px`;
       canvas.style.height = `${window.innerHeight}px`;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      particles = Array.from({ length: Math.min(90, Math.floor(window.innerWidth / 16)) }, () => ({
+      particles = Array.from({ length: targetCount }, () => ({
         x: Math.random() * window.innerWidth,
         y: Math.random() * window.innerHeight,
-        radius: Math.random() * 1.8 + 0.4,
-        speed: Math.random() * 0.22 + 0.05,
-        drift: Math.random() * 0.16 - 0.08,
-        alpha: Math.random() * 0.35 + 0.12
+        radius: Math.random() * (lowPerformance ? 1.2 : 1.6) + 0.35,
+        speed: Math.random() * (lowPerformance ? 0.12 : 0.2) + 0.04,
+        drift: Math.random() * 0.12 - 0.06,
+        alpha: Math.random() * 0.28 + 0.1
       }));
     }
 
     function draw() {
+      if (!visible) {
+        frameId = requestAnimationFrame(draw);
+        return;
+      }
+
       context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+      context.shadowBlur = 0;
       particles.forEach((particle) => {
         particle.y -= particle.speed;
         particle.x += particle.drift;
@@ -40,23 +56,29 @@ export default function Particles() {
         context.beginPath();
         context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
         context.fillStyle = `rgba(139, 214, 255, ${particle.alpha})`;
-        context.shadowColor = 'rgba(91, 194, 255, 0.55)';
-        context.shadowBlur = 12;
         context.fill();
       });
 
       frameId = requestAnimationFrame(draw);
     }
 
+    function handleVisibilityChange() {
+      visible = !document.hidden;
+    }
+
     resize();
     draw();
     window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [lowPerformance, reducedMotion]);
+
+  if (reducedMotion) return null;
 
   return <canvas ref={canvasRef} className="particles" aria-hidden="true" />;
 }

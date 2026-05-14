@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { fadeUpMotion, listItemMotion, panelSlideRight, toastMotion } from '../constants/animations.js';
 import { USER_CODE_PATTERN } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
 
@@ -31,7 +32,8 @@ export default function MemoryPanel({
   onCancelFriendRequest,
   onAcceptFriendRequest,
   onRejectFriendRequest,
-  locating
+  locating,
+  lowPerformance = false
 }) {
   const [activeTab, setActiveTab] = useState('memories');
   const [searchCode, setSearchCode] = useState('');
@@ -171,10 +173,7 @@ export default function MemoryPanel({
         {message && (
           <motion.p
             className={`form-message ${messageType} panel-toast`}
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.22, ease: 'easeOut' }}
+            {...toastMotion}
           >
             {messageType === 'error' ? <X size={16} /> : <Check size={16} />}
             {message}
@@ -189,10 +188,7 @@ export default function MemoryPanel({
       {createPortal(toast, document.body)}
       <motion.aside
         className="memory-panel glass"
-        initial={{ opacity: 0, x: 24 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: 24 }}
-        transition={{ duration: 0.45, ease: 'easeOut' }}
+        {...panelSlideRight}
       >
         <header className="memory-header">
           <div>
@@ -221,9 +217,7 @@ export default function MemoryPanel({
             <motion.div
               key="memories"
               className="panel-scroll"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              {...fadeUpMotion}
             >
               <div className="memory-stats">
                 <article>
@@ -259,16 +253,17 @@ export default function MemoryPanel({
 
                 {recent.length > 0 ? (
                   <div className="memory-list">
-                    {recent.map((diary) => {
+                    {recent.map((diary, index) => {
                       const title = getDiaryTitle(diary);
                       const authorCode = getDiaryAuthorCode(diary, user);
 
                       return (
-                        <button
+                        <motion.button
                           key={diary._id}
                           className={`memory-item compact ${sameId(selectedDiaryId, diary._id) ? 'selected' : ''}`}
                           onClick={() => onSelectDiary(diary)}
                           title={title}
+                          {...listItemMotion(index, lowPerformance)}
                         >
                           <strong>{title}</strong>
                           <span className="memory-reactions-row">
@@ -282,7 +277,7 @@ export default function MemoryPanel({
                             </span>
                             <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt, timeNow)}</time>
                           </span>
-                        </button>
+                        </motion.button>
                       );
                     })}
                   </div>
@@ -298,9 +293,7 @@ export default function MemoryPanel({
             <motion.div
               key="social"
               className="panel-scroll social-panel"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
+              {...fadeUpMotion}
             >
               <form className="social-search" onSubmit={searchUser}>
                 <label>

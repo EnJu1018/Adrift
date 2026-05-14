@@ -2,21 +2,11 @@ import mapboxgl from 'mapbox-gl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Compass, Minus, Navigation, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fadeUpMotion, pageTransition, toastMotion } from '../constants/animations.js';
 import { getMoodMarkerStyle } from '../constants/moodStyles.js';
 import FallbackMap from './FallbackMap.jsx';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-const HIDDEN_DIARY_LAYER_IDS = [
-  'diary-cluster-glow',
-  'diary-clusters',
-  'diary-cluster-count',
-  'diary-marker-glow',
-  'diary-marker-shell',
-  'diary-marker-core',
-  'diary-selected-ring',
-  'diary-marker-icon'
-];
-
 export default function MapView({
   diaries,
   selectedDiary,
@@ -29,17 +19,18 @@ export default function MapView({
   loading,
   locating = false,
   onLocateUser,
-  disabled
+  disabled,
+  lowPerformance = false,
+  reducedMotion = false
 }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const moveTimerRef = useRef(null);
-  const domMarkersRef = useRef(new Map());
-  const domMarkerFrameRef = useRef(null);
   const tooltipRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapPitch, setMapPitch] = useState(0);
   const [mapBearing, setMapBearing] = useState(0);
+  const [isMapMoving, setIsMapMoving] = useState(false);
   const [hoveredDiaryId, setHoveredDiaryId] = useState(null);
   const diariesById = useMemo(() => {
     return new Map((diaries || []).map((diary) => [diary._id, diary]));
@@ -87,7 +78,7 @@ export default function MapView({
     mapboxgl.accessToken = MAPBOX_TOKEN;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/adrift-diary/cmp4wo87a003201sh13047v5v',
+      style: 'mapbox://styles/mapbox/dark-v11',
       center: [121.5654, 25.033],
       zoom: 3.2,
       attributionControl: false
@@ -124,9 +115,9 @@ export default function MapView({
             40,
             '#a78bfa'
           ],
-          'circle-radius': ['step', ['get', 'point_count'], 28, 10, 36, 40, 46],
-          'circle-opacity': 0.28,
-          'circle-blur': 0.46,
+          'circle-radius': ['step', ['get', 'point_count'], 22, 10, 28, 40, 34],
+          'circle-opacity': 0.2,
+          'circle-blur': 0.5,
           'circle-emissive-strength': 1
         }
       });
@@ -146,10 +137,10 @@ export default function MapView({
             40,
             '#a78bfa'
           ],
-          'circle-radius': ['step', ['get', 'point_count'], 21, 10, 27, 40, 34],
-          'circle-stroke-color': '#f8fdff',
-          'circle-stroke-width': 2,
-          'circle-opacity': 0.92,
+          'circle-radius': ['step', ['get', 'point_count'], 16, 10, 20, 40, 24],
+          'circle-stroke-color': 'rgba(238, 252, 255, 0.78)',
+          'circle-stroke-width': 1.4,
+          'circle-opacity': 0.82,
           'circle-blur': 0,
           'circle-emissive-strength': 1
         }
@@ -166,9 +157,9 @@ export default function MapView({
           'text-size': ['step', ['get', 'point_count'], 13, 10, 14, 40, 15]
         },
         paint: {
-          'text-color': '#04111f',
-          'text-halo-color': 'rgba(255, 255, 255, 0.74)',
-          'text-halo-width': 0.9,
+          'text-color': '#eefcff',
+          'text-halo-color': 'rgba(4, 12, 24, 0.72)',
+          'text-halo-width': 1.1,
           'text-emissive-strength': 1
         }
       });
@@ -201,24 +192,24 @@ export default function MapView({
           'circle-radius': [
             'case',
             ['boolean', ['get', 'selected'], false],
-            27,
+            23,
             ['boolean', ['get', 'hovered'], false],
-            24,
+            20,
             ['boolean', ['get', 'approximate'], false],
-            24,
-            20
+            19,
+            18
           ],
           'circle-opacity': [
             'case',
             ['boolean', ['get', 'selected'], false],
-            0.9,
+            0.54,
             ['boolean', ['get', 'hovered'], false],
-            0.78,
+            0.47,
             ['boolean', ['get', 'approximate'], false],
-            0.58,
-            0.68
+            0.34,
+            0.4
           ],
-          'circle-blur': 0.46,
+          'circle-blur': 0.5,
           'circle-emissive-strength': 1
         }
       });
@@ -232,35 +223,42 @@ export default function MapView({
           'circle-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1]
         },
         paint: {
-          'circle-color': ['get', 'markerColor'],
+          'circle-color': [
+            'case',
+            ['boolean', ['get', 'selected'], false],
+            'rgba(13, 28, 44, 0.88)',
+            ['boolean', ['get', 'hovered'], false],
+            'rgba(12, 28, 44, 0.82)',
+            'rgba(8, 18, 32, 0.76)'
+          ],
           'circle-radius': [
             'case',
             ['boolean', ['get', 'selected'], false],
-            16,
+            12.4,
             ['boolean', ['get', 'hovered'], false],
-            15,
+            11.8,
             ['boolean', ['get', 'approximate'], false],
-            14,
-            13
+            10.8,
+            10.6
           ],
           'circle-stroke-color': [
             'case',
             ['boolean', ['get', 'selected'], false],
-            '#ffffff',
+            'rgba(245, 253, 255, 0.96)',
             ['get', 'markerColor']
           ],
           'circle-stroke-width': [
             'case',
             ['boolean', ['get', 'selected'], false],
-            2.4,
+            2.1,
             ['boolean', ['get', 'hovered'], false],
-            2,
+            1.8,
             ['boolean', ['get', 'approximate'], false],
             1.15,
             1.45
           ],
-          'circle-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.82, 0.98],
-          'circle-stroke-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.78, 0.96],
+          'circle-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.72, 0.94],
+          'circle-stroke-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.68, 0.95],
           'circle-blur': ['case', ['boolean', ['get', 'approximate'], false], 0.04, 0],
           'circle-emissive-strength': 1,
           'circle-radius-transition': { duration: 180 },
@@ -277,9 +275,9 @@ export default function MapView({
           'circle-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1]
         },
         paint: {
-          'circle-color': '#fffdf5',
-          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 5.4, 4.4],
-          'circle-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.68, 0.9],
+          'circle-color': ['get', 'markerColor'],
+          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 4.8, 3.8],
+          'circle-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.62, 0.88],
           'circle-blur': 0,
           'circle-emissive-strength': 1
         }
@@ -292,41 +290,12 @@ export default function MapView({
         filter: ['all', ['!', ['has', 'point_count']], ['any', ['==', ['get', 'selected'], true], ['==', ['get', 'hovered'], true]]],
         paint: {
           'circle-color': 'rgba(255, 255, 255, 0)',
-          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 19, 17],
+          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 15.2, 13.2],
           'circle-stroke-color': ['get', 'markerColor'],
-          'circle-stroke-width': ['case', ['boolean', ['get', 'selected'], false], 1.8, 1.1],
-          'circle-stroke-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.88, 0.52],
+          'circle-stroke-width': ['case', ['boolean', ['get', 'selected'], false], 1.6, 1],
+          'circle-stroke-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.74, 0.42],
           'circle-blur': 0.08,
           'circle-emissive-strength': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'diary-marker-icon',
-        type: 'symbol',
-        source: 'diaries',
-        filter: ['!', ['has', 'point_count']],
-        layout: {
-          'text-field': ['get', 'moodIcon'],
-          'text-font': ['Arial Unicode MS Regular', 'DIN Offc Pro Medium'],
-          'symbol-sort-key': ['case', ['boolean', ['get', 'selected'], false], 3, ['boolean', ['get', 'hovered'], false], 2, 1],
-          'text-size': [
-            'case',
-            ['boolean', ['get', 'selected'], false],
-            15,
-            ['boolean', ['get', 'hovered'], false],
-            14,
-            13
-          ],
-          'text-allow-overlap': true,
-          'text-ignore-placement': true
-        },
-        paint: {
-          'text-color': 'rgba(3, 12, 24, 0.88)',
-          'text-halo-color': 'rgba(255, 255, 255, 0.68)',
-          'text-halo-width': 0.85,
-          'text-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.78, 1],
-          'text-emissive-strength': 1
         }
       });
 
@@ -383,19 +352,11 @@ export default function MapView({
         }
       });
 
-      HIDDEN_DIARY_LAYER_IDS.forEach((layerId) => {
-        if (map.getLayer(layerId)) {
-          map.setLayoutProperty(layerId, 'visibility', 'none');
-        }
-      });
-
       setMapReady(true);
     });
 
     return () => {
       window.clearTimeout(moveTimerRef.current);
-      window.cancelAnimationFrame(domMarkerFrameRef.current);
-      clearDomMarkers(domMarkersRef.current);
       map.remove();
       mapRef.current = null;
     };
@@ -416,39 +377,6 @@ export default function MapView({
     const source = map.getSource('current-location');
     source?.setData(currentLocationGeoJson);
   }, [currentLocationGeoJson, mapReady]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    function renderMarkers() {
-      window.cancelAnimationFrame(domMarkerFrameRef.current);
-      domMarkerFrameRef.current = window.requestAnimationFrame(() => {
-        syncDiaryDomMarkers({
-          map,
-          markers: domMarkersRef.current,
-          diariesById,
-          selectedId: selectedDiary?._id,
-          hoveredId: hoveredDiaryId,
-          onSelect,
-          setHoveredDiaryId,
-          tooltipRef
-        });
-      });
-    }
-
-    renderMarkers();
-    map.on('move', renderMarkers);
-    map.on('zoom', renderMarkers);
-    map.on('idle', renderMarkers);
-
-    return () => {
-      window.cancelAnimationFrame(domMarkerFrameRef.current);
-      map.off('move', renderMarkers);
-      map.off('zoom', renderMarkers);
-      map.off('idle', renderMarkers);
-    };
-  }, [diariesById, hoveredDiaryId, mapReady, onSelect, selectedDiary?._id]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -527,34 +455,34 @@ export default function MapView({
     map.on('click', 'diary-clusters', openCluster);
     map.on('click', 'diary-cluster-count', openCluster);
     map.on('click', 'diary-marker-shell', openDiary);
-    map.on('click', 'diary-marker-icon', openDiary);
+    map.on('click', 'diary-marker-core', openDiary);
+    map.on('click', 'diary-selected-ring', openDiary);
     map.on('mouseenter', 'diary-cluster-glow', updateCursor);
     map.on('mouseenter', 'diary-clusters', updateCursor);
     map.on('mouseenter', 'diary-cluster-count', updateCursor);
     map.on('mouseenter', 'diary-marker-shell', showDiaryHover);
-    map.on('mouseenter', 'diary-marker-icon', showDiaryHover);
+    map.on('mouseenter', 'diary-marker-core', showDiaryHover);
     map.on('mouseleave', 'diary-cluster-glow', resetCursor);
     map.on('mouseleave', 'diary-clusters', resetCursor);
     map.on('mouseleave', 'diary-cluster-count', resetCursor);
     map.on('mouseleave', 'diary-marker-shell', hideDiaryHover);
-    map.on('mouseleave', 'diary-marker-icon', hideDiaryHover);
 
     return () => {
       map.off('click', 'diary-cluster-glow', openCluster);
       map.off('click', 'diary-clusters', openCluster);
       map.off('click', 'diary-cluster-count', openCluster);
       map.off('click', 'diary-marker-shell', openDiary);
-      map.off('click', 'diary-marker-icon', openDiary);
+      map.off('click', 'diary-marker-core', openDiary);
+      map.off('click', 'diary-selected-ring', openDiary);
       map.off('mouseenter', 'diary-cluster-glow', updateCursor);
       map.off('mouseenter', 'diary-clusters', updateCursor);
       map.off('mouseenter', 'diary-cluster-count', updateCursor);
       map.off('mouseenter', 'diary-marker-shell', showDiaryHover);
-      map.off('mouseenter', 'diary-marker-icon', showDiaryHover);
+      map.off('mouseenter', 'diary-marker-core', showDiaryHover);
       map.off('mouseleave', 'diary-cluster-glow', resetCursor);
       map.off('mouseleave', 'diary-clusters', resetCursor);
       map.off('mouseleave', 'diary-cluster-count', resetCursor);
       map.off('mouseleave', 'diary-marker-shell', hideDiaryHover);
-      map.off('mouseleave', 'diary-marker-icon', hideDiaryHover);
       tooltipRef.current?.remove();
       tooltipRef.current = null;
     };
@@ -595,6 +523,39 @@ export default function MapView({
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
+    function handleMoveStart() {
+      setIsMapMoving(true);
+    }
+
+    function handleMoveEnd() {
+      setIsMapMoving(false);
+    }
+
+    map.on('movestart', handleMoveStart);
+    map.on('zoomstart', handleMoveStart);
+    map.on('rotatestart', handleMoveStart);
+    map.on('pitchstart', handleMoveStart);
+    map.on('moveend', handleMoveEnd);
+    map.on('zoomend', handleMoveEnd);
+    map.on('rotateend', handleMoveEnd);
+    map.on('pitchend', handleMoveEnd);
+
+    return () => {
+      map.off('movestart', handleMoveStart);
+      map.off('zoomstart', handleMoveStart);
+      map.off('rotatestart', handleMoveStart);
+      map.off('pitchstart', handleMoveStart);
+      map.off('moveend', handleMoveEnd);
+      map.off('zoomend', handleMoveEnd);
+      map.off('rotateend', handleMoveEnd);
+      map.off('pitchend', handleMoveEnd);
+    };
+  }, [mapReady]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
     function updateMapViewState() {
       const nextPitch = map.getPitch();
       const nextBearing = map.getBearing();
@@ -614,16 +575,6 @@ export default function MapView({
       map.off('move', updateMapViewState);
     };
   }, [mapReady]);
-
-  useEffect(() => {
-    if (!mapRef.current || !selectedDiary) return;
-
-    mapRef.current.easeTo({
-      center: selectedDiary.location.coordinates,
-      zoom: Math.max(mapRef.current.getZoom(), 8),
-      duration: 900
-    });
-  }, [selectedDiary]);
 
   useEffect(() => {
     const lat = Number(focusLocation?.lat);
@@ -662,10 +613,10 @@ export default function MapView({
 
   return (
     <motion.section
-      className="map-shell"
-      initial={{ opacity: 0, filter: 'blur(18px)' }}
-      animate={{ opacity: 1, filter: 'blur(0px)' }}
-      transition={{ duration: 1.1, ease: 'easeOut' }}
+      className={`map-shell ${isMapMoving ? 'is-map-moving' : ''} ${lowPerformance ? 'low-performance-map' : ''} ${reducedMotion ? 'reduced-motion-map' : ''}`}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={pageTransition}
     >
       {MAPBOX_TOKEN ? (
         <div className="mapbox-container" ref={mapContainer} />
@@ -693,10 +644,10 @@ export default function MapView({
                 className="compass"
                 onClick={resetBearing}
                 aria-label="回到北方在上"
-                initial={{ opacity: 0, scale: 0.95, y: -3 }}
+                initial={{ opacity: 0, scale: 0.96, y: -3 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -3 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
+                exit={{ opacity: 0, scale: 0.96, y: -3 }}
+                transition={pageTransition}
               >
                 <Compass size={17} style={{ transform: `rotate(${-mapBearing}deg)` }} />
               </motion.button>
@@ -709,10 +660,10 @@ export default function MapView({
                 className="map-control-text"
                 onClick={resetPitch}
                 aria-label="返回 2D 地圖"
-                initial={{ opacity: 0, scale: 0.95, y: -3 }}
+                initial={{ opacity: 0, scale: 0.96, y: -3 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -3 }}
-                transition={{ duration: 0.18, ease: 'easeOut' }}
+                exit={{ opacity: 0, scale: 0.96, y: -3 }}
+                transition={pageTransition}
               >
                 2D
               </motion.button>
@@ -736,10 +687,7 @@ export default function MapView({
         {!loading && !disabled && diaries.length === 0 && (
           <motion.div
             className="map-empty subtle glass"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            {...fadeUpMotion}
           >
             這片地圖還沒有留下記憶
           </motion.div>
@@ -748,9 +696,7 @@ export default function MapView({
         {loading && (
           <motion.div
             className="map-loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            {...toastMotion}
           >
             <div className="map-skeleton" />
             <p>{mode === 'explore' ? '正在探索附近日記...' : '正在載入地圖日記...'}</p>
@@ -813,189 +759,6 @@ function isNorthUp(bearing) {
   return normalizedBearing < 3 || normalizedBearing > 357;
 }
 
-function syncDiaryDomMarkers({ map, markers, diariesById, selectedId, hoveredId, onSelect, setHoveredDiaryId, tooltipRef }) {
-  const source = map.getSource('diaries');
-  if (!source) return;
-
-  const features = map.querySourceFeatures('diaries');
-  const nextKeys = new Set();
-
-  features.forEach((feature) => {
-    if (feature.geometry?.type !== 'Point') return;
-
-    const properties = feature.properties || {};
-    const coordinates = feature.geometry.coordinates;
-    if (!Array.isArray(coordinates) || coordinates.length < 2) return;
-
-    const isCluster = Boolean(properties.cluster);
-    const key = isCluster ? `cluster:${properties.cluster_id}` : `diary:${properties.id}`;
-    if (!key || nextKeys.has(key)) return;
-
-    nextKeys.add(key);
-
-    const signature = isCluster
-      ? `cluster:${properties.point_count}:${coordinates.join(',')}`
-      : [
-          properties.id,
-          properties.markerColor,
-          properties.markerGlowColor,
-          properties.markerCoreColor,
-          properties.moodIcon,
-          properties.explore,
-          properties.approximate,
-          properties.selected,
-          properties.hovered,
-          coordinates.join(',')
-        ].join(':');
-
-    const existing = markers.get(key);
-    if (existing?.signature === signature) {
-      existing.marker.setLngLat(coordinates);
-      return;
-    }
-
-    existing?.marker.remove();
-
-    const element = isCluster
-      ? createClusterMarkerElement({ count: properties.point_count, onClick: () => openDomCluster(map, coordinates, properties.cluster_id) })
-      : createDiaryMarkerElement({
-          properties,
-          diary: diariesById.get(properties.id),
-          selected: properties.id === selectedId,
-          hovered: properties.id === hoveredId,
-          onSelect,
-          setHoveredDiaryId,
-          tooltipRef,
-          coordinates,
-          map
-        });
-
-    const marker = new mapboxgl.Marker({
-      element,
-      anchor: 'center'
-    })
-      .setLngLat(coordinates)
-      .addTo(map);
-
-    markers.set(key, { marker, signature });
-  });
-
-  markers.forEach((entry, key) => {
-    if (nextKeys.has(key)) return;
-    entry.marker.remove();
-    markers.delete(key);
-  });
-}
-
-function createDiaryMarkerElement({ properties, diary, selected, hovered, onSelect, setHoveredDiaryId, tooltipRef, coordinates, map }) {
-  const approximate = readBoolean(properties.approximate);
-  const explore = readBoolean(properties.explore);
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = [
-    'diary-dom-marker',
-    selected ? 'is-selected' : '',
-    hovered ? 'is-hovered' : '',
-    approximate ? 'is-approximate' : '',
-    explore ? 'is-explore' : ''
-  ]
-    .filter(Boolean)
-    .join(' ');
-  button.style.zIndex = selected ? '8' : hovered ? '7' : '5';
-  button.style.setProperty('--marker-color', properties.markerColor || '#7dd3fc');
-  button.style.setProperty('--marker-glow', properties.markerGlowColor || 'rgba(125, 211, 252, 0.62)');
-  button.style.setProperty('--marker-core', properties.markerCoreColor || '#e0f7ff');
-  button.setAttribute('aria-label', diary?.title ? `查看日記：${diary.title}` : '查看 Adrift 日記');
-
-  const pulse = document.createElement('span');
-  pulse.className = 'diary-marker-pulse';
-  const orb = document.createElement('span');
-  orb.className = 'diary-marker-orb';
-  const symbol = document.createElement('span');
-  symbol.className = 'diary-marker-symbol';
-  symbol.textContent = properties.moodIcon || '✦';
-
-  orb.appendChild(symbol);
-  button.append(pulse, orb);
-
-  button.addEventListener('click', (event) => {
-    event.stopPropagation();
-    if (diary) onSelect(diary);
-  });
-
-  button.addEventListener('mouseenter', () => {
-    map.getCanvas().style.cursor = 'pointer';
-    setHoveredDiaryId(properties.id || null);
-
-    if (!approximate) return;
-    tooltipRef.current?.remove();
-    tooltipRef.current = new mapboxgl.Popup({
-      closeButton: false,
-      closeOnClick: false,
-      className: 'approximate-tooltip',
-      offset: 18
-    })
-      .setLngLat(coordinates)
-      .setHTML('<span>此日記使用大略位置</span>')
-      .addTo(map);
-  });
-
-  button.addEventListener('mouseleave', () => {
-    map.getCanvas().style.cursor = '';
-    setHoveredDiaryId(null);
-    tooltipRef.current?.remove();
-    tooltipRef.current = null;
-  });
-
-  return button;
-}
-
-function createClusterMarkerElement({ count, onClick }) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'diary-dom-cluster';
-  button.style.zIndex = '4';
-  button.setAttribute('aria-label', `附近有 ${count} 篇 Adrift 日記`);
-
-  const halo = document.createElement('span');
-  halo.className = 'diary-cluster-halo';
-  const body = document.createElement('span');
-  body.className = 'diary-cluster-body';
-  const number = document.createElement('strong');
-  number.textContent = String(count);
-
-  body.appendChild(number);
-  button.append(halo, body);
-
-  button.addEventListener('click', (event) => {
-    event.stopPropagation();
-    onClick();
-  });
-
-  return button;
-}
-
-function openDomCluster(map, coordinates, clusterId) {
-  const source = map.getSource('diaries');
-  source?.getClusterExpansionZoom(clusterId, (error, zoom) => {
-    if (error) return;
-    map.easeTo({
-      center: coordinates,
-      zoom,
-      duration: 650
-    });
-  });
-}
-
-function clearDomMarkers(markers) {
-  markers.forEach((entry) => entry.marker.remove());
-  markers.clear();
-}
-
-function readBoolean(value) {
-  return value === true || value === 'true';
-}
-
 function buildDiaryFeatures(diaries, selectedId, hoveredId) {
   const validDiaries = diaries.filter((diary) => {
     const coordinates = diary.location?.coordinates;
@@ -1016,7 +779,6 @@ function buildDiaryFeatures(diaries, selectedId, hoveredId) {
     const key = `${Number(coordinates[0]).toFixed(5)},${Number(coordinates[1]).toFixed(5)}`;
     const group = coordinateGroups.get(key) || [diary];
     const groupIndex = group.findIndex((item) => item._id === diary._id);
-    const displayCoordinates = offsetOverlappingCoordinates(coordinates, groupIndex, group.length);
     const locationAccuracy = normalizeLocationAccuracy(diary.locationAccuracy);
     const moodType = diary.mood?.type || 'other';
     const markerStyle = getMoodMarkerStyle(moodType, { explore: Boolean(diary.isExplore) });
@@ -1028,6 +790,7 @@ function buildDiaryFeatures(diaries, selectedId, hoveredId) {
         mood: moodType,
         moodIcon: markerStyle.icon,
         markerColor: markerStyle.color,
+        markerRgb: markerStyle.rgb,
         markerGlowColor: markerStyle.glow,
         markerGlassColor: markerStyle.glass,
         markerCoreColor: markerStyle.core,
@@ -1035,11 +798,12 @@ function buildDiaryFeatures(diaries, selectedId, hoveredId) {
         selected: diary._id === selectedId,
         hovered: diary._id === hoveredId,
         approximate: locationAccuracy === 'approximate',
+        overlapIndex: groupIndex,
         overlapCount: group.length
       },
       geometry: {
         type: 'Point',
-        coordinates: displayCoordinates
+        coordinates
       }
     };
   });
@@ -1047,22 +811,6 @@ function buildDiaryFeatures(diaries, selectedId, hoveredId) {
 
 function normalizeLocationAccuracy(value) {
   return value === 'approximate' ? 'approximate' : 'precise';
-}
-
-function offsetOverlappingCoordinates(coordinates, index, total) {
-  const [lng, lat] = coordinates.map(Number);
-
-  if (total <= 1 || index < 0) {
-    return [lng, lat];
-  }
-
-  const radiusMeters = Math.min(72, 18 + total * 4);
-  const angle = (Math.PI * 2 * index) / total - Math.PI / 2;
-  const latOffset = (Math.sin(angle) * radiusMeters) / 111320;
-  const lngScale = Math.max(Math.cos(toRadians(lat)), 0.18);
-  const lngOffset = (Math.cos(angle) * radiusMeters) / (111320 * lngScale);
-
-  return [lng + lngOffset, lat + latOffset];
 }
 
 function distanceMeters(lat1, lng1, lat2, lng2) {
@@ -1081,4 +829,5 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
 function toRadians(value) {
   return (value * Math.PI) / 180;
 }
+
 

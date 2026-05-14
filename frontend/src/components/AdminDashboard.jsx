@@ -3,6 +3,7 @@ import { ArrowLeft, ChevronDown, Eye, RefreshCcw, Search, Shield, Trash2, X } fr
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api/client.js';
+import { dropdownMotion, fadeUpMotion, modalBackdropMotion, modalPopMotion, pageFadeUp, toastMotion } from '../constants/animations.js';
 import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
 import Select from './ui/Select.jsx';
 
@@ -225,10 +226,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
   return (
     <motion.section
       className="admin-page admin-dashboard-container"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.28, ease: 'easeOut' }}
+      {...pageFadeUp}
     >
       <header className="admin-hero glass">
         <button className="icon-button" type="button" onClick={onBack} aria-label="返回">
@@ -277,12 +275,12 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
         <div className="admin-feedback-slot" aria-live="polite">
           <AnimatePresence>
             {notice && (
-              <motion.p className="admin-notice" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+              <motion.p className="admin-notice" {...toastMotion}>
                 {notice}
               </motion.p>
             )}
             {error && (
-              <motion.p className="admin-error" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
+              <motion.p className="admin-error" {...toastMotion}>
                 {error}
               </motion.p>
             )}
@@ -296,10 +294,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
             <motion.section
               key="overview"
               className="admin-card admin-overview-card glass"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
+              {...fadeUpMotion}
             >
             {loading.overview ? (
               <p className="admin-empty">載入管理資料中...</p>
@@ -327,10 +322,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
             <motion.section
               key="users"
               className="admin-card admin-data-card glass"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
+              {...fadeUpMotion}
             >
             <div className="admin-controls">
               <label className="admin-search">
@@ -369,10 +361,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
             <motion.section
               key="diaries"
               className="admin-card admin-data-card glass"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.22, ease: 'easeOut' }}
+              {...fadeUpMotion}
             >
             <div className="admin-controls diaries-controls">
               <label className="admin-search">
@@ -443,10 +432,7 @@ export function AdminForbidden({ onBack }) {
   return (
     <motion.section
       className="admin-page admin-forbidden"
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.28, ease: 'easeOut' }}
+      {...pageFadeUp}
     >
       <div className="admin-card glass">
         <p className="eyebrow">Admin Mode</p>
@@ -629,10 +615,7 @@ function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole 
                 top: placement.top,
                 minWidth: placement.width
               }}
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18, ease: 'easeOut' }}
+              {...dropdownMotion(placement.openUp)}
               role="menu"
             >
               {roleChoices.map((item) => (
@@ -731,13 +714,10 @@ function DeleteUserModal({ user, loading, onClose, onConfirm }) {
   const canConfirm = confirmText === 'DELETE';
 
   return (
-    <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.div className="admin-modal-backdrop" {...modalBackdropMotion}>
       <motion.article
         className="admin-detail-modal admin-danger-modal glass"
-        initial={{ opacity: 0, y: 24, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.98 }}
-        transition={{ duration: 0.24, ease: 'easeOut' }}
+        {...modalPopMotion}
       >
         <header>
           <div>
@@ -793,13 +773,10 @@ function DiaryDetailModal({ diary, deleteLoading, onClose, onDelete }) {
   const placeName = diary.location?.placeName || (Number.isFinite(lat) && Number.isFinite(lng) ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : '未記錄地點');
 
   return (
-    <motion.div className="admin-modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.div className="admin-modal-backdrop" {...modalBackdropMotion}>
       <motion.article
         className="admin-detail-modal glass"
-        initial={{ opacity: 0, y: 24, scale: 0.96 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.98 }}
-        transition={{ duration: 0.24, ease: 'easeOut' }}
+        {...modalPopMotion}
       >
         <header>
           <div>

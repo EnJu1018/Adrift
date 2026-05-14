@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Eye, EyeOff, LogIn, MapPinned, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { fadeUpMotion, modalPopMotion, pageFadeUp, panelSlideLeft, toastMotion } from '../constants/animations.js';
 import { EMAIL_PATTERN, USER_CODE_PATTERN } from '../constants/app.js';
 
 export default function AuthPanel({
@@ -168,19 +169,13 @@ export default function AuthPanel({
   return (
     <motion.section
       className="auth-page"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.45, ease: 'easeOut' }}
+      {...pageFadeUp}
     >
       <AuthBrand copy={pageCopy} isRegister={isRegister} />
 
       <motion.aside
         className="auth-card glass"
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 18, scale: 0.98 }}
-        transition={{ duration: 0.46, ease: [0.22, 1, 0.36, 1] }}
+        {...modalPopMotion}
       >
         <div className="auth-card-header">
           <div>
@@ -193,7 +188,7 @@ export default function AuthPanel({
         <form className="auth-form new-auth-form" onSubmit={submit} noValidate>
           <AnimatePresence mode="popLayout">
             {isRegister && (
-              <motion.div className="auth-field-stack" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <motion.div className="auth-field-stack" {...fadeUpMotion}>
                 <AuthInput
                   label="使用者名稱"
                   value={form.name}
@@ -242,7 +237,7 @@ export default function AuthPanel({
 
           <AnimatePresence mode="popLayout">
             {isRegister && (
-              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <motion.div {...fadeUpMotion}>
                 <PasswordInput
                   label="確認密碼"
                   value={form.confirmPassword}
@@ -267,10 +262,7 @@ export default function AuthPanel({
             {visibleMessage && (
               <motion.p
                 className={error ? 'auth-inline-message error' : 'auth-inline-message success'}
-                initial={{ opacity: 0, y: -8, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.98 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
+                {...toastMotion}
               >
                 {error ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
                 {visibleMessage}
@@ -294,9 +286,7 @@ function AuthBrand({ copy, isRegister }) {
   return (
     <motion.section
       className="auth-brand-panel"
-      initial={{ opacity: 0, x: -24 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.62, ease: 'easeOut' }}
+      {...panelSlideLeft}
     >
       <div className="auth-floating-light one" />
       <div className="auth-floating-light two" />
