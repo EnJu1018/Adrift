@@ -8,8 +8,8 @@ backend/node_modules/
 .env.*
 !.env.example
 frontend/.env
-frontend/.env.*
-!frontend/.env.example
+frontend/.env
+!frontend/.env
 backend/.env
 backend/.env.*
 !backend/.env.example
@@ -47,3 +47,4 @@ coverage/
 tmp/
 temp/
 *.tmp
+/frontend/.env

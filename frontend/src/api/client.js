@@ -1,6 +1,33 @@
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+export const API_URL = resolveApiUrl(import.meta.env.VITE_API_URL);
 const TOKEN_KEY = 'adrift_token';
 const USER_KEY = 'adrift_user';
+
+function resolveApiUrl(configuredUrl) {
+  const fallbackUrl = configuredUrl || 'http://localhost:5000';
+
+  if (typeof window === 'undefined') {
+    return fallbackUrl;
+  }
+
+  try {
+    const apiUrl = new URL(fallbackUrl, window.location.origin);
+    const pageHost = window.location.hostname;
+    const apiHost = apiUrl.hostname;
+    const pageIsLocal = ['localhost', '127.0.0.1', '::1'].includes(pageHost);
+    const apiIsLocal = ['localhost', '127.0.0.1', '::1'].includes(apiHost);
+
+    if (!pageIsLocal && apiIsLocal) {
+      apiUrl.hostname = pageHost;
+      apiUrl.protocol = window.location.protocol;
+      apiUrl.port = apiUrl.port || '5000';
+      return apiUrl.origin;
+    }
+
+    return apiUrl.origin;
+  } catch {
+    return fallbackUrl;
+  }
+}
 
 export function getStoredAuth() {
   try {
@@ -158,6 +185,10 @@ export const api = {
   },
   getFriends() {
     return request('/friends');
+  },
+  getFriendRecommendations(limit = 10) {
+    const query = new URLSearchParams({ limit }).toString();
+    return request(`/friends/recommendations?${query}`);
   },
   getFriendProfile(friendId) {
     return request(`/friends/${friendId}/profile`);

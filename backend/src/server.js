@@ -18,7 +18,7 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 dotenv.config();
 
 if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET is required in .env');
+  throw new Error('JWT_SECRET is required in ..env');
 }
 
 const app = express();
@@ -32,7 +32,10 @@ const allowedOrigins = (process.env.CLIENT_ORIGIN || 'http://localhost:5173')
 function isAllowedOrigin(origin) {
   if (!origin) return true;
   if (allowedOrigins.includes(origin)) return true;
-  return /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]):5173$/.test(origin) || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/.test(origin);
+  return /^http:\/\/(localhost|127\.0\.0\.1|\[::1\]):5173$/.test(origin)
+    || /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/.test(origin)
+    || /^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}:5173$/.test(origin)
+    || /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/.test(origin);
 }
 
 app.use(

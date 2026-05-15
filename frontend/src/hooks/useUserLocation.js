@@ -1,8 +1,57 @@
 import { useCallback, useRef, useState } from 'react';
 import { API_URL } from '../api/client.js';
 
-const ipLocationUrl = 'https://ipwho.is/?fields=success,latitude,longitude,city,region,country,message';
 const LOCATION_CACHE_TTL = 5 * 60 * 1000;
+const IP_LOCATION_TIMEOUT = 7000;
+
+const browserIpLocationProviders = [
+  {
+    url: 'https://ipwho.is/?fields=success,latitude,longitude,city,region,country,message',
+    normalize(payload) {
+      if (payload.success === false) {
+        throw new Error(payload.message || 'IP location response failed');
+      }
+
+      return {
+        lat: payload.latitude,
+        lng: payload.longitude,
+        city: payload.city,
+        region: payload.region,
+        country: payload.country
+      };
+    }
+  },
+  {
+    url: 'https://ipapi.co/json/',
+    normalize(payload) {
+      if (payload.error) {
+        throw new Error(payload.reason || 'IP location response failed');
+      }
+
+      return {
+        lat: payload.latitude,
+        lng: payload.longitude,
+        city: payload.city,
+        region: payload.region,
+        country: payload.country_name
+      };
+    }
+  },
+  {
+    url: 'https://ipinfo.io/json',
+    normalize(payload) {
+      const [lat, lng] = typeof payload.loc === 'string' ? payload.loc.split(',') : [];
+
+      return {
+        lat,
+        lng,
+        city: payload.city,
+        region: payload.region,
+        country: payload.country
+      };
+    }
+  }
+];
 
 const initialState = {
   lat: null,
@@ -170,14 +219,18 @@ export function useUserLocation() {
 }
 
 async function getLocationWithFallback() {
-  try {
-    return await getBrowserLocation();
-  } catch {
+  if (canUseBrowserGeolocation()) {
     try {
-      return await getBrowserIpLocation();
+      return await getBrowserLocation();
     } catch {
-      return getBackendClientIpLocation();
+      // Continue to approximate IP fallback below.
     }
+  }
+
+  try {
+    return await getBrowserIpLocation();
+  } catch {
+    return getBackendClientIpLocation();
   }
 }
 
@@ -203,7 +256,7 @@ function isValidCoordinates(location) {
 
 function getBrowserLocation() {
   return new Promise((resolve, reject) => {
-    if (!navigator.geolocation) {
+    if (!canUseBrowserGeolocation()) {
       reject(new Error('Browser geolocation is not available'));
       return;
     }
@@ -232,38 +285,64 @@ function getBrowserLocation() {
 }
 
 async function getBrowserIpLocation() {
-  const response = await fetch(ipLocationUrl, {
-    headers: {
-      Accept: 'application/json'
+  const errors = [];
+
+  for (const provider of browserIpLocationProviders) {
+    try {
+      const payload = await fetchJson(provider.url, IP_LOCATION_TIMEOUT);
+      const normalized = provider.normalize(payload);
+      const lat = Number(normalized.lat);
+      const lng = Number(normalized.lng);
+
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        throw new Error('IP location response is invalid');
+      }
+
+      return {
+        lat,
+        lng,
+        accuracy: null,
+        accuracyType: 'approximate',
+        source: 'ip',
+        city: normalized.city || '',
+        region: normalized.region || '',
+        country: normalized.country || ''
+      };
+    } catch (error) {
+      errors.push(`${provider.url}: ${error.message}`);
     }
-  });
-
-  if (!response.ok) {
-    throw new Error('IP location request failed');
   }
 
-  const payload = await response.json();
-  if (payload.success === false) {
-    throw new Error(payload.message || 'IP location response failed');
+  throw new Error(errors.join(' | ') || 'IP location request failed');
+}
+
+async function fetchJson(url, timeout) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`IP location request failed: ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    window.clearTimeout(timeoutId);
   }
+}
 
-  const lat = Number(payload.latitude);
-  const lng = Number(payload.longitude);
+function canUseBrowserGeolocation() {
+  if (!navigator.geolocation) return false;
+  if (window.isSecureContext) return true;
 
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    throw new Error('IP location response is invalid');
-  }
-
-  return {
-    lat,
-    lng,
-    accuracy: null,
-    accuracyType: 'approximate',
-    source: 'ip',
-    city: payload.city || '',
-    region: payload.region || '',
-    country: payload.country || ''
-  };
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 }
 
 async function getBackendClientIpLocation() {

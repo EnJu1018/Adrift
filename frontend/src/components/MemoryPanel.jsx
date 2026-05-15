@@ -5,7 +5,6 @@ import {
   CalendarDays,
   Clock3,
   Eye,
-  Lock,
   Plus,
   Search,
   Sparkles,
@@ -46,6 +45,7 @@ export default function MemoryPanel({
   onCancelFriendRequest,
   onAcceptFriendRequest,
   onRejectFriendRequest,
+  onGetFriendRecommendations,
   onGetFriendProfile,
   onDeleteFriend,
   locating,
@@ -62,6 +62,10 @@ export default function MemoryPanel({
   const [friendProfile, setFriendProfile] = useState(null);
   const [profileError, setProfileError] = useState('');
   const [friendToDelete, setFriendToDelete] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState('');
+  const [recommendationStatus, setRecommendationStatus] = useState({});
 
   useEffect(() => {
     if (!message) return undefined;
@@ -81,17 +85,38 @@ export default function MemoryPanel({
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (activeTab !== 'social' || !onGetFriendRecommendations) return undefined;
+
+    let active = true;
+    setRecommendationsLoading(true);
+    setRecommendationsError('');
+
+    onGetFriendRecommendations()
+      .then((items) => {
+        if (!active) return;
+        setRecommendations(Array.isArray(items) ? items : []);
+      })
+      .catch(() => {
+        if (!active) return;
+        setRecommendations([]);
+        setRecommendationsError('推薦好友載入失敗，請稍後再試');
+      })
+      .finally(() => {
+        if (active) setRecommendationsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeTab]);
+
   const visibleDiaries = diaries || [];
   const friendList = friends || [];
   const requests = friendRequests || [];
   const sentRequests = sentFriendRequests || [];
   const mine = visibleDiaries.filter((diary) => sameId(diary.user?._id || diary.user?.id, user?.id));
-  const publicCount = mine.filter((diary) => diary.visibility === 'public').length;
-  const privateCount = mine.filter((diary) => diary.visibility === 'private').length;
-  const friendsCount = mine.filter((diary) => diary.visibility === 'friends').length;
-  const recent = [...visibleDiaries]
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-    .slice(0, 5);
+  const listedDiaries = [...visibleDiaries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
   const sentRequestForSearchResult = searchResult
     ? sentRequests.find((request) => sameId(request.to?._id, searchResult._id))
@@ -158,6 +183,36 @@ export default function MemoryPanel({
       showMessage(payload.message || '好友邀請已送出');
     } catch (error) {
       showMessage(error.message || '好友邀請送出失敗', 'error');
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function sendRecommendationRequest(recommendation) {
+    if (!recommendation?._id) return;
+
+    try {
+      setBusyAction(`recommend-${recommendation._id}`);
+      const payload = await onSendFriendRequest(recommendation._id);
+      setRecommendationStatus((current) => ({ ...current, [recommendation._id]: 'sent_request' }));
+      showMessage(payload.message || '好友邀請已送出');
+    } catch (error) {
+      showMessage(error.message || '好友邀請送出失敗', 'error');
+    } finally {
+      setBusyAction('');
+    }
+  }
+
+  async function cancelRecommendationRequest(recommendation, requestId) {
+    if (!recommendation?._id || !requestId) return;
+
+    try {
+      setBusyAction(`cancel-recommend-${recommendation._id}`);
+      const payload = await onCancelFriendRequest(requestId);
+      setRecommendationStatus((current) => ({ ...current, [recommendation._id]: 'none' }));
+      showMessage(payload.message || '好友邀請已收回');
+    } catch (error) {
+      showMessage(error.message || '收回好友邀請失敗', 'error');
     } finally {
       setBusyAction('');
     }
@@ -368,8 +423,9 @@ export default function MemoryPanel({
             <p className="eyebrow">Memory Log</p>
             <h2>地圖日記</h2>
           </div>
-          <button className="icon-button" onClick={onNewDiary} disabled={locating} aria-label="新增日記">
-            {locating ? <span className="button-spinner" /> : <Plus size={18} />}
+          <button className="new-diary-cta" onClick={onNewDiary} disabled={locating} aria-label="新增日記">
+            {locating ? <span className="button-spinner dark" /> : <Plus size={17} />}
+            {locating ? '定位中' : '新增'}
           </button>
         </header>
 
@@ -389,94 +445,83 @@ export default function MemoryPanel({
           {activeTab === 'memories' ? (
             <motion.div
               key="memories"
-              className="panel-scroll"
+              className="panel-scroll memory-panel-content"
               {...fadeUpMotion}
             >
-              <div className="memory-stats">
-                <article>
-                  <span>{mine.length}</span>
-                  <p>我的日記</p>
-                </article>
-                <article>
-                  <span>{visibleDiaries.length}</span>
-                  <p>可見記憶</p>
-                </article>
-              </div>
-
-              <div className="visibility-grid">
-                <span>
-                  <Lock size={15} />
-                  私人 {privateCount}
-                </span>
-                <span>
-                  <Users size={15} />
-                  朋友 {friendsCount}
-                </span>
-                <span>
-                  <Eye size={15} />
-                  公開 {publicCount}
-                </span>
-              </div>
-
-              {mapMode === 'explore' ? (
-                <p className="visibility-filter-note">Explore 只顯示公開日記</p>
-              ) : (
-                <div className="visibility-filter" aria-label="日記可見性篩選">
-                  {VISIBILITY_FILTER_OPTIONS.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={visibilityFilter === option.value ? 'active' : ''}
-                      onClick={() => onVisibilityFilterChange?.(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
+              <div className="memory-controls">
+                <div className="memory-stats">
+                  <article>
+                    <span>{mine.length}</span>
+                    <p>我的日記</p>
+                  </article>
+                  <article>
+                    <span>{visibleDiaries.length}</span>
+                    <p>可見記憶</p>
+                  </article>
                 </div>
-              )}
+
+                {mapMode === 'explore' ? (
+                  <p className="visibility-filter-note">Explore 只顯示公開日記</p>
+                ) : (
+                  <div className="visibility-filter" aria-label="日記可見性篩選">
+                    {VISIBILITY_FILTER_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={visibilityFilter === option.value ? 'active' : ''}
+                        onClick={() => onVisibilityFilterChange?.(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <section className="memory-section">
                 <div className="section-title">
                   <Clock3 size={16} />
-                  <span>最近日記</span>
+                  <span>目前地圖日記</span>
                 </div>
 
-                {recent.length > 0 ? (
-                  <div className="memory-list">
-                    {recent.map((diary, index) => {
-                      const title = getDiaryTitle(diary);
-                      const authorCode = getDiaryAuthorCode(diary, user);
+                <div className="diary-list-scroll-area">
+                  {listedDiaries.length > 0 ? (
+                    <div className="memory-list">
+                      {listedDiaries.map((diary, index) => {
+                        const title = getDiaryTitle(diary);
+                        const authorCode = getDiaryAuthorCode(diary, user);
 
-                      return (
-                        <motion.button
-                          key={diary._id}
-                          className={`memory-item compact ${sameId(selectedDiaryId, diary._id) ? 'selected' : ''}`}
-                          onClick={() => onSelectDiary(diary)}
-                          title={title}
-                          {...listItemMotion(index, lowPerformance)}
-                        >
-                          <strong>{title}</strong>
-                          <span className="memory-reactions-row">
-                            <span>❤️ {diary.reactions?.understand || 0}</span>
-                            <span>🤗 {diary.reactions?.hug || 0}</span>
-                            <span>🌧 {diary.reactions?.relate || 0}</span>
-                          </span>
-                          <span className="memory-item-meta">
-                            <span className="memory-author-line">
-                              <span className="memory-author">@{authorCode}</span>
+                        return (
+                          <motion.button
+                            key={diary._id}
+                            className={`memory-item compact ${sameId(selectedDiaryId, diary._id) ? 'selected' : ''}`}
+                            onClick={() => onSelectDiary(diary)}
+                            title={title}
+                            {...listItemMotion(index, lowPerformance)}
+                          >
+                            <strong>{title}</strong>
+                            <span className="memory-reactions-row">
+                              <span>❤️ {diary.reactions?.understand || 0}</span>
+                              <span>🤗 {diary.reactions?.hug || 0}</span>
+                              <span>🌧 {diary.reactions?.relate || 0}</span>
                             </span>
-                            <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt, timeNow)}</time>
-                          </span>
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="empty-memory">
-                    <Sparkles size={18} />
-                    <p>{getVisibilityEmptyMessage(mapMode === 'explore' ? 'public' : visibilityFilter)}</p>
-                  </div>
-                )}
+                            <span className="memory-item-meta">
+                              <span className="memory-author-line">
+                                <span className="memory-author">@{authorCode}</span>
+                              </span>
+                              <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt, timeNow)}</time>
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-memory">
+                      <Sparkles size={18} />
+                      <p>{getVisibilityEmptyMessage(mapMode === 'explore' ? 'public' : visibilityFilter)}</p>
+                    </div>
+                  )}
+                </div>
               </section>
             </motion.div>
           ) : (
@@ -546,6 +591,78 @@ export default function MemoryPanel({
                   )}
                 </article>
               )}
+
+              <section className="social-section recommendations-section">
+                <div className="section-title">
+                  <Sparkles size={16} />
+                  <span>推薦好友</span>
+                </div>
+
+                {recommendationsLoading ? (
+                  <p className="quiet-note">正在尋找可能認識的人...</p>
+                ) : recommendationsError ? (
+                  <p className="quiet-note error-note">{recommendationsError}</p>
+                ) : recommendations.length > 0 ? (
+                  <div className="recommendation-list">
+                    {recommendations.map((recommendation) => {
+                      const sentRequest = sentRequests.find((request) => sameId(request.to?._id, recommendation._id));
+                      const status = recommendationStatus[recommendation._id] || (sentRequest ? 'sent_request' : 'none');
+                      const tags = getRecommendationTags(recommendation);
+
+                      return (
+                        <article className="recommendation-card" key={recommendation._id}>
+                          <div className="avatar-orb small">{recommendation.name.slice(0, 1).toUpperCase()}</div>
+                          <div className="recommendation-body">
+                            <div className="recommendation-heading">
+                              <strong>{recommendation.name}</strong>
+                              <span>@{recommendation.userCode}</span>
+                            </div>
+                            <p>{recommendation.reasons?.[0] || '你們可能有相近的 Adrift 足跡。'}</p>
+                            {tags.length > 0 && (
+                              <div className="recommendation-tags">
+                                {tags.map((tag) => (
+                                  <span key={tag}>{tag}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                          <div className="recommendation-actions">
+                            {status === 'sent_request' ? (
+                              <>
+                                <button className="chip-button" type="button" disabled>
+                                  已送出
+                                </button>
+                                <button
+                                  className="icon-button"
+                                  type="button"
+                                  onClick={() => cancelRecommendationRequest(recommendation, sentRequest?.requestId)}
+                                  disabled={!sentRequest?.requestId || busyAction === `cancel-recommend-${recommendation._id}`}
+                                  aria-label="收回好友邀請"
+                                >
+                                  {busyAction === `cancel-recommend-${recommendation._id}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                className="chip-button"
+                                type="button"
+                                onClick={() => sendRecommendationRequest(recommendation)}
+                                disabled={busyAction === `recommend-${recommendation._id}`}
+                              >
+                                {busyAction === `recommend-${recommendation._id}` ? <span className="button-spinner" /> : <UserPlus size={15} />}
+                                加入好友
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="quiet-note">目前沒有適合的推薦好友。多新增一些公開日記或好友後，推薦會更準確。</p>
+                )}
+              </section>
+
               <section className="social-section">
                 <div className="section-title">
                   <Undo2 size={16} />
@@ -701,6 +818,19 @@ function getFriendshipLabel(status) {
   return labels[status] || labels.none;
 }
 
+function getRecommendationTags(recommendation) {
+  const tags = [];
+
+  (recommendation.sharedMoods || []).slice(0, 2).forEach((mood) => tags.push(mood));
+  (recommendation.nearbyPlaces || []).slice(0, 2).forEach((place) => tags.push(place));
+
+  if (recommendation.mutualFriendsCount > 0) {
+    tags.push(`${recommendation.mutualFriendsCount} 位共同好友`);
+  }
+
+  return tags;
+}
+
 function getVisibilityEmptyMessage(filter) {
   const messages = {
     private: '沒有私人日記',
@@ -715,5 +845,3 @@ function getVisibilityEmptyMessage(filter) {
 function sameId(left, right) {
   return Boolean(left && right && left.toString() === right.toString());
 }
-
-

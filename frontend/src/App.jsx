@@ -591,6 +591,11 @@ export default function App() {
     return payload.data;
   }
 
+  async function getFriendRecommendations(limit = 10) {
+    const payload = await api.getFriendRecommendations(limit);
+    return payload.data || [];
+  }
+
   async function deleteFriend(friendId) {
     const payload = await api.deleteFriend(friendId);
     await Promise.all([loadSocial(), loadDiaries({}, { silent: true })]);
@@ -709,10 +714,6 @@ export default function App() {
                     附近
                   </button>
                   )}
-                  <button className="primary-button compact" onClick={openNewDiary} disabled={locating}>
-                    {locating ? <span className="button-spinner dark" /> : <Plus size={18} />}
-                    {locating ? '定位中...' : '新增'}
-                  </button>
                 </>
               )}
 
@@ -799,6 +800,7 @@ export default function App() {
               onCancelFriendRequest={cancelFriendRequest}
               onAcceptFriendRequest={acceptFriendRequest}
               onRejectFriendRequest={rejectFriendRequest}
+              onGetFriendRecommendations={getFriendRecommendations}
               onGetFriendProfile={getFriendProfile}
               onDeleteFriend={deleteFriend}
               locating={locating}
@@ -843,4 +845,3 @@ function buildApproximatePlaceName(location) {
 
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
 }
-

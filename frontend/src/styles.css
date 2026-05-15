@@ -193,9 +193,10 @@ button {
 .memory-panel {
   position: relative;
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 14px;
-  min-height: calc(100vh - 36px);
+  height: calc(100vh - 36px);
+  min-height: 0;
   padding: 18px;
   border-radius: var(--panel-radius);
   overflow: hidden;
@@ -347,9 +348,25 @@ button {
   align-content: start;
   gap: 12px;
   min-height: 0;
-  max-height: calc(100vh - 290px);
-  overflow: auto;
+  overflow: hidden;
+}
+
+.memory-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-content: stretch;
+}
+
+.memory-controls {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 12px;
+}
+
+.social-panel {
+  overflow-y: auto;
   padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .memory-stats {
@@ -384,26 +401,6 @@ button {
   margin-top: 8px;
   color: #a9c7d7;
   font-size: 0.84rem;
-}
-
-.visibility-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.visibility-grid span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 34px;
-  padding: 0 8px;
-  border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 12px;
-  color: #cbeafa;
-  background: rgba(137, 215, 255, 0.08);
-  font-size: 0.8rem;
 }
 
 .visibility-filter {
@@ -452,7 +449,9 @@ button {
 }
 
 .memory-section {
-  display: grid;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
   gap: 12px;
 }
@@ -471,6 +470,14 @@ button {
   min-height: 0;
   overflow: visible;
   padding-right: 0;
+}
+
+.diary-list-scroll-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
 }
 
 .memory-item {
@@ -678,6 +685,7 @@ h2 {
 .chip-button,
 .icon-button,
 .primary-button,
+.new-diary-cta,
 .danger-button {
   display: inline-flex;
   align-items: center;
@@ -1051,7 +1059,8 @@ select option {
 
 .social-panel,
 .social-section,
-.social-search {
+.social-search,
+.recommendation-list {
   display: grid;
   gap: 12px;
 }
@@ -1081,6 +1090,103 @@ select option {
 .person-card .chip-button {
   min-height: 34px;
   padding: 0 10px;
+}
+
+.recommendations-section {
+  border-color: rgba(121, 241, 220, 0.2);
+  background:
+    linear-gradient(145deg, rgba(2, 18, 32, 0.5), rgba(3, 13, 24, 0.34)),
+    radial-gradient(circle at 10% 0%, rgba(121, 241, 220, 0.1), transparent 42%);
+}
+
+.recommendation-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid rgba(191, 232, 255, 0.14);
+  border-radius: 15px;
+  background: rgba(1, 11, 22, 0.42);
+}
+
+.recommendation-body {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.recommendation-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recommendation-heading strong,
+.recommendation-heading span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-heading strong {
+  color: #ffffff;
+  font-size: 0.88rem;
+}
+
+.recommendation-heading span,
+.recommendation-card p {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.recommendation-card p {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.recommendation-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recommendation-tags span {
+  max-width: 100%;
+  padding: 4px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(121, 241, 220, 0.18);
+  border-radius: 999px;
+  color: #d8fff4;
+  background: rgba(121, 241, 220, 0.08);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recommendation-actions {
+  display: inline-flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.recommendation-actions .chip-button {
+  min-height: 34px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.recommendation-actions .icon-button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 0;
+}
+
+.error-note {
+  border-color: rgba(255, 110, 137, 0.2);
+  color: #ffd3da;
+  background: rgba(255, 83, 114, 0.08);
 }
 
 .person-actions {
@@ -1214,7 +1320,38 @@ select option {
   min-height: 38px;
 }
 
-.primary-button:disabled {
+.new-diary-cta {
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(210, 255, 247, 0.54);
+  border-radius: 999px;
+  color: #02121b;
+  background:
+    linear-gradient(135deg, rgba(121, 241, 220, 0.98), rgba(79, 195, 255, 0.96)),
+    radial-gradient(circle at 28% 12%, rgba(255, 255, 255, 0.34), transparent 42%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.32),
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 0 30px rgba(121, 241, 220, 0.3);
+  font-size: 0.84rem;
+  font-weight: 850;
+  white-space: nowrap;
+  backdrop-filter: blur(16px) saturate(145%);
+}
+
+.new-diary-cta:hover:not(:disabled) {
+  border-color: rgba(238, 255, 252, 0.74);
+  background:
+    linear-gradient(135deg, rgba(151, 255, 234, 1), rgba(99, 211, 255, 1)),
+    radial-gradient(circle at 30% 12%, rgba(255, 255, 255, 0.42), transparent 44%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.42),
+    0 12px 32px rgba(0, 0, 0, 0.32),
+    0 0 36px rgba(121, 241, 220, 0.42);
+}
+
+.primary-button:disabled,
+.new-diary-cta:disabled {
   cursor: wait;
   opacity: 0.68;
 }
@@ -1232,6 +1369,7 @@ select option {
 .icon-button:hover,
 .chip-button:hover,
 .primary-button:hover,
+.new-diary-cta:hover,
 .danger-button:hover {
   transform: translateY(-1px);
 }
@@ -2472,6 +2610,7 @@ select option {
 .status-strip span {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -3920,10 +4059,11 @@ select option {
   .memory-panel,
   .life-map-panel,
   .settings-panel {
+    height: auto;
     min-height: auto;
   }
 
-  .panel-scroll {
+  .memory-panel {
     max-height: none;
   }
 
@@ -3949,6 +4089,11 @@ select option {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar-actions {
+    align-self: stretch;
+    justify-content: flex-end;
   }
 
   .profile-dock {

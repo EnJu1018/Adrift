@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getFriendRecommendations, parseRecommendationLimit } from '../services/friendRecommendationService.js';
 
 const router = express.Router();
 const publicUserFields = '_id name avatar userCode';
@@ -156,6 +157,21 @@ router.get('/requests/sent', async (req, res, next) => {
       success: true,
       message: '取得已送出邀請成功',
       data: sentRequests
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/recommendations', async (req, res, next) => {
+  try {
+    const limit = parseRecommendationLimit(req.query.limit);
+    const recommendations = await getFriendRecommendations(req.user._id, { limit });
+
+    res.json({
+      success: true,
+      message: recommendations.length > 0 ? '取得推薦好友成功' : '目前沒有適合的推薦好友',
+      data: recommendations
     });
   } catch (error) {
     next(error);

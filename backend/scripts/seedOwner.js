@@ -7,12 +7,12 @@ dotenv.config();
 const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase().trim();
 
 if (!ownerEmail) {
-  console.error('OWNER_EMAIL is required in .env');
+  console.error('OWNER_EMAIL is required in ..env');
   process.exit(1);
 }
 
 if (!process.env.MONGODB_URI) {
-  console.error('MONGODB_URI is required in .env');
+  console.error('MONGODB_URI is required in ..env');
   process.exit(1);
 }
 
