@@ -406,6 +406,51 @@ button {
   font-size: 0.8rem;
 }
 
+.visibility-filter {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid rgba(191, 232, 255, 0.13);
+  border-radius: 15px;
+  background: rgba(2, 13, 24, 0.34);
+}
+
+.visibility-filter button {
+  min-height: 32px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.visibility-filter button:hover {
+  color: #ecfbff;
+  background: rgba(125, 211, 252, 0.08);
+}
+
+.visibility-filter button.active {
+  color: #effcff;
+  border-color: rgba(125, 211, 252, 0.26);
+  background: rgba(125, 211, 252, 0.15);
+  box-shadow: 0 0 18px rgba(77, 197, 255, 0.1);
+}
+
+.visibility-filter-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(191, 232, 255, 0.12);
+  border-radius: 14px;
+  color: var(--muted);
+  background: rgba(2, 13, 24, 0.28);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .memory-section {
   display: grid;
   min-height: 0;
@@ -1029,6 +1074,10 @@ select option {
   align-items: center;
 }
 
+.person-card.clickable {
+  cursor: pointer;
+}
+
 .person-card .chip-button {
   min-height: 34px;
   padding: 0 10px;
@@ -1045,6 +1094,101 @@ select option {
   min-width: 34px;
   min-height: 34px;
   padding: 0;
+}
+
+.friend-list-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid rgba(184, 231, 255, 0.14);
+  border-radius: 13px;
+  background: rgba(0, 10, 20, 0.38);
+  color: var(--muted);
+}
+
+.friend-list-search input {
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.friend-profile-modal {
+  display: grid;
+  gap: 16px;
+  width: min(430px, calc(100vw - 32px));
+  padding: 22px;
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(12, 27, 44, 0.88), rgba(5, 17, 29, 0.72));
+  border-color: rgba(196, 235, 255, 0.2);
+}
+
+.friend-profile-modal.danger {
+  border-color: rgba(255, 128, 151, 0.22);
+}
+
+.friend-profile-header,
+.friend-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.friend-profile-header {
+  justify-content: space-between;
+}
+
+.friend-profile-header > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+
+.friend-profile-header h3 {
+  margin: 0;
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 1.15rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.friend-profile-header span {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.friend-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.friend-profile-grid article {
+  display: grid;
+  gap: 6px;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid rgba(191, 232, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(2, 13, 24, 0.34);
+}
+
+.friend-profile-grid span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.friend-profile-grid strong {
+  color: #ffffff;
+  font-size: 0.92rem;
+}
+
+.friend-profile-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .quiet-note {

@@ -1,5 +1,6 @@
 import express from 'express';
 import mongoose from 'mongoose';
+import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -161,6 +162,61 @@ router.get('/requests/sent', async (req, res, next) => {
   }
 });
 
+router.get('/:friendId/profile', async (req, res, next) => {
+  try {
+    const { friendId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(friendId)) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到好友'
+      });
+    }
+
+    const currentUser = await User.findById(req.user._id).select('friends');
+    const isFriend = currentUser?.friends.some((id) => id.toString() === friendId);
+
+    if (!isFriend) {
+      return res.status(403).json({
+        success: false,
+        message: '只能查看好友資料'
+      });
+    }
+
+    const friend = await User.findById(friendId).select(`${publicUserFields} createdAt`);
+
+    if (!friend) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到好友'
+      });
+    }
+
+    const [publicCount, friendsCount] = await Promise.all([
+      Diary.countDocuments({ user: friend._id, visibility: 'public' }),
+      Diary.countDocuments({ user: friend._id, visibility: 'friends' })
+    ]);
+
+    res.json({
+      success: true,
+      message: '取得好友資料成功',
+      data: {
+        _id: friend._id,
+        name: friend.name,
+        userCode: friend.userCode || '',
+        avatar: friend.avatar || '',
+        createdAt: friend.createdAt,
+        diaryStats: {
+          publicCount,
+          friendsCount
+        }
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.delete('/requests/:requestId/cancel', async (req, res, next) => {
   try {
     const { requestId } = req.params;
@@ -275,6 +331,62 @@ router.post('/requests/:requestId/reject', async (req, res, next) => {
     res.json({
       success: true,
       message: '已拒絕好友邀請'
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.delete('/:friendId', async (req, res, next) => {
+  try {
+    const { friendId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(friendId)) {
+      return res.status(400).json({
+        success: false,
+        message: '好友 ID 不正確'
+      });
+    }
+
+    if (friendId === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: '不可刪除自己'
+      });
+    }
+
+    const [currentUser, friend] = await Promise.all([
+      User.findById(req.user._id).select('friends'),
+      User.findById(friendId).select('_id friends')
+    ]);
+
+    if (!friend) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到好友'
+      });
+    }
+
+    const isFriend = currentUser?.friends.some((id) => id.toString() === friendId);
+
+    if (!isFriend) {
+      return res.status(409).json({
+        success: false,
+        message: '你們目前不是好友'
+      });
+    }
+
+    await Promise.all([
+      User.updateOne({ _id: currentUser._id }, { $pull: { friends: friend._id } }),
+      User.updateOne({ _id: friend._id }, { $pull: { friends: currentUser._id } })
+    ]);
+
+    res.json({
+      success: true,
+      message: '已刪除好友',
+      data: {
+        friendId: friend._id
+      }
     });
   } catch (error) {
     next(error);

@@ -8,6 +8,27 @@ import { EMAIL_PATTERN } from '../constants/app.js';
 const router = express.Router();
 const publicUserFields = '_id name avatar userCode';
 
+function getFriendshipStatus(currentUser, targetUser) {
+  const currentId = currentUser._id.toString();
+  const targetId = targetUser._id.toString();
+
+  if (currentId === targetId) return 'self';
+
+  if ((currentUser.friends || []).some((id) => id.toString() === targetId)) {
+    return 'friend';
+  }
+
+  if ((targetUser.friendRequests || []).some((request) => request.from.toString() === currentId && request.status === 'pending')) {
+    return 'sent_request';
+  }
+
+  if ((currentUser.friendRequests || []).some((request) => request.from.toString() === targetId && request.status === 'pending')) {
+    return 'received_request';
+  }
+
+  return 'none';
+}
+
 function serializeUser(user) {
   return {
     id: user._id,
@@ -228,10 +249,10 @@ router.get('/search', requireAuth, async (req, res, next) => {
       });
     }
 
-    const user = await User.findOne({
-      userCode,
-      _id: { $ne: req.user._id }
-    }).select(publicUserFields);
+    const [currentUser, user] = await Promise.all([
+      User.findById(req.user._id).select('friends friendRequests'),
+      User.findOne({ userCode }).select(`${publicUserFields} friendRequests`)
+    ]);
 
     if (!user) {
       return res.status(404).json({
@@ -243,7 +264,13 @@ router.get('/search', requireAuth, async (req, res, next) => {
     res.json({
       success: true,
       message: '搜尋成功',
-      data: user
+      data: {
+        _id: user._id,
+        name: user.name,
+        avatar: user.avatar || '',
+        userCode: user.userCode || '',
+        friendshipStatus: getFriendshipStatus(currentUser, user)
+      }
     });
   } catch (error) {
     next(error);

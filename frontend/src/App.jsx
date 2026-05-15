@@ -39,6 +39,7 @@ export default function App() {
   const [diaryError, setDiaryError] = useState('');
   const [filterNearby, setFilterNearby] = useState(false);
   const [mapMode, setMapMode] = useState('mine');
+  const [visibilityFilter, setVisibilityFilter] = useState('all');
   const [exploreRadius, setExploreRadius] = useState(5000);
   const [exploreCenter, setExploreCenter] = useState(null);
   const [mapFocusLocation, setMapFocusLocation] = useState(null);
@@ -81,6 +82,7 @@ export default function App() {
     setDraftLocation(null);
     setFilterNearby(false);
     setMapMode('mine');
+    setVisibilityFilter('all');
     setExploreCenter(null);
     setMapFocusLocation(null);
 
@@ -272,6 +274,14 @@ export default function App() {
     return { total: diaries.length, mine };
   }, [diaries, user?.id]);
 
+  const displayedDiaries = useMemo(() => {
+    if (mapMode === 'explore' || visibilityFilter === 'all') {
+      return diaries;
+    }
+
+    return diaries.filter((diary) => diary.visibility === visibilityFilter);
+  }, [diaries, mapMode, visibilityFilter]);
+
   const currentLocationMarker = useMemo(() => {
     const lat = Number(userLocation.lat);
     const lng = Number(userLocation.lng);
@@ -313,6 +323,16 @@ export default function App() {
     };
   }, [user?.id, userLocation.getLocation]);
 
+  useEffect(() => {
+    if (!selectedDiary) return;
+
+    const stillVisible = displayedDiaries.some((diary) => diary._id === selectedDiary._id);
+
+    if (!stillVisible) {
+      setSelectedDiary(null);
+    }
+  }, [displayedDiaries, selectedDiary]);
+
   async function handleAuth(mode, form) {
     try {
       setAuthLoading(true);
@@ -325,6 +345,7 @@ export default function App() {
         saveAuth(token, nextUser);
         setUser(nextUser);
         setMapMode('mine');
+        setVisibilityFilter('all');
         setExploreCenter(null);
         setMapFocusLocation(null);
         navigate('/');
@@ -503,6 +524,7 @@ export default function App() {
 
     try {
       setMapMode('explore');
+      setVisibilityFilter('all');
       setFilterNearby(false);
       setSelectedDiary(null);
       setDiaryLoading(true);
@@ -561,6 +583,17 @@ export default function App() {
   async function rejectFriendRequest(requestId) {
     const payload = await api.rejectFriendRequest(requestId);
     await loadSocial();
+    return payload;
+  }
+
+  async function getFriendProfile(friendId) {
+    const payload = await api.getFriendProfile(friendId);
+    return payload.data;
+  }
+
+  async function deleteFriend(friendId) {
+    const payload = await api.deleteFriend(friendId);
+    await Promise.all([loadSocial(), loadDiaries({}, { silent: true })]);
     return payload;
   }
 
@@ -700,7 +733,7 @@ export default function App() {
               onReact={reactToDiary}
             />
             <MapView
-              diaries={diaries}
+              diaries={displayedDiaries}
               selectedDiary={selectedDiary}
               onSelect={setSelectedDiary}
               onViewportChange={handleMapViewportChange}
@@ -751,10 +784,13 @@ export default function App() {
             <MemoryPanel
               key="memory-panel"
               user={user}
-              diaries={diaries}
+              diaries={displayedDiaries}
               friends={friends}
               friendRequests={friendRequests}
               sentFriendRequests={sentFriendRequests}
+              mapMode={mapMode}
+              visibilityFilter={visibilityFilter}
+              onVisibilityFilterChange={setVisibilityFilter}
               selectedDiaryId={selectedDiary?._id}
               onNewDiary={openNewDiary}
               onSelectDiary={setSelectedDiary}
@@ -763,6 +799,8 @@ export default function App() {
               onCancelFriendRequest={cancelFriendRequest}
               onAcceptFriendRequest={acceptFriendRequest}
               onRejectFriendRequest={rejectFriendRequest}
+              onGetFriendProfile={getFriendProfile}
+              onDeleteFriend={deleteFriend}
               locating={locating}
               lowPerformance={performanceMode.lowPerformance}
             />

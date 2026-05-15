@@ -159,6 +159,12 @@ export const api = {
   getFriends() {
     return request('/friends');
   },
+  getFriendProfile(friendId) {
+    return request(`/friends/${friendId}/profile`);
+  },
+  deleteFriend(friendId) {
+    return request(`/friends/${friendId}`, { method: 'DELETE' });
+  },
   getLifeMapInsight() {
     return request('/ai/life-map');
   },
