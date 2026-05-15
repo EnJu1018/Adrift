@@ -149,6 +149,12 @@ export const api = {
       body: formData
     });
   },
+  updateDiary(diaryId, payload) {
+    return request(`/diaries/${diaryId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    });
+  },
   deleteDiary(id) {
     return request(`/diaries/${id}`, { method: 'DELETE' });
   },

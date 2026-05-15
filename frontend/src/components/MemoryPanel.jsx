@@ -34,6 +34,7 @@ export default function MemoryPanel({
   friends,
   friendRequests,
   sentFriendRequests,
+  socialRefreshToken = 0,
   mapMode = 'mine',
   visibilityFilter = 'all',
   onVisibilityFilterChange,
@@ -91,6 +92,7 @@ export default function MemoryPanel({
     let active = true;
     setRecommendationsLoading(true);
     setRecommendationsError('');
+    setRecommendationStatus({});
 
     onGetFriendRecommendations()
       .then((items) => {
@@ -109,7 +111,7 @@ export default function MemoryPanel({
     return () => {
       active = false;
     };
-  }, [activeTab]);
+  }, [activeTab, socialRefreshToken]);
 
   const visibleDiaries = diaries || [];
   const friendList = friends || [];
@@ -127,8 +129,12 @@ export default function MemoryPanel({
   const searchResultIsFriend = searchResult
     ? friendList.some((friend) => sameId(friend._id, searchResult._id))
     : false;
-  const searchFriendshipStatus = searchResult?.friendshipStatus
-    || (searchResultIsFriend ? 'friend' : sentRequestForSearchResult ? 'sent_request' : receivedRequestForSearchResult ? 'received_request' : 'none');
+  const searchFriendshipStatus = getSyncedFriendshipStatus({
+    explicitStatus: searchResult?.friendshipStatus,
+    isFriend: searchResultIsFriend,
+    sentRequest: sentRequestForSearchResult,
+    receivedRequest: receivedRequestForSearchResult
+  });
   const normalizedFriendQuery = friendQuery.trim().toLowerCase();
   const filteredFriends = normalizedFriendQuery
     ? friendList.filter((friend) => {
@@ -141,6 +147,13 @@ export default function MemoryPanel({
   function showMessage(nextMessage, type = 'success') {
     setMessage(nextMessage);
     setMessageType(type);
+  }
+
+  function updateSearchResultStatus(userId, status) {
+    setSearchResult((current) => {
+      if (!current || (userId && !sameId(current._id, userId))) return current;
+      return { ...current, friendshipStatus: status };
+    });
   }
 
   async function searchUser(event) {
@@ -178,10 +191,11 @@ export default function MemoryPanel({
 
     try {
       setBusyAction('request');
+      updateSearchResultStatus(searchResult._id, 'sent_request');
       const payload = await onSendFriendRequest(searchResult._id);
-      setSearchResult((current) => current ? { ...current, friendshipStatus: 'sent_request' } : current);
       showMessage(payload.message || '好友邀請已送出');
     } catch (error) {
+      updateSearchResultStatus(searchResult._id, 'none');
       showMessage(error.message || '好友邀請送出失敗', 'error');
     } finally {
       setBusyAction('');
@@ -193,10 +207,13 @@ export default function MemoryPanel({
 
     try {
       setBusyAction(`recommend-${recommendation._id}`);
-      const payload = await onSendFriendRequest(recommendation._id);
       setRecommendationStatus((current) => ({ ...current, [recommendation._id]: 'sent_request' }));
+      updateSearchResultStatus(recommendation._id, 'sent_request');
+      const payload = await onSendFriendRequest(recommendation._id);
       showMessage(payload.message || '好友邀請已送出');
     } catch (error) {
+      setRecommendationStatus((current) => ({ ...current, [recommendation._id]: 'none' }));
+      updateSearchResultStatus(recommendation._id, 'none');
       showMessage(error.message || '好友邀請送出失敗', 'error');
     } finally {
       setBusyAction('');
@@ -208,10 +225,13 @@ export default function MemoryPanel({
 
     try {
       setBusyAction(`cancel-recommend-${recommendation._id}`);
-      const payload = await onCancelFriendRequest(requestId);
       setRecommendationStatus((current) => ({ ...current, [recommendation._id]: 'none' }));
+      updateSearchResultStatus(recommendation._id, 'none');
+      const payload = await onCancelFriendRequest(requestId);
       showMessage(payload.message || '好友邀請已收回');
     } catch (error) {
+      setRecommendationStatus((current) => ({ ...current, [recommendation._id]: 'sent_request' }));
+      updateSearchResultStatus(recommendation._id, 'sent_request');
       showMessage(error.message || '收回好友邀請失敗', 'error');
     } finally {
       setBusyAction('');
@@ -220,38 +240,54 @@ export default function MemoryPanel({
 
   async function cancelRequest(requestId) {
     if (!requestId) return;
+    const request = sentRequests.find((item) => sameId(item.requestId, requestId));
+    const targetUserId = request?.to?._id;
 
     try {
       setBusyAction(`cancel-${requestId}`);
+      updateSearchResultStatus(targetUserId, 'none');
+      if (targetUserId) {
+        setRecommendationStatus((current) => ({ ...current, [targetUserId]: 'none' }));
+      }
       const payload = await onCancelFriendRequest(requestId);
-      setSearchResult((current) => current ? { ...current, friendshipStatus: 'none' } : current);
       showMessage(payload.message || '好友邀請已收回');
     } catch (error) {
+      updateSearchResultStatus(targetUserId, 'sent_request');
       showMessage(error.message || '收回好友邀請失敗', 'error');
     } finally {
       setBusyAction('');
     }
   }
 
-  async function acceptRequest(requestId) {
+  async function acceptRequest(request) {
+    const requestId = request?.requestId;
+    if (!requestId) return;
+
     try {
       setBusyAction(`accept-${requestId}`);
+      updateSearchResultStatus(request.from?._id, 'friend');
       const payload = await onAcceptFriendRequest(requestId);
-      setSearchResult((current) => current ? { ...current, friendshipStatus: 'friend' } : current);
+      setRecommendations((current) => current.filter((item) => !sameId(item._id, request.from?._id)));
       showMessage(payload.message || '已成為好友');
     } catch (error) {
+      updateSearchResultStatus(request.from?._id, 'received_request');
       showMessage(error.message || '接受好友邀請失敗', 'error');
     } finally {
       setBusyAction('');
     }
   }
 
-  async function rejectRequest(requestId) {
+  async function rejectRequest(request) {
+    const requestId = request?.requestId;
+    if (!requestId) return;
+
     try {
       setBusyAction(`reject-${requestId}`);
+      updateSearchResultStatus(request.from?._id, 'none');
       const payload = await onRejectFriendRequest(requestId);
       showMessage(payload.message || '已拒絕好友邀請');
     } catch (error) {
+      updateSearchResultStatus(request.from?._id, 'received_request');
       showMessage(error.message || '拒絕好友邀請失敗', 'error');
     } finally {
       setBusyAction('');
@@ -280,8 +316,8 @@ export default function MemoryPanel({
 
     try {
       setBusyAction(`delete-friend-${friendToDelete._id}`);
+      updateSearchResultStatus(friendToDelete._id, 'none');
       const payload = await onDeleteFriend(friendToDelete._id);
-      setSearchResult((current) => sameId(current?._id, friendToDelete._id) ? { ...current, friendshipStatus: 'none' } : current);
       if (sameId(friendProfile?._id, friendToDelete._id)) {
         setFriendProfile(null);
       }
@@ -508,6 +544,7 @@ export default function MemoryPanel({
                             <span className="memory-item-meta">
                               <span className="memory-author-line">
                                 <span className="memory-author">@{authorCode}</span>
+                                {(diary.editCount > 0 || diary.lastEditedAt) && <span className="memory-edited-label">已編輯</span>}
                               </span>
                               <time dateTime={diary.createdAt}>{formatDiaryTime(diary.createdAt, timeNow)}</time>
                             </span>
@@ -539,7 +576,7 @@ export default function MemoryPanel({
                       onChange={(event) => setSearchCode(event.target.value)}
                       placeholder="friend_001"
                     />
-                    <button className="icon-button" type="submit" disabled={Boolean(busyAction)} aria-label="搜尋好友">
+                    <button className="icon-button" type="submit" disabled={busyAction === 'search'} aria-label="搜尋好友">
                       {busyAction === 'search' ? <span className="button-spinner" /> : <Search size={16} />}
                     </button>
                   </div>
@@ -568,7 +605,7 @@ export default function MemoryPanel({
                       <button
                         className="icon-button"
                         onClick={() => cancelRequest(sentRequestForSearchResult?.requestId)}
-                        disabled={Boolean(busyAction) || !sentRequestForSearchResult?.requestId}
+                        disabled={busyAction === `cancel-${sentRequestForSearchResult?.requestId}` || !sentRequestForSearchResult?.requestId}
                         aria-label="收回好友邀請"
                       >
                         {busyAction === `cancel-${sentRequestForSearchResult?.requestId}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
@@ -577,14 +614,14 @@ export default function MemoryPanel({
                   ) : searchFriendshipStatus === 'received_request' ? (
                     <button
                       className="chip-button"
-                      onClick={() => acceptRequest(receivedRequestForSearchResult?.requestId)}
-                      disabled={Boolean(busyAction) || !receivedRequestForSearchResult?.requestId}
+                      onClick={() => acceptRequest(receivedRequestForSearchResult)}
+                      disabled={busyAction === `accept-${receivedRequestForSearchResult?.requestId}` || !receivedRequestForSearchResult?.requestId}
                     >
                       {busyAction === `accept-${receivedRequestForSearchResult?.requestId}` ? <span className="button-spinner" /> : <Check size={15} />}
                       接受邀請
                     </button>
                   ) : (
-                    <button className="chip-button" onClick={sendRequest} disabled={Boolean(busyAction)}>
+                    <button className="chip-button" onClick={sendRequest} disabled={busyAction === 'request'}>
                       {busyAction === 'request' ? <span className="button-spinner" /> : <UserPlus size={15} />}
                       加入好友
                     </button>
@@ -680,7 +717,7 @@ export default function MemoryPanel({
                       <button
                         className="chip-button"
                         onClick={() => cancelRequest(request.requestId)}
-                        disabled={Boolean(busyAction)}
+                        disabled={busyAction === `cancel-${request.requestId}`}
                       >
                         {busyAction === `cancel-${request.requestId}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
                         收回
@@ -708,16 +745,16 @@ export default function MemoryPanel({
                       <div className="person-actions">
                         <button
                           className="icon-button"
-                          onClick={() => acceptRequest(request.requestId)}
-                          disabled={Boolean(busyAction)}
+                          onClick={() => acceptRequest(request)}
+                          disabled={busyAction === `accept-${request.requestId}`}
                           aria-label="接受好友邀請"
                         >
                           {busyAction === `accept-${request.requestId}` ? <span className="button-spinner" /> : <Check size={15} />}
                         </button>
                         <button
                           className="icon-button"
-                          onClick={() => rejectRequest(request.requestId)}
-                          disabled={Boolean(busyAction)}
+                          onClick={() => rejectRequest(request)}
+                          disabled={busyAction === `reject-${request.requestId}`}
                           aria-label="拒絕好友邀請"
                         >
                           {busyAction === `reject-${request.requestId}` ? <span className="button-spinner" /> : <X size={15} />}
@@ -816,6 +853,14 @@ function getFriendshipLabel(status) {
   };
 
   return labels[status] || labels.none;
+}
+
+function getSyncedFriendshipStatus({ explicitStatus, isFriend, sentRequest, receivedRequest }) {
+  if (explicitStatus === 'self' || explicitStatus === 'blocked') return explicitStatus;
+  if (isFriend) return 'friend';
+  if (sentRequest) return 'sent_request';
+  if (receivedRequest) return 'received_request';
+  return explicitStatus || 'none';
 }
 
 function getRecommendationTags(recommendation) {

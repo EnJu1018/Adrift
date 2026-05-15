@@ -1,8 +1,9 @@
 ﻿import { motion } from 'framer-motion';
-import { ImagePlus, LocateFixed, X } from 'lucide-react';
+import { ImagePlus, LocateFixed, RefreshCcw, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { MOOD_OPTIONS, VISIBILITY_OPTIONS } from '../constants/app.js';
 import { modalBackdropMotion, modalPopMotion } from '../constants/animations.js';
+import { getDistanceInMeters } from '../utils/distance.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 import Select from './ui/Select.jsx';
 
@@ -36,26 +37,78 @@ const visibilitySelectOptions = VISIBILITY_OPTIONS.map((value) => ({
   icon: visibilityIcons[value]
 }));
 
-export default function DiaryModal({ location, onClose, onSubmit, loading, error }) {
+const EDIT_DISTANCE_LIMIT_METERS = 1000;
+
+export default function DiaryModal({
+  location,
+  diary = null,
+  mode = 'create',
+  onClose,
+  onSubmit,
+  onRefreshLocation,
+  loading,
+  error
+}) {
+  const isEditMode = mode === 'edit';
   const [form, setForm] = useState({
-    title: '',
-    text: '',
-    moodType: 'calm',
-    moodIntensity: 3,
-    visibility: 'private',
+    title: diary?.title || '',
+    text: diary?.text || diary?.content || '',
+    moodType: diary?.mood?.type || 'calm',
+    moodIntensity: diary?.mood?.intensity || 3,
+    visibility: diary?.visibility || 'private',
     image: null
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [placeName, setPlaceName] = useState('');
+  const [timeNow, setTimeNow] = useState(Date.now());
+  const [refreshingLocation, setRefreshingLocation] = useState(false);
+
+  const diaryCoordinates = diary?.location?.coordinates || [];
+  const diaryLng = Number.isFinite(diaryCoordinates[0]) ? diaryCoordinates[0] : diary?.location?.lng;
+  const diaryLat = Number.isFinite(diaryCoordinates[1]) ? diaryCoordinates[1] : diary?.location?.lat;
+  const currentLat = Number(location.lat);
+  const currentLng = Number(location.lng);
+  const editExpiresAt = diary?.editExpiresAt ? new Date(diary.editExpiresAt).getTime() : new Date(diary?.createdAt).getTime() + 60 * 60 * 1000;
+  const remainingMs = isEditMode && Number.isFinite(editExpiresAt) ? Math.max(0, editExpiresAt - timeNow) : 0;
+  const distanceLimit = diary?.editDistanceLimitMeters || EDIT_DISTANCE_LIMIT_METERS;
+  const distanceMeters =
+    isEditMode &&
+    [diaryLat, diaryLng, currentLat, currentLng].every((value) => Number.isFinite(Number(value)))
+      ? getDistanceInMeters(currentLat, currentLng, diaryLat, diaryLng)
+      : null;
+  const editDistanceAllowed = distanceMeters !== null && distanceMeters <= distanceLimit;
+  const editTimeAllowed = !isEditMode || remainingMs > 0;
+  const canSubmitEdit = !isEditMode || (editTimeAllowed && editDistanceAllowed);
+
+  useEffect(() => {
+    if (!isEditMode || !diary) return;
+
+    setForm({
+      title: diary.title || '',
+      text: diary.text || diary.content || '',
+      moodType: diary.mood?.type || 'calm',
+      moodIntensity: diary.mood?.intensity || 3,
+      visibility: diary.visibility || 'private',
+      image: null
+    });
+    setFieldErrors({});
+  }, [diary?._id, isEditMode]);
+
+  useEffect(() => {
+    if (!isEditMode) return undefined;
+
+    const timer = window.setInterval(() => setTimeNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, [isEditMode]);
 
   useEffect(() => {
     let cancelled = false;
-    const lat = Number(location.lat);
-    const lng = Number(location.lng);
+    const lat = isEditMode ? Number(diaryLat) : Number(location.lat);
+    const lng = isEditMode ? Number(diaryLng) : Number(location.lng);
 
-    setPlaceName(location.placeName || formatCoordinates(lat, lng));
+    setPlaceName((isEditMode ? diary?.location?.placeName : location.placeName) || formatCoordinates(lat, lng));
 
-    if (location.source === 'ip') {
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || (!isEditMode && location.source === 'ip')) {
       return undefined;
     }
 
@@ -66,7 +119,7 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     return () => {
       cancelled = true;
     };
-  }, [location.lat, location.lng, location.placeName, location.source]);
+  }, [diary?.location?.placeName, diaryLat, diaryLng, isEditMode, location.lat, location.lng, location.placeName, location.source]);
 
   function updateField(field, value) {
     const nextForm = { ...form, [field]: value };
@@ -103,23 +156,43 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
 
     if (!validate()) return;
 
-    const data = new FormData();
-    data.append('title', form.title.trim());
-    data.append('text', form.text.trim());
-    data.append('moodType', form.moodType);
-    data.append('moodIntensity', form.moodIntensity);
-    data.append('visibility', form.visibility);
-    data.append('lat', location.lat);
-    data.append('lng', location.lng);
-    data.append('placeName', placeName);
-    data.append('locationAccuracy', location.accuracyType === 'approximate' ? 'approximate' : 'precise');
+    if (isEditMode && !canSubmitEdit) return;
 
-    if (Number.isFinite(location.accuracy)) {
-      data.append('accuracy', location.accuracy);
-    }
+    const data = isEditMode
+      ? {
+          title: form.title.trim(),
+          content: form.text.trim(),
+          mood: {
+            type: form.moodType,
+            intensity: Number(form.moodIntensity)
+          },
+          visibility: form.visibility,
+          currentLocation: {
+            lat: currentLat,
+            lng: currentLng,
+            accuracyType: location.accuracyType === 'approximate' ? 'approximate' : 'precise'
+          }
+        }
+      : new FormData();
 
-    if (form.image) {
-      data.append('image', form.image);
+    if (!isEditMode) {
+      data.append('title', form.title.trim());
+      data.append('text', form.text.trim());
+      data.append('moodType', form.moodType);
+      data.append('moodIntensity', form.moodIntensity);
+      data.append('visibility', form.visibility);
+      data.append('lat', location.lat);
+      data.append('lng', location.lng);
+      data.append('placeName', placeName);
+      data.append('locationAccuracy', location.accuracyType === 'approximate' ? 'approximate' : 'precise');
+
+      if (Number.isFinite(location.accuracy)) {
+        data.append('accuracy', location.accuracy);
+      }
+
+      if (form.image) {
+        data.append('image', form.image);
+      }
     }
 
     try {
@@ -137,6 +210,19 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
     }
   }
 
+  async function refreshCurrentLocation() {
+    if (!onRefreshLocation || refreshingLocation) return;
+
+    try {
+      setRefreshingLocation(true);
+      await onRefreshLocation();
+    } catch {
+      // Parent displays the location error in the status strip and modal error area.
+    } finally {
+      setRefreshingLocation(false);
+    }
+  }
+
   return (
     <motion.div className="modal-backdrop" {...modalBackdropMotion}>
       <motion.form
@@ -146,8 +232,8 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
       >
         <header>
           <div>
-            <p className="eyebrow">New memory</p>
-            <h2>新增日記</h2>
+            <p className="eyebrow">{isEditMode ? 'Edit memory' : 'New memory'}</p>
+            <h2>{isEditMode ? '編輯日記' : '新增日記'}</h2>
           </div>
           <button type="button" className="icon-button" onClick={onClose} aria-label="Close">
             <X size={18} />
@@ -209,34 +295,75 @@ export default function DiaryModal({ location, onClose, onSubmit, loading, error
             onChange={(value) => updateField('visibility', value)}
           />
 
-          <label className="file-input">
-            圖片
-            <span>
-              <ImagePlus size={16} />
-              {form.image ? form.image.name : '選擇圖片'}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => updateField('image', event.target.files?.[0] || null)}
-            />
-          </label>
+          {!isEditMode && (
+            <label className="file-input">
+              圖片
+              <span>
+                <ImagePlus size={16} />
+                {form.image ? form.image.name : '選擇圖片'}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => updateField('image', event.target.files?.[0] || null)}
+              />
+            </label>
+          )}
         </div>
 
-        <p className="location-line">
-          <LocateFixed size={16} />
-          {placeName || formatCoordinates(Number(location.lat), Number(location.lng))}
-          {location.accuracyType === 'approximate' && ' · 目前為大略位置'}
-          {Number.isFinite(location.accuracy) && ` · ±${Math.round(location.accuracy)}m`}
-        </p>
+        {isEditMode ? (
+          <div className="edit-authenticity-box">
+            <p>
+              Adrift 希望保留日記當下的真實性，因此日記只能在發布後 1 小時內、且仍接近原本地點時修改。
+            </p>
+            <span>
+              <LocateFixed size={15} />
+              日記位置不可修改：{placeName || formatCoordinates(Number(diaryLat), Number(diaryLng))}
+            </span>
+            <span>{remainingMs > 0 ? `剩餘可編輯時間：${formatRemainingTime(remainingMs)}` : '已超過可編輯時間'}</span>
+            <span>
+              目前距離原位置：{distanceMeters === null ? '無法判斷' : `約 ${formatDistance(distanceMeters)}`}
+              {location.accuracyType === 'approximate' && ' · 目前為大略位置，可能影響是否可編輯'}
+            </span>
+            {!editDistanceAllowed && <strong>你目前距離原日記位置超過 1 公里，無法編輯</strong>}
+            {!editTimeAllowed && <strong>日記發布超過 1 小時後無法再編輯</strong>}
+            {remainingMs > 0 && remainingMs <= 5 * 60 * 1000 && <strong>可編輯時間即將結束</strong>}
+            <button className="chip-button inline-refresh" type="button" onClick={refreshCurrentLocation} disabled={refreshingLocation || loading}>
+              {refreshingLocation ? <span className="button-spinner" /> : <RefreshCcw size={14} />}
+              更新位置
+            </button>
+          </div>
+        ) : (
+          <p className="location-line">
+            <LocateFixed size={16} />
+            {placeName || formatCoordinates(Number(location.lat), Number(location.lng))}
+            {location.accuracyType === 'approximate' && ' · 目前為大略位置'}
+            {Number.isFinite(location.accuracy) && ` · ±${Math.round(location.accuracy)}m`}
+          </p>
+        )}
 
         {error && <p className="form-error">{error}</p>}
 
-        <button className="primary-button" type="submit" disabled={loading}>
+        <button className="primary-button" type="submit" disabled={loading || !canSubmitEdit}>
           {loading && <span className="button-spinner dark" />}
-          {loading ? '保存中...' : '保存日記'}
+          {loading ? '保存中...' : isEditMode ? '儲存變更' : '保存日記'}
         </button>
       </motion.form>
     </motion.div>
   );
+}
+
+function formatRemainingTime(ms) {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0 && minutes > 0) return `${hours} 小時 ${minutes} 分鐘`;
+  if (hours > 0) return `${hours} 小時`;
+  return `${minutes} 分鐘`;
+}
+
+function formatDistance(value) {
+  if (value >= 1000) return `${(value / 1000).toFixed(1)} 公里`;
+  return `${Math.round(value)} 公尺`;
 }

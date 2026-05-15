@@ -4,16 +4,20 @@ import mongoose from 'mongoose';
 import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FALLBACK_DIARY_TITLE, REACTION_TYPES } from '../constants/app.js';
+import { FALLBACK_DIARY_TITLE, REACTION_TYPES, VISIBILITIES } from '../constants/app.js';
 import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getDistanceInMeters } from '../utils/distance.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const authorFields = 'name avatar userCode';
 const diaryEventClients = new Map();
+const DIARY_EDIT_WINDOW_MS = 60 * 60 * 1000;
+const DIARY_EDIT_DISTANCE_LIMIT_METERS = 1000;
+const MOOD_TYPES = ['calm', 'joy', 'sad', 'wonder', 'anxious', 'nostalgic', 'other'];
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '..', 'uploads'),
@@ -117,13 +121,33 @@ function normalizeLocationAccuracy(value) {
   return value === 'approximate' ? 'approximate' : 'precise';
 }
 
+function getDiaryEditMeta(diary, userId) {
+  const authorId = getDiaryAuthorId(diary);
+  const createdAt = new Date(diary.createdAt);
+  const createdAtMs = createdAt.getTime();
+  const hasValidCreatedAt = Number.isFinite(createdAtMs);
+  const editExpiresAt = hasValidCreatedAt ? new Date(createdAtMs + DIARY_EDIT_WINDOW_MS) : null;
+  const isOwner = Boolean(userId && authorId && sameId(authorId, userId));
+  const withinEditWindow = Boolean(editExpiresAt && Date.now() <= editExpiresAt.getTime());
+
+  return {
+    lastEditedAt: diary.lastEditedAt || null,
+    editCount: diary.editCount || 0,
+    canEdit: isOwner && withinEditWindow,
+    editExpiresAt,
+    editDistanceLimitMeters: DIARY_EDIT_DISTANCE_LIMIT_METERS
+  };
+}
+
 function serializeDiary(diary, userId) {
   const output = diary.toObject ? diary.toObject() : { ...diary };
   output.title = output.title || FALLBACK_DIARY_TITLE;
   output.locationAccuracy = normalizeLocationAccuracy(output.locationAccuracy);
   output.reactions = getReactionCounts(diary);
   output.userReaction = getUserReaction(diary, userId);
+  Object.assign(output, getDiaryEditMeta(diary, userId));
   delete output.reactedUsers;
+  delete output.editHistory;
   return output;
 }
 
@@ -177,7 +201,8 @@ function serializeMemory(diary) {
     },
     locationAccuracy: normalizeLocationAccuracy(diary.locationAccuracy),
     visibility: diary.visibility,
-    createdAt: diary.createdAt
+    createdAt: diary.createdAt,
+    ...getDiaryEditMeta(diary, diary.user)
   };
 }
 
@@ -199,6 +224,56 @@ function parseExploreQuery(query) {
     lng: parsedLng,
     radius: Math.min(parsedRadius, 50000)
   };
+}
+
+function parseCurrentLocation(value) {
+  const lat = Number(value?.lat);
+  const lng = Number(value?.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return null;
+  }
+
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    return null;
+  }
+
+  return {
+    lat,
+    lng,
+    accuracyType: value?.accuracyType === 'approximate' ? 'approximate' : 'precise'
+  };
+}
+
+function normalizeDiaryUpdatePayload(body) {
+  const title = typeof body.title === 'string' ? body.title.trim() : '';
+  const content = typeof body.content === 'string' ? body.content.trim() : typeof body.text === 'string' ? body.text.trim() : '';
+  const mood = body.mood || {};
+  const moodType = typeof mood.type === 'string' ? mood.type : typeof body.moodType === 'string' ? body.moodType : '';
+  const moodIntensity = Number(mood.intensity ?? body.moodIntensity);
+  const visibility = typeof body.visibility === 'string' ? body.visibility : '';
+
+  return {
+    title,
+    content,
+    moodType,
+    moodIntensity,
+    visibility
+  };
+}
+
+function validateDiaryUpdatePayload(payload) {
+  if (!payload.title) return '請輸入日記標題';
+  if (payload.title.length > 50) return '日記標題最多 50 字';
+  if (!payload.content) return '請輸入日記內容';
+  if (payload.content.length > 2000) return '日記內容最多 2000 字';
+  if (!MOOD_TYPES.includes(payload.moodType)) return '請選擇有效的心情';
+  if (!Number.isFinite(payload.moodIntensity) || payload.moodIntensity < 1 || payload.moodIntensity > 5) {
+    return '心情強度必須介於 1 到 5';
+  }
+  if (!VISIBILITIES.includes(payload.visibility)) return '請選擇有效的可見性';
+
+  return '';
 }
 
 function serializeExploreDiary(diary, userId) {
@@ -232,6 +307,7 @@ function serializeExploreDiary(diary, userId) {
     locationAccuracy: normalizeLocationAccuracy(diary.locationAccuracy),
     visibility: diary.visibility,
     createdAt: diary.createdAt,
+    ...getDiaryEditMeta(diary, userId),
     author,
     user: author
   };
@@ -566,6 +642,112 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
       success: true,
       message: '日記新增成功',
       data: { diary: serializeDiary(populatedDiary, req.user._id) }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/:id', requireAuth, async (req, res, next) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到日記'
+      });
+    }
+
+    const diary = await Diary.findById(req.params.id).populate('user', authorFields);
+
+    if (!diary) {
+      return res.status(404).json({
+        success: false,
+        message: '找不到日記'
+      });
+    }
+
+    if (!sameId(getDiaryAuthorId(diary), req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: '你只能編輯自己的日記'
+      });
+    }
+
+    const createdAt = new Date(diary.createdAt).getTime();
+    const diffMs = Date.now() - createdAt;
+
+    if (!Number.isFinite(createdAt) || diffMs > DIARY_EDIT_WINDOW_MS) {
+      return res.status(403).json({
+        success: false,
+        message: '日記發布超過 1 小時後無法再編輯'
+      });
+    }
+
+    const currentLocation = parseCurrentLocation(req.body.currentLocation);
+
+    if (!currentLocation) {
+      return res.status(400).json({
+        success: false,
+        message: '需要目前位置才能編輯日記'
+      });
+    }
+
+    const [diaryLng, diaryLat] = diary.location?.coordinates || [];
+    const distance = getDistanceInMeters(currentLocation.lat, currentLocation.lng, diaryLat, diaryLng);
+
+    if (!Number.isFinite(distance) || distance > DIARY_EDIT_DISTANCE_LIMIT_METERS) {
+      return res.status(403).json({
+        success: false,
+        message: '你已離開日記位置超過 1 公里，無法編輯'
+      });
+    }
+
+    const payload = normalizeDiaryUpdatePayload(req.body);
+    const validationMessage = validateDiaryUpdatePayload(payload);
+
+    if (validationMessage) {
+      return res.status(400).json({
+        success: false,
+        message: validationMessage
+      });
+    }
+
+    // Adrift 保留日記當下的真實性：只允許短時間、原地附近修正文字與狀態，時間與地點不可改。
+    diary.editHistory.push({
+      title: diary.title,
+      content: diary.text,
+      mood: diary.mood?.toObject ? diary.mood.toObject() : diary.mood,
+      visibility: diary.visibility,
+      editedAt: new Date()
+    });
+    diary.title = payload.title;
+    diary.text = payload.content;
+    diary.mood = {
+      type: payload.moodType,
+      intensity: payload.moodIntensity
+    };
+    diary.visibility = payload.visibility;
+    diary.lastEditedAt = new Date();
+    diary.editCount = (diary.editCount || 0) + 1;
+
+    await diary.save();
+    const populatedDiary = await diary.populate('user', authorFields);
+    broadcastDiaryEvent('diary:updated', populatedDiary);
+
+    res.json({
+      success: true,
+      message: '日記已更新',
+      data: {
+        diary: serializeDiary(populatedDiary, req.user._id),
+        _id: diary._id,
+        title: diary.title,
+        content: diary.text,
+        text: diary.text,
+        mood: diary.mood,
+        visibility: diary.visibility,
+        lastEditedAt: diary.lastEditedAt,
+        editCount: diary.editCount
+      }
     });
   } catch (error) {
     next(error);

@@ -29,14 +29,18 @@ export default function App() {
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
   const [sentFriendRequests, setSentFriendRequests] = useState([]);
+  const [socialRefreshToken, setSocialRefreshToken] = useState(0);
   const [selectedDiary, setSelectedDiary] = useState(null);
   const [draftLocation, setDraftLocation] = useState(null);
+  const [editingDiary, setEditingDiary] = useState(null);
+  const [editLocation, setEditLocation] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [diaryLoading, setDiaryLoading] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [authError, setAuthError] = useState('');
   const [authNotice, setAuthNotice] = useState('');
   const [diaryError, setDiaryError] = useState('');
+  const [actionNotice, setActionNotice] = useState('');
   const [filterNearby, setFilterNearby] = useState(false);
   const [mapMode, setMapMode] = useState('mine');
   const [visibilityFilter, setVisibilityFilter] = useState('all');
@@ -77,9 +81,13 @@ export default function App() {
     setFriends([]);
     setFriendRequests([]);
     setSentFriendRequests([]);
+    setSocialRefreshToken(0);
     setDiaries([]);
     setSelectedDiary(null);
     setDraftLocation(null);
+    setEditingDiary(null);
+    setEditLocation(null);
+    setActionNotice('');
     setFilterNearby(false);
     setMapMode('mine');
     setVisibilityFilter('all');
@@ -145,9 +153,20 @@ export default function App() {
         api.getFriendRequests(),
         api.getSentFriendRequests()
       ]);
-      setFriends(friendsPayload.data || []);
-      setFriendRequests(requestsPayload.data || []);
-      setSentFriendRequests(sentRequestsPayload.data || []);
+      const nextFriends = friendsPayload.data || [];
+      const nextRequests = requestsPayload.data || [];
+      const nextSentRequests = sentRequestsPayload.data || [];
+
+      setFriends(nextFriends);
+      setFriendRequests(nextRequests);
+      setSentFriendRequests(nextSentRequests);
+      setSocialRefreshToken((current) => current + 1);
+
+      return {
+        friends: nextFriends,
+        friendRequests: nextRequests,
+        sentFriendRequests: nextSentRequests
+      };
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
     }
@@ -175,6 +194,13 @@ export default function App() {
     setSelectedDiary((current) => (current?._id === diaryId ? null : current));
   }, []);
 
+  const updateRealtimeDiary = useCallback((diary) => {
+    if (!diary?._id) return;
+
+    setDiaries((current) => current.map((item) => (item._id === diary._id ? { ...item, ...diary } : item)));
+    setSelectedDiary((current) => (current?._id === diary._id ? { ...current, ...diary } : current));
+  }, []);
+
   useEffect(() => {
     const syncPath = () => setCurrentPath(window.location.pathname);
     window.addEventListener('popstate', syncPath);
@@ -189,6 +215,13 @@ export default function App() {
     window.addEventListener('adrift:auth-expired', handleExpired);
     return () => window.removeEventListener('adrift:auth-expired', handleExpired);
   }, [logout]);
+
+  useEffect(() => {
+    if (!actionNotice) return undefined;
+
+    const timer = window.setTimeout(() => setActionNotice(''), 2200);
+    return () => window.clearTimeout(timer);
+  }, [actionNotice]);
 
   useEffect(() => {
     if (!user && !isAuthPage) {
@@ -259,15 +292,26 @@ export default function App() {
       }
     }
 
+    function handleUpdated(event) {
+      try {
+        const payload = JSON.parse(event.data);
+        updateRealtimeDiary(payload.diary);
+      } catch {
+        // Ignore malformed event payloads; the next normal refresh will recover.
+      }
+    }
+
     events.addEventListener('diary:created', handleCreated);
     events.addEventListener('diary:deleted', handleDeleted);
+    events.addEventListener('diary:updated', handleUpdated);
 
     return () => {
       events.removeEventListener('diary:created', handleCreated);
       events.removeEventListener('diary:deleted', handleDeleted);
+      events.removeEventListener('diary:updated', handleUpdated);
       events.close();
     };
-  }, [applyRealtimeDiary, removeRealtimeDiary, user?.id]);
+  }, [applyRealtimeDiary, removeRealtimeDiary, updateRealtimeDiary, user?.id]);
 
   const stats = useMemo(() => {
     const mine = diaries.filter((diary) => diary.user?._id === user?.id || diary.user?.id === user?.id).length;
@@ -419,6 +463,60 @@ export default function App() {
       }
       setDraftLocation(null);
       setSelectedDiary(diary);
+      setActionNotice('日記已新增');
+    } catch (error) {
+      if (error.status !== 401) setDiaryError(error.message);
+      throw error;
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function openEditDiary(diary) {
+    if (!diary?._id) return;
+
+    try {
+      setDiaryError('');
+      const cachedLocation = userLocation.location;
+      const location = cachedLocation || (await userLocation.getLocation());
+      setEditLocation(location);
+      setEditingDiary(diary);
+    } catch (error) {
+      setDiaryError(error.message || '需要目前位置才能編輯日記');
+    }
+  }
+
+  async function refreshEditLocation() {
+    try {
+      setDiaryError('');
+      const location = await userLocation.refreshLocation({
+        preciseMessage: '已更新目前位置',
+        approximateMessage: '已使用大略位置'
+      });
+      setEditLocation(location);
+      return location;
+    } catch (error) {
+      setDiaryError(error.message || '無法更新目前位置');
+      throw error;
+    }
+  }
+
+  async function updateDiary(diaryId, payload) {
+    try {
+      setPublishing(true);
+      setDiaryError('');
+      const response = await api.updateDiary(diaryId, payload);
+      const diary = response.data?.diary || response.data || response.diary;
+
+      if (diary?._id) {
+        setDiaries((current) => current.map((item) => (item._id === diary._id ? { ...item, ...diary } : item)));
+        setSelectedDiary((current) => (current?._id === diary._id ? { ...current, ...diary } : current));
+      }
+
+      setEditingDiary(null);
+      setEditLocation(null);
+      setActionNotice('日記已更新');
+      return response;
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
       throw error;
@@ -432,6 +530,7 @@ export default function App() {
       await api.deleteDiary(id);
       setDiaries((current) => current.filter((diary) => diary._id !== id));
       setSelectedDiary(null);
+      setActionNotice('日記已刪除');
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
     }
@@ -455,6 +554,7 @@ export default function App() {
 
       setSelectedDiary((current) => (current?._id === id ? { ...current, ...nextData } : current));
       setDiaries((current) => current.map((diary) => (diary._id === id ? { ...diary, ...nextData } : diary)));
+      setActionNotice('已更新共鳴');
       return payload;
     } catch (error) {
       if (previousSelected) setSelectedDiary(previousSelected);
@@ -729,9 +829,11 @@ export default function App() {
             <DiarySidePanel
               diary={selectedDiary}
               currentUser={user}
+              currentLocation={userLocation.location}
               onClose={() => setSelectedDiary(null)}
               onDelete={deleteDiary}
               onReact={reactToDiary}
+              onEdit={openEditDiary}
             />
             <MapView
               diaries={displayedDiaries}
@@ -762,6 +864,7 @@ export default function App() {
             {userLocation.message && <strong className={userLocation.accuracyType === 'approximate' ? 'location-approximate' : 'location-success'}>{userLocation.message}</strong>}
             {userLocation.accuracyType === 'approximate' && !userLocation.message && <strong className="location-approximate">目前為大略位置</strong>}
             {userLocation.error && <strong>{userLocation.error}</strong>}
+            {actionNotice && <strong className="location-success">{actionNotice}</strong>}
             {diaryError && <strong>{diaryError}</strong>}
           </div>
         </section>
@@ -789,6 +892,7 @@ export default function App() {
               friends={friends}
               friendRequests={friendRequests}
               sentFriendRequests={sentFriendRequests}
+              socialRefreshToken={socialRefreshToken}
               mapMode={mapMode}
               visibilityFilter={visibilityFilter}
               onVisibilityFilterChange={setVisibilityFilter}
@@ -831,6 +935,21 @@ export default function App() {
             location={draftLocation}
             onClose={() => setDraftLocation(null)}
             onSubmit={createDiary}
+            loading={publishing}
+            error={diaryError}
+          />
+        )}
+        {editingDiary && editLocation && (
+          <DiaryModal
+            mode="edit"
+            diary={editingDiary}
+            location={editLocation}
+            onClose={() => {
+              setEditingDiary(null);
+              setEditLocation(null);
+            }}
+            onSubmit={(payload) => updateDiary(editingDiary._id, payload)}
+            onRefreshLocation={refreshEditLocation}
             loading={publishing}
             error={diaryError}
           />

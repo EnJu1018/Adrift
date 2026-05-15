@@ -1,9 +1,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Clock3, ImageIcon, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
+import { Clock3, Edit3, ImageIcon, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getImageUrl } from '../api/client.js';
 import { fadeUpMotion, panelSlideLeft } from '../constants/animations.js';
 import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constants/app.js';
+import { getDistanceInMeters } from '../utils/distance.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 
 const visibilityIcons = {
@@ -18,21 +19,26 @@ const visibilityLabels = {
   public: 'public'
 };
 
-export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, onReact }) {
+const EDIT_DISTANCE_LIMIT_METERS = 1000;
+
+export default function DiarySidePanel({ diary, currentUser, currentLocation, onClose, onDelete, onReact, onEdit }) {
   const [resolvedPlaceName, setResolvedPlaceName] = useState('');
   const [reactingType, setReactingType] = useState('');
+  const [timeNow, setTimeNow] = useState(Date.now());
   const hasDiary = Boolean(diary);
   const VisibilityIcon = hasDiary ? visibilityIcons[diary.visibility] || Waves : Waves;
   const coordinates = diary?.location?.coordinates || [];
   const lng = Number.isFinite(coordinates[0]) ? coordinates[0] : diary?.location?.lng;
   const lat = Number.isFinite(coordinates[1]) ? coordinates[1] : diary?.location?.lat;
-  const currentUserId = currentUser?.id;
+  const currentUserId = currentUser?.id || currentUser?._id;
   const diaryUserId = diary?.user?._id || diary?.user?.id || diary?.author?._id;
   const isOwner = Boolean(currentUserId && diaryUserId && currentUserId === diaryUserId.toString());
   const author = diary?.user || diary?.author || {};
   const locationText = resolvedPlaceName || diary?.location?.placeName || formatCoordinates(lat, lng);
   const timeText = hasDiary ? formatDiaryDateTime(diary.createdAt) : '';
+  const lastEditedText = diary?.lastEditedAt ? formatDiaryEditedTime(diary.lastEditedAt) : '';
   const titleText = diary?.title?.trim() || FALLBACK_DIARY_TITLE;
+  const editStatus = getDiaryEditStatus(diary, isOwner, currentLocation, timeNow);
   const reactionCounts = {
     understand: diary?.reactions?.understand || 0,
     hug: diary?.reactions?.hug || 0,
@@ -61,6 +67,13 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
       cancelled = true;
     };
   }, [diary?._id, diary?.location?.placeName, hasDiary, lat, lng]);
+
+  useEffect(() => {
+    if (!hasDiary || !isOwner) return undefined;
+
+    const timer = window.setInterval(() => setTimeNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, [hasDiary, isOwner]);
 
   async function handleReact(type) {
     if (!diary?._id || !onReact || reactingType) return;
@@ -133,6 +146,11 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
                   <Clock3 size={14} />
                   {timeText}
                 </span>
+                {(diary.editCount > 0 || diary.lastEditedAt) && (
+                  <span className="diary-edited-pill" title={lastEditedText ? `最後編輯：${lastEditedText}` : '已編輯'}>
+                    已編輯{lastEditedText ? ` · ${lastEditedText}` : ''}
+                  </span>
+                )}
                 <span className="diary-place-pill" title={locationText}>
                   <MapPin size={14} />
                   {locationText}
@@ -175,10 +193,23 @@ export default function DiarySidePanel({ diary, currentUser, onClose, onDelete, 
             </div>
 
             {isOwner && (
-              <button className="danger-button" onClick={() => onDelete(diary._id)}>
-                <Trash2 size={16} />
-                刪除日記
-              </button>
+              <div className="diary-owner-actions">
+                <div className={`edit-availability ${editStatus.canEdit ? 'available' : 'locked'}`}>
+                  <strong>{editStatus.canEdit ? `可編輯時間剩餘 ${editStatus.remainingText}` : editStatus.reason}</strong>
+                  <span>
+                    日記只能在發布後 1 小時內，且距離原位置 1 公里內編輯。
+                  </span>
+                  {currentLocation?.accuracyType === 'approximate' && <span>目前為大略位置，可能影響是否可編輯。</span>}
+                </div>
+                <button className="secondary-button edit-diary-button" onClick={() => onEdit?.(diary)} disabled={!editStatus.canEdit && !editStatus.needsLocation}>
+                  <Edit3 size={16} />
+                  編輯日記
+                </button>
+                <button className="danger-button" onClick={() => onDelete(diary._id)}>
+                  <Trash2 size={16} />
+                  刪除日記
+                </button>
+              </div>
             )}
           </motion.div>
         )}
@@ -198,6 +229,60 @@ function formatDiaryDateTime(value) {
   const minute = String(date.getMinutes()).padStart(2, '0');
 
   return `${year}/${month}/${day} ${hour}:${minute}`;
+}
+
+function formatDiaryEditedTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+function getDiaryEditStatus(diary, isOwner, currentLocation, timeNow) {
+  if (!diary || !isOwner) {
+    return { canEdit: false, reason: '' };
+  }
+
+  const expiresAt = diary.editExpiresAt ? new Date(diary.editExpiresAt).getTime() : new Date(diary.createdAt).getTime() + 60 * 60 * 1000;
+  const remainingMs = Number.isFinite(expiresAt) ? expiresAt - timeNow : 0;
+
+  if (!diary.canEdit || remainingMs <= 0) {
+    return { canEdit: false, reason: '已超過可編輯時間' };
+  }
+
+  const coordinates = diary.location?.coordinates || [];
+  const diaryLng = Number.isFinite(coordinates[0]) ? coordinates[0] : diary.location?.lng;
+  const diaryLat = Number.isFinite(coordinates[1]) ? coordinates[1] : diary.location?.lat;
+  const currentLat = Number(currentLocation?.lat);
+  const currentLng = Number(currentLocation?.lng);
+
+  if (![diaryLat, diaryLng, currentLat, currentLng].every((value) => Number.isFinite(Number(value)))) {
+    return { canEdit: false, needsLocation: true, reason: '取得目前位置後可檢查距離' };
+  }
+
+  const distance = getDistanceInMeters(currentLat, currentLng, diaryLat, diaryLng);
+  const limit = diary.editDistanceLimitMeters || EDIT_DISTANCE_LIMIT_METERS;
+
+  if (!Number.isFinite(distance) || distance > limit) {
+    return { canEdit: false, reason: '離原地點太遠，無法編輯' };
+  }
+
+  return {
+    canEdit: true,
+    reason: '',
+    distance,
+    remainingText: formatRemainingTime(remainingMs)
+  };
+}
+
+function formatRemainingTime(ms) {
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours > 0 && minutes > 0) return `${hours} 小時 ${minutes} 分鐘`;
+  if (hours > 0) return `${hours} 小時`;
+  return `${minutes} 分鐘`;
 }
 
 function buildOptimisticReaction(diary, type) {
@@ -224,4 +309,3 @@ function buildOptimisticReaction(diary, type) {
     userReaction
   };
 }
-

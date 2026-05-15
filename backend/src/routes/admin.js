@@ -63,6 +63,8 @@ function serializeAdminDiary(diary) {
     locationAccuracy: diary.locationAccuracy || 'precise',
     imageUrl: diary.imageUrl || '',
     createdAt: diary.createdAt,
+    lastEditedAt: diary.lastEditedAt || null,
+    editCount: diary.editCount || 0,
     author: diary.user
       ? {
           _id: diary.user._id,

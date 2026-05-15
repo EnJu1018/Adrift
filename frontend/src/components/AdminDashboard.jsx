@@ -174,6 +174,11 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
       setDeleteLoadingId(id);
       setError('');
       const payload = await api.deleteAdminDiary(id);
+      setDiaries((current) => current.filter((item) => item._id !== id));
+      setDiariesPagination((current) => ({
+        ...current,
+        total: Math.max(0, (current.total || 0) - 1)
+      }));
       setNotice(payload.message || '日記已刪除');
       window.setTimeout(() => setNotice(''), 2200);
       setSelectedDiary((current) => (current?._id === id ? null : current));
@@ -205,6 +210,11 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
       setUserDeleteLoadingId(id);
       setError('');
       const payload = await api.deleteAdminUser(id);
+      setUsers((current) => current.filter((item) => item._id !== id));
+      setUsersPagination((current) => ({
+        ...current,
+        total: Math.max(0, (current.total || 0) - 1)
+      }));
       setNotice(payload.message || '使用者已刪除');
       window.setTimeout(() => setNotice(''), 2200);
       setUserDeleteTarget(null);
@@ -795,6 +805,8 @@ function DiaryDetailModal({ diary, deleteLoading, onClose, onDelete }) {
           <span>{formatDate(diary.createdAt)}</span>
           <span>{placeName}</span>
           <span>{diary.locationAccuracy || 'precise'}</span>
+          <span>編輯 {diary.editCount || 0} 次</span>
+          {diary.lastEditedAt && <span>最後編輯 {formatDate(diary.lastEditedAt)}</span>}
         </div>
         <p className="admin-detail-content">{diary.content || diary.text || '沒有內容'}</p>
         <footer>

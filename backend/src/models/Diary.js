@@ -107,7 +107,26 @@ const diarySchema = new mongoose.Schema(
           required: true
         }
       }
-    ]
+    ],
+    editHistory: [
+      {
+        title: String,
+        content: String,
+        mood: Object,
+        visibility: String,
+        editedAt: {
+          type: Date,
+          default: Date.now
+        }
+      }
+    ],
+    lastEditedAt: {
+      type: Date
+    },
+    editCount: {
+      type: Number,
+      default: 0
+    }
   },
   {
     timestamps: true,
