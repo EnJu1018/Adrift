@@ -3,8 +3,9 @@ import { ArrowLeft, ChevronDown, Eye, RefreshCcw, Search, Shield, Trash2, X } fr
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api/client.js';
-import { dropdownMotion, fadeUpMotion, modalBackdropMotion, modalPopMotion, pageFadeUp, toastMotion } from '../constants/animations.js';
+import { dropdownMotion, fadeUpMotion, modalBackdropMotion, modalPopMotion, pageFadeUp } from '../constants/animations.js';
 import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
+import ToastViewport from './ToastViewport.jsx';
 import Select from './ui/Select.jsx';
 
 const tabs = [
@@ -88,6 +89,17 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
       loadDiaries();
     }
   }, [activeTab, debouncedDiarySearch, diaryVisibility, diaryMood, diaryPage]);
+
+  useEffect(() => {
+    if (!notice && !error) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setNotice('');
+      setError('');
+    }, error ? 3200 : 2200);
+
+    return () => window.clearTimeout(timer);
+  }, [error, notice]);
 
   const overviewStats = useMemo(() => {
     return [
@@ -180,7 +192,6 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
         total: Math.max(0, (current.total || 0) - 1)
       }));
       setNotice(payload.message || '日記已刪除');
-      window.setTimeout(() => setNotice(''), 2200);
       setSelectedDiary((current) => (current?._id === id ? null : current));
       await Promise.all([loadStats(), loadDiaries()]);
     } catch (err) {
@@ -197,7 +208,6 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
       const payload = await api.updateAdminUserRole(id, role);
       setUsers((current) => current.map((item) => (item._id === id ? { ...item, ...payload.data } : item)));
       setNotice(payload.message || '使用者權限已更新');
-      window.setTimeout(() => setNotice(''), 2200);
     } catch (err) {
       setError(err.message || '更新使用者權限失敗');
     } finally {
@@ -216,7 +226,6 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
         total: Math.max(0, (current.total || 0) - 1)
       }));
       setNotice(payload.message || '使用者已刪除');
-      window.setTimeout(() => setNotice(''), 2200);
       setUserDeleteTarget(null);
 
       if (users.length <= 1 && userPage > 1) {
@@ -281,20 +290,6 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
             {activeSection.title}
             {loading[activeTab] && <span className="button-spinner" />}
           </h2>
-        </div>
-        <div className="admin-feedback-slot" aria-live="polite">
-          <AnimatePresence>
-            {notice && (
-              <motion.p className="admin-notice" {...toastMotion}>
-                {notice}
-              </motion.p>
-            )}
-            {error && (
-              <motion.p className="admin-error" {...toastMotion}>
-                {error}
-              </motion.p>
-            )}
-          </AnimatePresence>
         </div>
       </div>
 
@@ -434,6 +429,13 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
           />
         )}
       </AnimatePresence>
+      <ToastViewport
+        toast={error ? { id: `admin-error-${error}`, message: error, type: 'error' } : notice ? { id: `admin-notice-${notice}`, message: notice, type: 'success' } : null}
+        onDismiss={() => {
+          setNotice('');
+          setError('');
+        }}
+      />
     </motion.section>
   );
 }

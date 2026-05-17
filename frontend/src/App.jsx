@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Brain, Compass, MapPin, Plus, RefreshCcw, Search, Shield } from 'lucide-react';
+import { Activity, Bell, Brain, Copy, Home, LogOut, MapPin, Settings, Shield, UserRound, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearStoredAuth, getDiaryEventsUrl, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
@@ -7,11 +7,13 @@ import AdminDashboard, { AdminForbidden } from './components/AdminDashboard.jsx'
 import AuthPanel from './components/AuthPanel.jsx';
 import DiaryModal from './components/DiaryModal.jsx';
 import DiarySidePanel from './components/DiarySidePanel.jsx';
+import FeedPage from './components/FeedPage.jsx';
+import FriendsPage from './components/FriendsPage.jsx';
 import LifeMapAI from './components/LifeMapAI.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
-import ProfileDock from './components/ProfileDock.jsx';
+import ToastViewport from './components/ToastViewport.jsx';
 import { pageFadeUp } from './constants/animations.js';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
@@ -40,22 +42,27 @@ export default function App() {
   const [authError, setAuthError] = useState('');
   const [authNotice, setAuthNotice] = useState('');
   const [diaryError, setDiaryError] = useState('');
-  const [actionNotice, setActionNotice] = useState('');
-  const [filterNearby, setFilterNearby] = useState(false);
+  const [actionToast, setActionToast] = useState(null);
   const [mapMode, setMapMode] = useState('mine');
   const [visibilityFilter, setVisibilityFilter] = useState('all');
   const [exploreRadius, setExploreRadius] = useState(5000);
   const [exploreCenter, setExploreCenter] = useState(null);
   const [mapFocusLocation, setMapFocusLocation] = useState(null);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userCodeCopied, setUserCodeCopied] = useState(false);
+  const [userCodeCopyError, setUserCodeCopyError] = useState(false);
   const userLocation = useUserLocation();
   const performanceMode = usePerformanceMode(diaries.length);
   const locating = userLocation.loading;
   const autoLocateRequestedRef = useRef(false);
+  const navbarActionsRef = useRef(null);
 
   const isAuthPage = currentPath === '/login' || currentPath === '/register';
   const authMode = currentPath === '/register' ? 'register' : 'login';
-  const isProfilePage = currentPath === '/profile';
+  const isFriendsPage = currentPath === '/friends';
+  const isFeedPage = currentPath === '/feed';
   const isSettingsPage = currentPath === '/settings/account';
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
@@ -68,6 +75,8 @@ export default function App() {
 
     setCurrentPath(path);
     setAuthError('');
+    setNotificationsOpen(false);
+    setUserMenuOpen(false);
 
     if (path !== '/login') {
       setAuthNotice('');
@@ -87,8 +96,7 @@ export default function App() {
     setDraftLocation(null);
     setEditingDiary(null);
     setEditLocation(null);
-    setActionNotice('');
-    setFilterNearby(false);
+    setActionToast(null);
     setMapMode('mine');
     setVisibilityFilter('all');
     setExploreCenter(null);
@@ -217,11 +225,53 @@ export default function App() {
   }, [logout]);
 
   useEffect(() => {
-    if (!actionNotice) return undefined;
+    if (!actionToast) return undefined;
 
-    const timer = window.setTimeout(() => setActionNotice(''), 2200);
+    const timer = window.setTimeout(() => setActionToast(null), actionToast.type === 'error' ? 3000 : 2200);
     return () => window.clearTimeout(timer);
-  }, [actionNotice]);
+  }, [actionToast]);
+
+  useEffect(() => {
+    if (!userCodeCopied && !userCodeCopyError) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setUserCodeCopied(false);
+      setUserCodeCopyError(false);
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [userCodeCopied, userCodeCopyError]);
+
+  useEffect(() => {
+    if (!notificationsOpen && !userMenuOpen) return undefined;
+
+    function closePopoversOnOutsideClick(event) {
+      if (navbarActionsRef.current?.contains(event.target)) return;
+      setNotificationsOpen(false);
+      setUserMenuOpen(false);
+    }
+
+    function closePopoversOnEscape(event) {
+      if (event.key !== 'Escape') return;
+      setNotificationsOpen(false);
+      setUserMenuOpen(false);
+    }
+
+    document.addEventListener('pointerdown', closePopoversOnOutsideClick);
+    document.addEventListener('keydown', closePopoversOnEscape);
+
+    return () => {
+      document.removeEventListener('pointerdown', closePopoversOnOutsideClick);
+      document.removeEventListener('keydown', closePopoversOnEscape);
+    };
+  }, [notificationsOpen, userMenuOpen]);
+
+  function showActionToast(message, type = 'success') {
+    setActionToast({
+      id: `${Date.now()}-${message}`,
+      message,
+      type
+    });
+  }
 
   useEffect(() => {
     if (!user && !isAuthPage) {
@@ -463,7 +513,7 @@ export default function App() {
       }
       setDraftLocation(null);
       setSelectedDiary(diary);
-      setActionNotice('日記已新增');
+      showActionToast('日記已新增');
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
       throw error;
@@ -515,7 +565,7 @@ export default function App() {
 
       setEditingDiary(null);
       setEditLocation(null);
-      setActionNotice('日記已更新');
+      showActionToast('日記已更新');
       return response;
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
@@ -530,7 +580,7 @@ export default function App() {
       await api.deleteDiary(id);
       setDiaries((current) => current.filter((diary) => diary._id !== id));
       setSelectedDiary(null);
-      setActionNotice('日記已刪除');
+      showActionToast('日記已刪除');
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
     }
@@ -554,7 +604,7 @@ export default function App() {
 
       setSelectedDiary((current) => (current?._id === id ? { ...current, ...nextData } : current));
       setDiaries((current) => current.map((diary) => (diary._id === id ? { ...diary, ...nextData } : diary)));
-      setActionNotice('已更新共鳴');
+      showActionToast('已更新共鳴');
       return payload;
     } catch (error) {
       if (previousSelected) setSelectedDiary(previousSelected);
@@ -563,33 +613,6 @@ export default function App() {
       }
       if (error.status !== 401) setDiaryError(error.message);
       throw error;
-    }
-  }
-
-  async function toggleNearby() {
-    if (mapMode === 'explore') return;
-
-    const next = !filterNearby;
-    setFilterNearby(next);
-
-    if (!next) {
-      await loadDiaries({}, { silent: true });
-      return;
-    }
-
-    try {
-      const location = await userLocation.getLocation();
-      await loadDiaries(
-        {
-          lat: location.lat,
-          lng: location.lng,
-          radius: 50000
-        },
-        { silent: true }
-      );
-    } catch (error) {
-      setFilterNearby(false);
-      setDiaryError(error.message);
     }
   }
 
@@ -603,14 +626,12 @@ export default function App() {
       return;
     }
 
-    if (filterNearby) return;
     loadDiaries(params, { silent: true });
-  }, [exploreRadius, filterNearby, loadDiaries, loadExploreDiaries, mapMode, user]);
+  }, [exploreRadius, loadDiaries, loadExploreDiaries, mapMode, user]);
 
   async function activateMineMode() {
     setMapMode('mine');
     setExploreCenter(null);
-    setFilterNearby(false);
     setSelectedDiary(null);
     setMapFocusLocation(null);
     await loadDiaries({}, { silent: true });
@@ -625,7 +646,6 @@ export default function App() {
     try {
       setMapMode('explore');
       setVisibilityFilter('all');
-      setFilterNearby(false);
       setSelectedDiary(null);
       setDiaryLoading(true);
       setDiaryError('');
@@ -702,6 +722,32 @@ export default function App() {
     return payload;
   }
 
+  async function copyUserCode() {
+    const userCode = user?.userCode;
+    if (!userCode) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(userCode);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = userCode;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setUserCodeCopied(true);
+      setUserCodeCopyError(false);
+    } catch {
+      setUserCodeCopied(false);
+      setUserCodeCopyError(true);
+    }
+  }
+
   async function updateName(name) {
     const payload = await api.updateName(name);
     syncUser(payload.data?.user || { ...user, name: payload.data?.name || name });
@@ -722,6 +768,13 @@ export default function App() {
     const payload = await api.deleteAccount(form);
     logout(payload.message || '帳號已刪除');
     return payload;
+  }
+
+  function openDiaryFromFeed(diary) {
+    if (!diary?._id) return;
+    setSelectedDiary(diary);
+    setVisibilityFilter('all');
+    navigate('/');
   }
 
   return (
@@ -756,75 +809,180 @@ export default function App() {
           />
         ) : (
         <>
-        <section className="experience-panel">
-          <header className="topbar glass">
-            <div>
-              <p className="eyebrow">Map Diary</p>
-              <h2>地圖日記</h2>
-            </div>
+        <header className="product-navbar glass">
+          <button className="brand-nav-button" type="button" onClick={() => navigate('/')} aria-label="回到地圖">
+            <span className="brand-mark small">A</span>
+            <strong>Adrift</strong>
+          </button>
 
-            <div className="topbar-actions">
-              {user && (
-                <>
+          {user ? (
+            <>
+              <nav className="primary-nav" aria-label="主要導覽">
+                <button className={isHomePath(currentPath) ? 'active' : ''} type="button" onClick={() => navigate('/')}>
+                  <Home size={16} />
+                  地圖
+                </button>
+                <button className={isFriendsPage ? 'active' : ''} type="button" onClick={() => navigate('/friends')}>
+                  <Users size={16} />
+                  好友
+                </button>
+                <button className={isFeedPage ? 'active' : ''} type="button" onClick={() => navigate('/feed')}>
+                  <Activity size={16} />
+                  動態
+                </button>
+                <button className={isAiPage ? 'active' : ''} type="button" onClick={() => navigate('/ai/life-map')}>
+                  <Brain size={16} />
+                  Life Map AI
+                </button>
+              </nav>
+
+              <div className="navbar-actions" ref={navbarActionsRef}>
+                <div className="nav-popover-wrap">
                   <button
-                    className="icon-button"
-                    onClick={() =>
-                      mapMode === 'explore' ? activateExploreMode(exploreRadius) : loadDiaries({}, { silent: true })
-                    }
-                    aria-label="Refresh diaries"
+                    className={`nav-icon-button ${notificationsOpen ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => {
+                      setNotificationsOpen((open) => !open);
+                      setUserMenuOpen(false);
+                    }}
+                    aria-label="通知"
+                    aria-expanded={notificationsOpen}
                   >
-                    <RefreshCcw size={18} />
+                    <Bell size={18} />
+                    {friendRequests.length > 0 && <span className="nav-badge">{friendRequests.length}</span>}
                   </button>
-                  <button className={`chip-button ${isAiPage ? 'active' : ''}`} onClick={() => navigate('/ai/life-map')}>
-                    <Brain size={15} />
-                    Adrift AI
-                  </button>
-                  {isAdmin && (
-                    <button className="chip-button" onClick={() => navigate('/admin/dashboard')}>
-                      <Shield size={15} />
-                      Admin
-                    </button>
-                  )}
-                  <div className="map-mode-switch" aria-label="地圖模式">
-                    <button className={mapMode === 'mine' ? 'active' : ''} onClick={activateMineMode}>
-                      我的日記
-                    </button>
-                    <button className={mapMode === 'explore' ? 'active' : ''} onClick={() => activateExploreMode()}>
-                      <Compass size={15} />
-                      Explore
-                    </button>
-                  </div>
-                  {mapMode === 'explore' && (
-                    <div className="radius-switch" aria-label="Explore 半徑">
-                      {exploreRadiusOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          className={exploreRadius === option.value ? 'active' : ''}
-                          onClick={() => changeExploreRadius(option.value)}
-                          disabled={diaryLoading}
-                        >
-                          {option.label}
-                        </button>
-                      ))}
+                  {notificationsOpen && (
+                    <div className="nav-dropdown notifications-dropdown glass">
+                      <div className="nav-dropdown-header">
+                        <strong>通知</strong>
+                        <span>{friendRequests.length > 0 ? `${friendRequests.length} 則好友邀請` : '目前沒有新通知'}</span>
+                      </div>
+                      {friendRequests.length > 0 ? (
+                        friendRequests.slice(0, 3).map((request) => (
+                          <button key={request.requestId} type="button" onClick={() => navigate('/friends')}>
+                            <UserRound size={15} />
+                            <span>
+                              <strong>{request.from?.name || '新的好友邀請'}</strong>
+                              <small>@{request.from?.userCode || 'unknown'} 想加你為好友</small>
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <p>目前沒有新通知</p>
+                      )}
                     </div>
                   )}
-                  {mapMode === 'mine' && (
-                  <button className={`chip-button ${filterNearby ? 'active' : ''}`} onClick={toggleNearby} disabled={locating}>
-                    {locating ? <span className="button-spinner" /> : <Search size={16} />}
-                    附近
+                </div>
+
+                <div className="nav-popover-wrap">
+                  <button
+                    className={`nav-avatar-button ${userMenuOpen ? 'active' : ''}`}
+                    type="button"
+                    onClick={() => {
+                      setUserMenuOpen((open) => !open);
+                      setNotificationsOpen(false);
+                    }}
+                    aria-label="使用者選單"
+                    aria-expanded={userMenuOpen}
+                  >
+                    <span className="avatar-orb small">{(user.name || 'A').slice(0, 1).toUpperCase()}</span>
+                    <small>{user.name || '使用者'}</small>
                   </button>
+                  {userMenuOpen && (
+                    <div className="nav-dropdown user-dropdown glass">
+                      <div className="nav-dropdown-header">
+                        <div className="nav-user-summary">
+                          <strong>{user.name || 'Account'}</strong>
+                          {user.role && <span className={`nav-role-badge ${user.role}`}>{user.role}</span>}
+                        </div>
+                        <div className="nav-user-code-row">
+                          <span>@{user.userCode || 'user'}</span>
+                          <button
+                            className="copy-mini-button nav-copy-button"
+                            type="button"
+                            onClick={copyUserCode}
+                            aria-label="複製使用者 ID"
+                          >
+                            <Copy size={13} />
+                            {userCodeCopyError ? '失敗' : userCodeCopied ? '已複製' : '複製'}
+                          </button>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => navigate('/settings/account')}>
+                        <Settings size={15} />
+                        我的帳號
+                      </button>
+                      {isAdmin && (
+                        <button type="button" onClick={() => navigate('/admin/dashboard')}>
+                          <Shield size={15} />
+                          Admin Dashboard
+                        </button>
+                      )}
+                      <button className="danger-menu-item" type="button" onClick={() => logout()}>
+                        <LogOut size={15} />
+                        登出
+                      </button>
+                    </div>
                   )}
-                </>
-              )}
+                </div>
+              </div>
 
-              {!user && (
-                <button className="primary-button compact" onClick={() => navigate('/login')}>
-                  登入
+              <nav className="mobile-bottom-nav glass" aria-label="手機導覽">
+                <button className={isHomePath(currentPath) ? 'active' : ''} type="button" onClick={() => navigate('/')}>
+                  <Home size={18} />
+                  <span>地圖</span>
                 </button>
-              )}
-            </div>
-          </header>
+                <button className={isFriendsPage ? 'active' : ''} type="button" onClick={() => navigate('/friends')}>
+                  <Users size={18} />
+                  <span>好友</span>
+                </button>
+                <button className={isFeedPage ? 'active' : ''} type="button" onClick={() => navigate('/feed')}>
+                  <Activity size={18} />
+                  <span>動態</span>
+                </button>
+                <button className={isAiPage ? 'active' : ''} type="button" onClick={() => navigate('/ai/life-map')}>
+                  <Brain size={18} />
+                  <span>AI</span>
+                </button>
+              </nav>
+            </>
+          ) : (
+            <button className="primary-button compact" onClick={() => navigate('/login')}>
+              登入
+            </button>
+          )}
+        </header>
 
+        {user && isFriendsPage ? (
+          <FriendsPage
+            key="friends-page"
+            user={user}
+            diaries={displayedDiaries}
+            friends={friends}
+            friendRequests={friendRequests}
+            sentFriendRequests={sentFriendRequests}
+            socialRefreshToken={socialRefreshToken}
+            onOpenDiary={openDiaryFromFeed}
+            onSearchUser={searchFriendUser}
+            onSendFriendRequest={sendFriendRequest}
+            onCancelFriendRequest={cancelFriendRequest}
+            onAcceptFriendRequest={acceptFriendRequest}
+            onRejectFriendRequest={rejectFriendRequest}
+            onGetFriendRecommendations={getFriendRecommendations}
+            onGetFriendProfile={getFriendProfile}
+            onDeleteFriend={deleteFriend}
+          />
+        ) : user && isFeedPage ? (
+          <FeedPage
+            diaries={diaries}
+            user={user}
+            onOpenDiary={openDiaryFromFeed}
+          />
+        ) : user && isAiPage ? (
+          <LifeMapAI key="life-map-ai" onBack={() => navigate('/')} />
+        ) : (
+        <>
+        <section className="experience-panel">
           <div className="map-stage">
             <DiarySidePanel
               diary={selectedDiary}
@@ -856,15 +1014,14 @@ export default function App() {
           <div className="status-strip glass">
             <span>
               <MapPin size={15} />
-              {stats.total} memories
+              {stats.total} 則記憶
             </span>
-            <span>{stats.mine} mine</span>
+            <span>{stats.mine} 我的</span>
             {mapMode === 'explore' && !diaryLoading && diaries.length === 0 && <strong>附近還沒有公開日記</strong>}
             {locating && <strong>正在取得位置...</strong>}
             {userLocation.message && <strong className={userLocation.accuracyType === 'approximate' ? 'location-approximate' : 'location-success'}>{userLocation.message}</strong>}
             {userLocation.accuracyType === 'approximate' && !userLocation.message && <strong className="location-approximate">目前為大略位置</strong>}
             {userLocation.error && <strong>{userLocation.error}</strong>}
-            {actionNotice && <strong className="location-success">{actionNotice}</strong>}
             {diaryError && <strong>{diaryError}</strong>}
           </div>
         </section>
@@ -882,8 +1039,6 @@ export default function App() {
               onUpdatePassword={updatePassword}
               onDeleteAccount={deleteAccount}
             />
-          ) : user && isAiPage ? (
-            <LifeMapAI key="life-map-ai" onBack={() => navigate('/')} />
           ) : user ? (
             <MemoryPanel
               key="memory-panel"
@@ -894,11 +1049,18 @@ export default function App() {
               sentFriendRequests={sentFriendRequests}
               socialRefreshToken={socialRefreshToken}
               mapMode={mapMode}
+              exploreRadius={exploreRadius}
+              exploreRadiusOptions={exploreRadiusOptions}
+              diaryLoading={diaryLoading}
+              onActivateMineMode={activateMineMode}
+              onActivateExploreMode={activateExploreMode}
+              onExploreRadiusChange={changeExploreRadius}
               visibilityFilter={visibilityFilter}
               onVisibilityFilterChange={setVisibilityFilter}
               selectedDiaryId={selectedDiary?._id}
-              onNewDiary={openNewDiary}
               onSelectDiary={setSelectedDiary}
+              onNewDiary={openNewDiary}
+              createDiaryDisabled={locating}
               onSearchUser={searchFriendUser}
               onSendFriendRequest={sendFriendRequest}
               onCancelFriendRequest={cancelFriendRequest}
@@ -907,28 +1069,15 @@ export default function App() {
               onGetFriendRecommendations={getFriendRecommendations}
               onGetFriendProfile={getFriendProfile}
               onDeleteFriend={deleteFriend}
-              locating={locating}
               lowPerformance={performanceMode.lowPerformance}
             />
           ) : null}
         </AnimatePresence>
         </>
         )}
+        </>
+        )}
       </motion.div>
-
-      {!isAdminPage && (
-        <ProfileDock
-          user={user}
-          diaries={diaries}
-          friends={friends}
-          forceOpen={isProfilePage}
-          onOpen={() => navigate('/profile')}
-          onClose={() => navigate('/')}
-          onSettings={() => navigate('/settings/account')}
-          onLogout={() => logout()}
-        />
-      )}
-
       <AnimatePresence>
         {draftLocation && (
           <DiaryModal
@@ -955,6 +1104,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+      <ToastViewport toast={actionToast} className="avoid-sidebar" onDismiss={() => setActionToast(null)} />
     </main>
   );
 }
@@ -963,4 +1113,8 @@ function buildApproximatePlaceName(location) {
   if (location?.source !== 'ip') return '';
 
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
+}
+
+function isHomePath(path) {
+  return path === '/' || path === '/map' || path === '/profile';
 }

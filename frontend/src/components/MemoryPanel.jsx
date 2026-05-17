@@ -4,6 +4,7 @@ import {
   BookOpen,
   CalendarDays,
   Clock3,
+  Compass,
   Eye,
   Plus,
   Search,
@@ -20,6 +21,7 @@ import { createPortal } from 'react-dom';
 import { fadeUpMotion, listItemMotion, panelSlideRight, toastMotion } from '../constants/animations.js';
 import { USER_CODE_PATTERN } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
+import ToastViewport from './ToastViewport.jsx';
 
 const VISIBILITY_FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
@@ -35,12 +37,20 @@ export default function MemoryPanel({
   friendRequests,
   sentFriendRequests,
   socialRefreshToken = 0,
+  variant = 'panel',
   mapMode = 'mine',
+  exploreRadius = 5000,
+  exploreRadiusOptions = [],
   visibilityFilter = 'all',
+  diaryLoading = false,
+  onActivateMineMode,
+  onActivateExploreMode,
+  onExploreRadiusChange,
   onVisibilityFilterChange,
   selectedDiaryId,
-  onNewDiary,
   onSelectDiary,
+  onNewDiary,
+  createDiaryDisabled = false,
   onSearchUser,
   onSendFriendRequest,
   onCancelFriendRequest,
@@ -49,12 +59,12 @@ export default function MemoryPanel({
   onGetFriendRecommendations,
   onGetFriendProfile,
   onDeleteFriend,
-  locating,
   lowPerformance = false
 }) {
-  const [activeTab, setActiveTab] = useState('memories');
+  const isFriendsPage = variant === 'friendsPage';
   const [searchCode, setSearchCode] = useState('');
   const [searchResult, setSearchResult] = useState(null);
+  const [searchError, setSearchError] = useState('');
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState('success');
   const [busyAction, setBusyAction] = useState('');
@@ -67,6 +77,7 @@ export default function MemoryPanel({
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState('');
   const [recommendationStatus, setRecommendationStatus] = useState({});
+  const [inviteTab, setInviteTab] = useState('received');
 
   useEffect(() => {
     if (!message) return undefined;
@@ -87,7 +98,7 @@ export default function MemoryPanel({
   }, []);
 
   useEffect(() => {
-    if (activeTab !== 'social' || !onGetFriendRecommendations) return undefined;
+    if (!isFriendsPage || !onGetFriendRecommendations) return undefined;
 
     let active = true;
     setRecommendationsLoading(true);
@@ -111,7 +122,7 @@ export default function MemoryPanel({
     return () => {
       active = false;
     };
-  }, [activeTab, socialRefreshToken]);
+  }, [isFriendsPage, onGetFriendRecommendations, socialRefreshToken]);
 
   const visibleDiaries = diaries || [];
   const friendList = friends || [];
@@ -162,25 +173,25 @@ export default function MemoryPanel({
 
     if (!normalized) {
       setSearchResult(null);
-      showMessage('請輸入使用者 ID', 'error');
+      setSearchError('請輸入使用者 ID');
       return;
     }
 
     if (!USER_CODE_PATTERN.test(normalized)) {
       setSearchResult(null);
-      showMessage('使用者 ID 只能包含英文、數字、底線、減號，長度需為 4 到 20 字元', 'error');
+      setSearchError('使用者 ID 只能包含英文、數字、底線、減號，長度需為 4 到 20 字元');
       return;
     }
 
     try {
       setBusyAction('search');
       setSearchResult(null);
+      setSearchError('');
       const result = await onSearchUser(normalized);
       setSearchResult(result);
-      showMessage('搜尋成功');
     } catch (error) {
       setSearchResult(null);
-      showMessage(error.message || '找不到使用者', 'error');
+      setSearchError(error.message || '找不到此使用者');
     } finally {
       setBusyAction('');
     }
@@ -339,7 +350,6 @@ export default function MemoryPanel({
     setFriendProfile(null);
 
     if (diary) {
-      setActiveTab('memories');
       onSelectDiary(diary);
       return;
     }
@@ -347,29 +357,13 @@ export default function MemoryPanel({
     showMessage('目前沒有可查看的好友日記', 'error');
   }
 
-  const toast = (
-    <div className="panel-toast-layer" aria-live="polite">
-      <AnimatePresence>
-        {message && (
-          <motion.p
-            className={`form-message ${messageType} panel-toast`}
-            {...toastMotion}
-          >
-            {messageType === 'error' ? <X size={16} /> : <Check size={16} />}
-            {message}
-          </motion.p>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-
   const friendProfileModal = friendProfile ? createPortal(
     <motion.div className="modal-backdrop" {...toastMotion}>
       <motion.article className="friend-profile-modal glass" {...fadeUpMotion}>
         <header className="friend-profile-header">
           <div className="avatar-orb">{friendProfile.name?.slice(0, 1).toUpperCase()}</div>
           <div>
-            <p className="eyebrow">Friend Profile</p>
+            <p className="eyebrow">好友資料</p>
             <h3>{friendProfile.name}</h3>
             <span>@{friendProfile.userCode}</span>
           </div>
@@ -399,11 +393,11 @@ export default function MemoryPanel({
         </div>
 
         <footer className="friend-profile-actions">
-          <button className="chip-button" type="button" onClick={() => viewFriendDiaries(friendProfile)}>
+          <button className="friend-primary-button" type="button" onClick={() => viewFriendDiaries(friendProfile)}>
             <BookOpen size={15} />
             查看地圖日記
           </button>
-          <button className="ghost-button danger" type="button" onClick={() => setFriendToDelete(friendProfile)}>
+          <button className="friend-danger-button" type="button" onClick={() => setFriendToDelete(friendProfile)}>
             <Trash2 size={15} />
             刪除好友
           </button>
@@ -419,7 +413,7 @@ export default function MemoryPanel({
         <header className="friend-profile-header">
           <div className="avatar-orb small">{friendToDelete.name?.slice(0, 1).toUpperCase()}</div>
           <div>
-            <p className="eyebrow">Remove Friend</p>
+            <p className="eyebrow">刪除好友</p>
             <h3>確定要刪除此好友嗎？</h3>
             <span>@{friendToDelete.userCode}</span>
           </div>
@@ -429,9 +423,9 @@ export default function MemoryPanel({
         </header>
         <p className="quiet-note">刪除後，你們將無法再查看彼此的好友限定日記。這不會刪除任何日記或帳號。</p>
         <footer className="friend-profile-actions">
-          <button className="ghost-button" type="button" onClick={() => setFriendToDelete(null)}>取消</button>
+          <button className="friend-secondary-button" type="button" onClick={() => setFriendToDelete(null)}>取消</button>
           <button
-            className="ghost-button danger"
+            className="friend-danger-button"
             type="button"
             onClick={confirmDeleteFriend}
             disabled={busyAction === `delete-friend-${friendToDelete._id}`}
@@ -447,48 +441,99 @@ export default function MemoryPanel({
 
   return (
     <>
-      {createPortal(toast, document.body)}
+      <ToastViewport
+        toast={message ? { id: `${messageType}-${message}`, message, type: messageType } : null}
+        className={isFriendsPage ? '' : 'avoid-sidebar'}
+        onDismiss={() => setMessage('')}
+      />
       {friendProfileModal}
       {deleteFriendModal}
-      <motion.aside
-        className="memory-panel glass"
+      <motion.section
+        className={isFriendsPage ? 'friends-page-shell glass' : 'memory-panel glass'}
         {...panelSlideRight}
       >
-        <header className="memory-header">
-          <div>
-            <p className="eyebrow">Memory Log</p>
-            <h2>地圖日記</h2>
-          </div>
-          <button className="new-diary-cta" onClick={onNewDiary} disabled={locating} aria-label="新增日記">
-            {locating ? <span className="button-spinner dark" /> : <Plus size={17} />}
-            {locating ? '定位中' : '新增'}
-          </button>
-        </header>
-
-        <div className="panel-tabs">
-          <button className={activeTab === 'memories' ? 'active' : ''} onClick={() => setActiveTab('memories')}>
-            <Sparkles size={15} />
-            日記
-          </button>
-          <button className={activeTab === 'social' ? 'active' : ''} onClick={() => setActiveTab('social')}>
-            <Users size={15} />
-            好友
-            {requests.length > 0 && <span>{requests.length}</span>}
-          </button>
-        </div>
+        {isFriendsPage ? (
+          <>
+            <header className="friends-page-hero">
+              <div>
+                <p className="eyebrow">Friends</p>
+                <h2>好友</h2>
+                <span>連結你想分享記憶的人</span>
+              </div>
+              <strong>{friendList.length} 位好友 · {requests.length} 則邀請</strong>
+            </header>
+            <div className="friends-stat-grid" aria-label="好友狀態摘要">
+              <article>
+                <strong>{friendList.length}</strong>
+                <span>我的好友</span>
+              </article>
+              <article>
+                <strong>{requests.length}</strong>
+                <span>收到邀請</span>
+              </article>
+              <article>
+                <strong>{sentRequests.length}</strong>
+                <span>已送出</span>
+              </article>
+            </div>
+          </>
+        ) : (
+          <header className="memory-header map-diary-header">
+            <div className="map-diary-title-group">
+              <h2>地圖日記</h2>
+              <p>在真實地點留下你的記憶</p>
+            </div>
+            <button
+              className="create-diary-button"
+              type="button"
+              onClick={onNewDiary}
+              disabled={createDiaryDisabled}
+            >
+              {createDiaryDisabled ? <span className="button-spinner" /> : <Plus size={16} />}
+              <span className="create-diary-label-full">新增日記</span>
+              <span className="create-diary-label-short">日記</span>
+            </button>
+          </header>
+        )}
 
         <AnimatePresence mode="wait">
-          {activeTab === 'memories' ? (
+          {!isFriendsPage ? (
             <motion.div
               key="memories"
               className="panel-scroll memory-panel-content"
               {...fadeUpMotion}
             >
               <div className="memory-controls">
+                <div className="map-mode-switch sidebar-map-mode" aria-label="地圖模式">
+                  <button className={mapMode === 'mine' ? 'active' : ''} type="button" onClick={onActivateMineMode}>
+                    我的地圖
+                  </button>
+                  <button className={mapMode === 'explore' ? 'active' : ''} type="button" onClick={() => onActivateExploreMode?.()}>
+                    <Compass size={15} />
+                    附近動態
+                  </button>
+                </div>
+
+                {mapMode === 'explore' && (
+                  <div className="radius-switch sidebar-radius-switch" aria-label="附近動態半徑">
+                    {exploreRadiusOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        className={exploreRadius === option.value ? 'active' : ''}
+                        onClick={() => onExploreRadiusChange?.(option.value)}
+                        disabled={diaryLoading}
+                        type="button"
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="memory-stats">
                   <article>
                     <span>{mine.length}</span>
-                    <p>我的日記</p>
+                    <p>我的足跡</p>
                   </article>
                   <article>
                     <span>{visibleDiaries.length}</span>
@@ -497,7 +542,7 @@ export default function MemoryPanel({
                 </div>
 
                 {mapMode === 'explore' ? (
-                  <p className="visibility-filter-note">Explore 只顯示公開日記</p>
+                  <p className="visibility-filter-note">附近動態只顯示公開日記</p>
                 ) : (
                   <div className="visibility-filter" aria-label="日記可見性篩選">
                     {VISIBILITY_FILTER_OPTIONS.map((option) => (
@@ -564,273 +609,348 @@ export default function MemoryPanel({
           ) : (
             <motion.div
               key="social"
-              className="panel-scroll social-panel"
+              className={isFriendsPage ? 'friends-page-content' : 'panel-scroll social-panel'}
               {...fadeUpMotion}
             >
-              <form className="social-search" onSubmit={searchUser}>
-                <label>
-                  搜尋使用者 ID
-                  <div className="inline-control">
-                    <input
-                      value={searchCode}
-                      onChange={(event) => setSearchCode(event.target.value)}
-                      placeholder="friend_001"
-                    />
-                    <button className="icon-button" type="submit" disabled={busyAction === 'search'} aria-label="搜尋好友">
-                      {busyAction === 'search' ? <span className="button-spinner" /> : <Search size={16} />}
-                    </button>
+              <div className="friends-main-column">
+                <form className="friend-page-card friend-search-card" onSubmit={searchUser}>
+                  <div className="friend-card-heading">
+                    <div>
+                      <p className="eyebrow">Search</p>
+                      <h3>搜尋好友</h3>
+                    </div>
+                    <Search size={18} />
                   </div>
-                </label>
-              </form>
-
-              {messageType === 'error' && message === '找不到此使用者' && <p className="quiet-note">找不到使用者</p>}
-
-              {searchResult && (
-                <article className="person-card">
-                  <div className="avatar-orb small">{searchResult.name.slice(0, 1).toUpperCase()}</div>
-                  <div>
-                    <strong>{searchResult.name}</strong>
-                    <span>@{searchResult.userCode} · {getFriendshipLabel(searchFriendshipStatus)}</span>
-                  </div>
-                  {searchFriendshipStatus === 'self' ? (
-                    <button className="chip-button" disabled>自己</button>
-                  ) : searchFriendshipStatus === 'friend' ? (
-                    <button className="chip-button" onClick={() => openFriendProfile(searchResult)}>
-                      <UserRound size={15} />
-                      資料卡
-                    </button>
-                  ) : searchFriendshipStatus === 'sent_request' ? (
-                    <div className="person-actions">
-                      <button className="chip-button" disabled>已送出邀請</button>
-                      <button
-                        className="icon-button"
-                        onClick={() => cancelRequest(sentRequestForSearchResult?.requestId)}
-                        disabled={busyAction === `cancel-${sentRequestForSearchResult?.requestId}` || !sentRequestForSearchResult?.requestId}
-                        aria-label="收回好友邀請"
-                      >
-                        {busyAction === `cancel-${sentRequestForSearchResult?.requestId}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
+                  <p className="friend-card-copy">輸入使用者 ID，找到你想連結的人。</p>
+                  <label className="friend-search-control">
+                    <span>使用者 ID</span>
+                    <div className="inline-control">
+                      <input
+                        value={searchCode}
+                        onChange={(event) => {
+                          setSearchCode(event.target.value);
+                          if (searchError) setSearchError('');
+                        }}
+                        placeholder="輸入 userCode，例如 arren1088"
+                      />
+                      <button className="friend-primary-button" type="submit" disabled={busyAction === 'search'}>
+                        {busyAction === 'search' ? <span className="button-spinner dark" /> : <Search size={15} />}
+                        {busyAction === 'search' ? '搜尋中' : '搜尋'}
                       </button>
                     </div>
-                  ) : searchFriendshipStatus === 'received_request' ? (
-                    <button
-                      className="chip-button"
-                      onClick={() => acceptRequest(receivedRequestForSearchResult)}
-                      disabled={busyAction === `accept-${receivedRequestForSearchResult?.requestId}` || !receivedRequestForSearchResult?.requestId}
-                    >
-                      {busyAction === `accept-${receivedRequestForSearchResult?.requestId}` ? <span className="button-spinner" /> : <Check size={15} />}
-                      接受邀請
-                    </button>
-                  ) : (
-                    <button className="chip-button" onClick={sendRequest} disabled={busyAction === 'request'}>
-                      {busyAction === 'request' ? <span className="button-spinner" /> : <UserPlus size={15} />}
-                      加入好友
-                    </button>
+                  </label>
+
+                  {searchError && (
+                    <p className="friend-inline-note error-note">{searchError}</p>
                   )}
-                </article>
-              )}
 
-              <section className="social-section recommendations-section">
-                <div className="section-title">
-                  <Sparkles size={16} />
-                  <span>推薦好友</span>
-                </div>
+                  {searchResult && (
+                    <article className="friend-user-card search-result-card">
+                      <span className="avatar-orb">{searchResult.name.slice(0, 1).toUpperCase()}</span>
+                      <div className="friend-user-main">
+                        <strong>{searchResult.name}</strong>
+                        <span>@{searchResult.userCode}</span>
+                        <small>{getFriendshipLabel(searchFriendshipStatus)}</small>
+                      </div>
+                      <div className="friend-actions">
+                        {searchFriendshipStatus === 'self' ? (
+                          <span className="friend-status-pill">這是你自己</span>
+                        ) : searchFriendshipStatus === 'friend' ? (
+                          <button className="friend-primary-button compact" type="button" onClick={() => openFriendProfile(searchResult)}>
+                            <UserRound size={15} />
+                            查看
+                          </button>
+                        ) : searchFriendshipStatus === 'sent_request' ? (
+                          <>
+                            <span className="friend-status-pill">已送出邀請</span>
+                            <button
+                              className="friend-secondary-button compact"
+                              type="button"
+                              onClick={() => cancelRequest(sentRequestForSearchResult?.requestId)}
+                              disabled={busyAction === `cancel-${sentRequestForSearchResult?.requestId}` || !sentRequestForSearchResult?.requestId}
+                            >
+                              {busyAction === `cancel-${sentRequestForSearchResult?.requestId}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
+                              收回
+                            </button>
+                          </>
+                        ) : searchFriendshipStatus === 'received_request' ? (
+                          <>
+                            <span className="friend-status-pill">對方已邀請你</span>
+                            <button
+                              className="friend-primary-button compact"
+                              type="button"
+                              onClick={() => acceptRequest(receivedRequestForSearchResult)}
+                              disabled={busyAction === `accept-${receivedRequestForSearchResult?.requestId}` || !receivedRequestForSearchResult?.requestId}
+                            >
+                              {busyAction === `accept-${receivedRequestForSearchResult?.requestId}` ? <span className="button-spinner dark" /> : <Check size={15} />}
+                              接受
+                            </button>
+                          </>
+                        ) : (
+                          <button className="friend-primary-button compact" type="button" onClick={sendRequest} disabled={busyAction === 'request'}>
+                            {busyAction === 'request' ? <span className="button-spinner dark" /> : <UserPlus size={15} />}
+                            {busyAction === 'request' ? '送出中' : '加入好友'}
+                          </button>
+                        )}
+                      </div>
+                    </article>
+                  )}
+                </form>
 
-                {recommendationsLoading ? (
-                  <p className="quiet-note">正在尋找可能認識的人...</p>
-                ) : recommendationsError ? (
-                  <p className="quiet-note error-note">{recommendationsError}</p>
-                ) : recommendations.length > 0 ? (
-                  <div className="recommendation-list">
-                    {recommendations.map((recommendation) => {
-                      const sentRequest = sentRequests.find((request) => sameId(request.to?._id, recommendation._id));
-                      const status = recommendationStatus[recommendation._id] || (sentRequest ? 'sent_request' : 'none');
-                      const tags = getRecommendationTags(recommendation);
+                <section className="friend-page-card recommendations-section">
+                  <div className="friend-card-heading">
+                    <div>
+                      <p className="eyebrow">Suggestions</p>
+                      <h3>推薦好友</h3>
+                    </div>
+                    <Sparkles size={18} />
+                  </div>
 
-                      return (
-                        <article className="recommendation-card" key={recommendation._id}>
-                          <div className="avatar-orb small">{recommendation.name.slice(0, 1).toUpperCase()}</div>
-                          <div className="recommendation-body">
-                            <div className="recommendation-heading">
-                              <strong>{recommendation.name}</strong>
-                              <span>@{recommendation.userCode}</span>
-                            </div>
-                            <p>{recommendation.reasons?.[0] || '你們可能有相近的 Adrift 足跡。'}</p>
-                            {tags.length > 0 && (
-                              <div className="recommendation-tags">
-                                {tags.map((tag) => (
-                                  <span key={tag}>{tag}</span>
-                                ))}
+                  {recommendationsLoading ? (
+                    <div className="friend-empty-state compact">
+                      <span className="button-spinner" />
+                      <p>載入推薦好友...</p>
+                    </div>
+                  ) : recommendationsError ? (
+                    <p className="friend-inline-note error-note">{recommendationsError}</p>
+                  ) : recommendations.length > 0 ? (
+                    <div className="friend-recommendation-grid">
+                      {recommendations.map((recommendation) => {
+                        const sentRequest = sentRequests.find((request) => sameId(request.to?._id, recommendation._id));
+                        const status = recommendationStatus[recommendation._id] || (sentRequest ? 'sent_request' : 'none');
+                        const tags = getRecommendationTags(recommendation);
+
+                        return (
+                          <article className="recommendation-card friend-recommendation-card" key={recommendation._id}>
+                            <span className="avatar-orb small">{recommendation.name.slice(0, 1).toUpperCase()}</span>
+                            <div className="recommendation-body">
+                              <div className="recommendation-heading">
+                                <strong>{recommendation.name}</strong>
+                                <span>@{recommendation.userCode}</span>
                               </div>
-                            )}
-                          </div>
-                          <div className="recommendation-actions">
-                            {status === 'sent_request' ? (
-                              <>
-                                <button className="chip-button" type="button" disabled>
-                                  已送出
+                              <p>{recommendation.reasons?.[0] || '你們可能有相近的 Adrift 足跡。'}</p>
+                              {tags.length > 0 && (
+                                <div className="recommendation-tags">
+                                  {tags.map((tag) => (
+                                    <span key={tag}>{tag}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <div className="recommendation-actions">
+                              {status === 'sent_request' ? (
+                                <>
+                                  <span className="friend-status-pill">已送出</span>
+                                  <button
+                                    className="friend-secondary-button compact"
+                                    type="button"
+                                    onClick={() => cancelRecommendationRequest(recommendation, sentRequest?.requestId)}
+                                    disabled={!sentRequest?.requestId || busyAction === `cancel-recommend-${recommendation._id}`}
+                                  >
+                                    {busyAction === `cancel-recommend-${recommendation._id}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
+                                    收回
+                                  </button>
+                                </>
+                              ) : (
+                                <button
+                                  className="friend-primary-button compact"
+                                  type="button"
+                                  onClick={() => sendRecommendationRequest(recommendation)}
+                                  disabled={busyAction === `recommend-${recommendation._id}`}
+                                >
+                                  {busyAction === `recommend-${recommendation._id}` ? <span className="button-spinner dark" /> : <UserPlus size={15} />}
+                                  加好友
+                                </button>
+                              )}
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="friend-empty-state">
+                      <Sparkles size={18} />
+                      <strong>目前沒有適合的推薦好友</strong>
+                      <p>多新增一些公開日記或好友後，推薦會更準確。</p>
+                    </div>
+                  )}
+                </section>
+
+                <section className="friend-page-card friend-invites-card">
+                  <div className="friend-card-heading">
+                    <div>
+                      <p className="eyebrow">Invites</p>
+                      <h3>好友邀請</h3>
+                    </div>
+                    <UserPlus size={18} />
+                  </div>
+                  <div className="friend-segmented" aria-label="好友邀請分類">
+                    <button className={inviteTab === 'received' ? 'active' : ''} type="button" onClick={() => setInviteTab('received')}>
+                      收到的邀請
+                      {requests.length > 0 && <span>{requests.length}</span>}
+                    </button>
+                    <button className={inviteTab === 'sent' ? 'active' : ''} type="button" onClick={() => setInviteTab('sent')}>
+                      已送出的邀請
+                      {sentRequests.length > 0 && <span>{sentRequests.length}</span>}
+                    </button>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    {inviteTab === 'received' ? (
+                      <motion.div key="received" className="friend-invite-list" {...fadeUpMotion}>
+                        {requests.length > 0 ? (
+                          requests.map((request) => (
+                            <article className="friend-user-card invite-card" key={request.requestId}>
+                              <span className="avatar-orb small">{request.from.name.slice(0, 1).toUpperCase()}</span>
+                              <div className="friend-user-main">
+                                <strong>{request.from.name}</strong>
+                                <span>@{request.from.userCode}</span>
+                                <small>{request.createdAt ? new Date(request.createdAt).toLocaleString() : '新的邀請'}</small>
+                              </div>
+                              <div className="friend-actions">
+                                <button
+                                  className="friend-primary-button compact"
+                                  type="button"
+                                  onClick={() => acceptRequest(request)}
+                                  disabled={busyAction === `accept-${request.requestId}`}
+                                >
+                                  {busyAction === `accept-${request.requestId}` ? <span className="button-spinner dark" /> : <Check size={15} />}
+                                  接受
                                 </button>
                                 <button
-                                  className="icon-button"
+                                  className="friend-secondary-button compact"
                                   type="button"
-                                  onClick={() => cancelRecommendationRequest(recommendation, sentRequest?.requestId)}
-                                  disabled={!sentRequest?.requestId || busyAction === `cancel-recommend-${recommendation._id}`}
-                                  aria-label="收回好友邀請"
+                                  onClick={() => rejectRequest(request)}
+                                  disabled={busyAction === `reject-${request.requestId}`}
                                 >
-                                  {busyAction === `cancel-recommend-${recommendation._id}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
+                                  {busyAction === `reject-${request.requestId}` ? <span className="button-spinner" /> : <X size={15} />}
+                                  拒絕
                                 </button>
-                              </>
-                            ) : (
-                              <button
-                                className="chip-button"
-                                type="button"
-                                onClick={() => sendRecommendationRequest(recommendation)}
-                                disabled={busyAction === `recommend-${recommendation._id}`}
-                              >
-                                {busyAction === `recommend-${recommendation._id}` ? <span className="button-spinner" /> : <UserPlus size={15} />}
-                                加入好友
-                              </button>
-                            )}
+                              </div>
+                            </article>
+                          ))
+                        ) : (
+                          <div className="friend-empty-state compact">
+                            <UserPlus size={18} />
+                            <strong>尚未收到好友邀請</strong>
                           </div>
-                        </article>
-                      );
-                    })}
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.div key="sent" className="friend-invite-list" {...fadeUpMotion}>
+                        {sentRequests.length > 0 ? (
+                          sentRequests.map((request) => (
+                            <article className="friend-user-card invite-card" key={request.requestId}>
+                              <span className="avatar-orb small">{request.to.name.slice(0, 1).toUpperCase()}</span>
+                              <div className="friend-user-main">
+                                <strong>{request.to.name}</strong>
+                                <span>@{request.to.userCode}</span>
+                                <small>{request.createdAt ? new Date(request.createdAt).toLocaleString() : '等待對方回覆'}</small>
+                              </div>
+                              <div className="friend-actions">
+                                <span className="friend-status-pill">等待回覆</span>
+                                <button
+                                  className="friend-secondary-button compact"
+                                  type="button"
+                                  onClick={() => cancelRequest(request.requestId)}
+                                  disabled={busyAction === `cancel-${request.requestId}`}
+                                >
+                                  {busyAction === `cancel-${request.requestId}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
+                                  收回邀請
+                                </button>
+                              </div>
+                            </article>
+                          ))
+                        ) : (
+                          <div className="friend-empty-state compact">
+                            <Undo2 size={18} />
+                            <strong>尚未送出好友邀請</strong>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </section>
+              </div>
+
+              <aside className="friends-side-column">
+                <section className="friend-page-card friends-list-card">
+                  <div className="friend-card-heading">
+                    <div>
+                      <p className="eyebrow">Friends</p>
+                      <h3>我的好友</h3>
+                    </div>
+                    <Users size={18} />
                   </div>
-                ) : (
-                  <p className="quiet-note">目前沒有適合的推薦好友。多新增一些公開日記或好友後，推薦會更準確。</p>
-                )}
-              </section>
-
-              <section className="social-section">
-                <div className="section-title">
-                  <Undo2 size={16} />
-                  <span>已送出邀請</span>
-                </div>
-                {sentRequests.length > 0 ? (
-                  sentRequests.map((request) => (
-                    <article className="person-card" key={request.requestId}>
-                      <div className="avatar-orb small">{request.to.name.slice(0, 1).toUpperCase()}</div>
-                      <div>
-                        <strong>{request.to.name}</strong>
-                        <span>@{request.to.userCode} · 等待對方回覆</span>
-                        <small>{new Date(request.createdAt).toLocaleString()}</small>
-                      </div>
-                      <button
-                        className="chip-button"
-                        onClick={() => cancelRequest(request.requestId)}
-                        disabled={busyAction === `cancel-${request.requestId}`}
-                      >
-                        {busyAction === `cancel-${request.requestId}` ? <span className="button-spinner" /> : <Undo2 size={15} />}
-                        收回
-                      </button>
-                    </article>
-                  ))
-                ) : (
-                  <p className="quiet-note">尚未送出好友邀請</p>
-                )}
-              </section>
-
-              <section className="social-section">
-                <div className="section-title">
-                  <UserPlus size={16} />
-                  <span>收到的邀請</span>
-                </div>
-                {requests.length > 0 ? (
-                  requests.map((request) => (
-                    <article className="person-card" key={request.requestId}>
-                      <div className="avatar-orb small">{request.from.name.slice(0, 1).toUpperCase()}</div>
-                      <div>
-                        <strong>{request.from.name}</strong>
-                        <span>@{request.from.userCode}</span>
-                      </div>
-                      <div className="person-actions">
-                        <button
-                          className="icon-button"
-                          onClick={() => acceptRequest(request)}
-                          disabled={busyAction === `accept-${request.requestId}`}
-                          aria-label="接受好友邀請"
-                        >
-                          {busyAction === `accept-${request.requestId}` ? <span className="button-spinner" /> : <Check size={15} />}
-                        </button>
-                        <button
-                          className="icon-button"
-                          onClick={() => rejectRequest(request)}
-                          disabled={busyAction === `reject-${request.requestId}`}
-                          aria-label="拒絕好友邀請"
-                        >
-                          {busyAction === `reject-${request.requestId}` ? <span className="button-spinner" /> : <X size={15} />}
-                        </button>
-                      </div>
-                    </article>
-                  ))
-                ) : (
-                  <p className="quiet-note">尚未收到好友邀請</p>
-                )}
-              </section>
-
-              <section className="social-section">
-                <div className="section-title">
-                  <Users size={16} />
-                  <span>我的好友</span>
-                </div>
-                <label className="friend-list-search">
-                  <Search size={15} />
-                  <input
-                    value={friendQuery}
-                    onChange={(event) => setFriendQuery(event.target.value)}
-                    placeholder="搜尋好友名稱或 ID"
-                  />
-                </label>
-                {friendList.length > 0 ? (
-                  filteredFriends.length > 0 ? (
-                    filteredFriends.map((friend) => (
-                      <article
-                        className="person-card clickable"
-                        key={friend._id}
-                        onClick={() => openFriendProfile(friend)}
-                      >
-                        <div className="avatar-orb small">{friend.name.slice(0, 1).toUpperCase()}</div>
-                        <div>
-                          <strong>{friend.name}</strong>
-                          <span>@{friend.userCode} · 已是好友</span>
-                        </div>
-                        <div className="person-actions">
-                          <button
-                            className="icon-button"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openFriendProfile(friend);
-                            }}
-                            disabled={busyAction === `profile-${friend._id}`}
-                            aria-label="查看好友資料"
+                  <label className="friend-list-search">
+                    <Search size={15} />
+                    <input
+                      value={friendQuery}
+                      onChange={(event) => setFriendQuery(event.target.value)}
+                      placeholder="搜尋好友名稱或 ID"
+                    />
+                  </label>
+                  <div className="friends-list">
+                    {friendList.length > 0 ? (
+                      filteredFriends.length > 0 ? (
+                        filteredFriends.map((friend) => (
+                          <article
+                            className="friend-user-card friend-list-item"
+                            key={friend._id}
+                            onClick={() => openFriendProfile(friend)}
                           >
-                            {busyAction === `profile-${friend._id}` ? <span className="button-spinner" /> : <UserRound size={15} />}
-                          </button>
-                          <button
-                            className="icon-button danger"
-                            type="button"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setFriendToDelete(friend);
-                            }}
-                            aria-label="刪除好友"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                            <span className="avatar-orb small">{friend.name.slice(0, 1).toUpperCase()}</span>
+                            <div className="friend-user-main">
+                              <strong>{friend.name}</strong>
+                              <span>@{friend.userCode}</span>
+                            </div>
+                            <div className="friend-actions">
+                              <button
+                                className="friend-secondary-button icon-only"
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openFriendProfile(friend);
+                                }}
+                                disabled={busyAction === `profile-${friend._id}`}
+                                aria-label="查看好友資料"
+                              >
+                                {busyAction === `profile-${friend._id}` ? <span className="button-spinner" /> : <UserRound size={15} />}
+                              </button>
+                              <button
+                                className="friend-danger-button icon-only"
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setFriendToDelete(friend);
+                                }}
+                                aria-label="刪除好友"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          </article>
+                        ))
+                      ) : (
+                        <div className="friend-empty-state compact">
+                          <Search size={18} />
+                          <strong>找不到符合條件的好友</strong>
                         </div>
-                      </article>
-                    ))
-                  ) : (
-                    <p className="quiet-note">找不到符合條件的好友</p>
-                  )
-                ) : (
-                  <p className="quiet-note">還沒有好友。搜尋使用者 ID，開始建立你的 Adrift 連結。</p>
-                )}
-              </section>
+                      )
+                    ) : (
+                      <div className="friend-empty-state">
+                        <Users size={20} />
+                        <strong>還沒有好友</strong>
+                        <p>搜尋使用者 ID，開始建立你的 Adrift 連結。</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              </aside>
             </motion.div>
           )}
         </AnimatePresence>
-      </motion.aside>
+      </motion.section>
     </>
   );
 }

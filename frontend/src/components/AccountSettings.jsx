@@ -1,7 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  AlertTriangle,
-  CheckCircle2,
   ChevronRight,
   Copy,
   Eye,
@@ -12,8 +10,9 @@ import {
   UserRound
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { accordionTransition, panelSlideRight, toastMotion } from '../constants/animations.js';
+import { accordionTransition, panelSlideRight } from '../constants/animations.js';
 import { EMAIL_PATTERN } from '../constants/app.js';
+import ToastViewport from './ToastViewport.jsx';
 
 const passwordVisibility = {
   emailPassword: false,
@@ -226,6 +225,11 @@ export default function AccountSettings({ user, onBack, onUpdateName, onUpdateEm
   }
 
   return (
+    <>
+      <ToastViewport
+        toast={message ? { id: `${messageType}-${message}`, message, type: messageType } : null}
+        onDismiss={() => setMessage('')}
+      />
     <motion.aside
       className="settings-panel glass"
       {...panelSlideRight}
@@ -239,18 +243,6 @@ export default function AccountSettings({ user, onBack, onUpdateName, onUpdateEm
           返回
         </button>
       </header>
-
-      <AnimatePresence mode="popLayout">
-        {message && (
-          <motion.p
-            className={`form-message ${messageType}`}
-            {...toastMotion}
-          >
-            {messageType === 'error' ? <AlertTriangle size={16} /> : <CheckCircle2 size={16} />}
-            {message}
-          </motion.p>
-        )}
-      </AnimatePresence>
 
       <div className="settings-scroll">
         <section className="settings-static-section">
@@ -467,6 +459,7 @@ export default function AccountSettings({ user, onBack, onUpdateName, onUpdateEm
         </AccordionSection>
       </div>
     </motion.aside>
+    </>
   );
 }
 
