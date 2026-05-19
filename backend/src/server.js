@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { connectDb } from './config/db.js';
+import { connectDb, getDbStatus } from './config/db.js';
 import aiRoutes from './routes/ai.js';
 import adminRoutes from './routes/admin.js';
 import authRoutes from './routes/auth.js';
@@ -64,7 +64,11 @@ app.get('/health', (_req, res) => {
   res.json({
     success: true,
     message: 'Adrift API is healthy',
-    data: { status: 'ok', name: 'Adrift API' }
+    data: {
+      status: 'ok',
+      name: 'Adrift API',
+      database: getDbStatus()
+    }
   });
 });
 

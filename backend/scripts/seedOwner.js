@@ -5,19 +5,20 @@ import User from '../src/models/User.js';
 dotenv.config();
 
 const ownerEmail = process.env.OWNER_EMAIL?.toLowerCase().trim();
+const mongoUri = process.env.MONGODB_URI?.trim() || process.env.MONGO_URI?.trim();
 
 if (!ownerEmail) {
   console.error('OWNER_EMAIL is required in ..env');
   process.exit(1);
 }
 
-if (!process.env.MONGODB_URI) {
-  console.error('MONGODB_URI is required in ..env');
+if (!mongoUri) {
+  console.error('MONGODB_URI is required in .env. MONGO_URI is also supported for legacy deployments.');
   process.exit(1);
 }
 
 try {
-  await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(mongoUri);
 
   const user = await User.findOneAndUpdate(
     { email: ownerEmail },

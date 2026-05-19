@@ -242,10 +242,22 @@ npm run dev
 建立 `.env`：
 
 ```env
-MONGO_URI=your_mongodb_uri
+PORT=5000
+NODE_ENV=production
+CLIENT_ORIGIN=https://your-domain.com
+MONGODB_URI=your_mongodb_uri
 JWT_SECRET=your_secret
-MAPBOX_TOKEN=your_mapbox_token
+GEMINI_API_KEY=your_gemini_api_key
 ```
+
+Frontend build-time `.env`:
+
+```env
+VITE_API_URL=https://your-api-domain.com
+VITE_MAPBOX_TOKEN=your_mapbox_public_token
+```
+
+> 注意：後端標準變數是 `MONGODB_URI`。舊部署若使用 `MONGO_URI` 也會被支援，但請優先使用 `MONGODB_URI`，避免 VPS 連到本機空資料庫。
 
 ---
 

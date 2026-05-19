@@ -6,7 +6,11 @@ function resolveApiUrl(configuredUrl) {
   const fallbackUrl = configuredUrl || 'http://localhost:5000';
 
   if (typeof window === 'undefined') {
-    return fallbackUrl;
+    return trimTrailingSlash(fallbackUrl);
+  }
+
+  if (fallbackUrl.startsWith('/')) {
+    return trimTrailingSlash(fallbackUrl);
   }
 
   try {
@@ -20,13 +24,17 @@ function resolveApiUrl(configuredUrl) {
       apiUrl.hostname = pageHost;
       apiUrl.protocol = window.location.protocol;
       apiUrl.port = apiUrl.port || '5000';
-      return apiUrl.origin;
+      return trimTrailingSlash(`${apiUrl.origin}${apiUrl.pathname === '/' ? '' : apiUrl.pathname}`);
     }
 
-    return apiUrl.origin;
+    return trimTrailingSlash(`${apiUrl.origin}${apiUrl.pathname === '/' ? '' : apiUrl.pathname}`);
   } catch {
-    return fallbackUrl;
+    return trimTrailingSlash(fallbackUrl);
   }
+}
+
+function trimTrailingSlash(value) {
+  return value.length > 1 ? value.replace(/\/+$/, '') : value;
 }
 
 export function getStoredAuth() {
