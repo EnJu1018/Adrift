@@ -40,6 +40,18 @@ const previewFeatures = [
   }
 ];
 
+const emptyInsight = {
+  summary: '',
+  moodTrend: {
+    description: '',
+    dominantMood: '',
+    averageIntensity: 0
+  },
+  locationInsights: [],
+  behaviorPatterns: [],
+  suggestions: []
+};
+
 export default function LifeMapAI({ onBack }) {
   const [status, setStatus] = useState('idle');
   const [insight, setInsight] = useState(null);
@@ -63,7 +75,7 @@ export default function LifeMapAI({ onBack }) {
       setDataWarmup(null);
       setLoadingIndex(0);
       const payload = await api.getLifeMapInsight();
-      const data = payload.data || null;
+      const data = payload?.data || null;
 
       if (data?.notEnoughData) {
         setDataWarmup(data);
@@ -71,7 +83,12 @@ export default function LifeMapAI({ onBack }) {
         return;
       }
 
-      setInsight(data);
+      if (!data || typeof data !== 'object') {
+        setStatus('error');
+        return;
+      }
+
+      setInsight(normalizeInsight(data));
       setStatus('success');
     } catch {
       setInsight(null);
@@ -184,7 +201,8 @@ export default function LifeMapAI({ onBack }) {
 }
 
 function LifeMapDashboard({ insight, onRegenerate }) {
-  const averageIntensity = Number(insight.moodTrend?.averageIntensity || 0);
+  const safeInsight = normalizeInsight(insight);
+  const averageIntensity = Number(safeInsight.moodTrend.averageIntensity || 0);
 
   return (
     <motion.section className="life-map-dashboard" {...fadeUpMotion}>
@@ -196,7 +214,7 @@ function LifeMapDashboard({ insight, onRegenerate }) {
             重新分析
           </button>
         </div>
-        <p>{insight.summary || '目前沒有足夠摘要內容。'}</p>
+        <p>{safeInsight.summary || '目前沒有足夠摘要內容。'}</p>
       </article>
 
       <div className="life-map-dashboard-grid">
@@ -204,9 +222,9 @@ function LifeMapDashboard({ insight, onRegenerate }) {
           <div className="life-map-card-heading">
             <span><TrendingUp size={17} /> 情緒趨勢</span>
           </div>
-          <p>{insight.moodTrend?.description || '目前沒有明確情緒趨勢。'}</p>
+          <p>{safeInsight.moodTrend.description || '目前沒有明確情緒趨勢。'}</p>
           <div className="life-map-mood-metrics">
-            <span>主要心情：<strong>{insight.moodTrend?.dominantMood || '-'}</strong></span>
+            <span>主要心情：<strong>{safeInsight.moodTrend.dominantMood || '-'}</strong></span>
             <span>平均強度：<strong>{formatIntensity(averageIntensity)} / 5</strong></span>
           </div>
           <div className="life-map-progress" aria-label={`平均強度 ${formatIntensity(averageIntensity)} / 5`}>
@@ -219,8 +237,8 @@ function LifeMapDashboard({ insight, onRegenerate }) {
             <span><Lightbulb size={17} /> AI 建議</span>
           </div>
           <div className="life-map-soft-list">
-            {(insight.suggestions || []).length > 0 ? (
-              insight.suggestions.map((item, index) => <p key={`suggestion-${index}`}>{item}</p>)
+            {safeInsight.suggestions.length > 0 ? (
+              safeInsight.suggestions.map((item, index) => <p key={`suggestion-${index}`}>{item}</p>)
             ) : (
               <p>可以先持續記錄幾天，讓 Life Map 更懂你的生活節奏。</p>
             )}
@@ -233,8 +251,8 @@ function LifeMapDashboard({ insight, onRegenerate }) {
           <span><MapPin size={17} /> 地點洞察</span>
         </div>
         <div className="life-map-location-grid">
-          {(insight.locationInsights || []).length > 0 ? (
-            insight.locationInsights.map((item, index) => (
+          {safeInsight.locationInsights.length > 0 ? (
+            safeInsight.locationInsights.map((item, index) => (
               <motion.article className="life-map-location-card" key={`${item.place}-${index}`} {...listItemMotion(index)}>
                 <strong>{item.place || '未命名地點'}</strong>
                 <span>{item.dominantMood || '未分類心情'}</span>
@@ -252,8 +270,8 @@ function LifeMapDashboard({ insight, onRegenerate }) {
           <span><Compass size={17} /> 行為模式</span>
         </div>
         <div className="life-map-pattern-list">
-          {(insight.behaviorPatterns || []).length > 0 ? (
-            insight.behaviorPatterns.map((item, index) => (
+          {safeInsight.behaviorPatterns.length > 0 ? (
+            safeInsight.behaviorPatterns.map((item, index) => (
               <motion.p key={`pattern-${index}`} {...listItemMotion(index)}>
                 {item}
               </motion.p>
@@ -265,6 +283,29 @@ function LifeMapDashboard({ insight, onRegenerate }) {
       </section>
     </motion.section>
   );
+}
+
+function normalizeInsight(value) {
+  if (!value || typeof value !== 'object') return emptyInsight;
+
+  const moodTrend = value.moodTrend && typeof value.moodTrend === 'object' ? value.moodTrend : {};
+
+  return {
+    summary: typeof value.summary === 'string' ? value.summary : '',
+    moodTrend: {
+      description: typeof moodTrend.description === 'string' ? moodTrend.description : '',
+      dominantMood: typeof moodTrend.dominantMood === 'string' ? moodTrend.dominantMood : '',
+      averageIntensity: Number.isFinite(Number(moodTrend.averageIntensity)) ? Number(moodTrend.averageIntensity) : 0
+    },
+    locationInsights: Array.isArray(value.locationInsights) ? value.locationInsights.filter(Boolean) : [],
+    behaviorPatterns: toStringList(value.behaviorPatterns),
+    suggestions: toStringList(value.suggestions)
+  };
+}
+
+function toStringList(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === 'string' && item.trim());
 }
 
 function formatIntensity(value) {

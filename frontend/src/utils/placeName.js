@@ -30,12 +30,13 @@ export async function resolvePlaceName(lat, lng) {
 
     if (!response.ok) throw new Error('Reverse geocoding failed');
 
-    const payload = await response.json();
+    const payload = await response.json().catch(() => null);
+    const features = Array.isArray(payload?.features) ? payload.features : [];
     const feature =
-      payload.features?.find((item) => item.place_type?.includes('place')) ||
-      payload.features?.find((item) => item.place_type?.includes('locality')) ||
-      payload.features?.find((item) => item.place_type?.includes('district')) ||
-      payload.features?.[0];
+      features.find((item) => item.place_type?.includes('place')) ||
+      features.find((item) => item.place_type?.includes('locality')) ||
+      features.find((item) => item.place_type?.includes('district')) ||
+      features[0];
     const placeName = feature?.text_zh_Hant || feature?.text_zh || feature?.text || formatCoordinates(lat, lng);
 
     placeCache.set(cacheKey, placeName);

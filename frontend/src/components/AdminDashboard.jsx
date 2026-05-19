@@ -128,7 +128,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
       setLoading((current) => ({ ...current, overview: true }));
       setError('');
       const payload = await api.getAdminStats();
-      setStats(payload.data);
+      setStats(payload.data && typeof payload.data === 'object' ? payload.data : null);
     } catch (err) {
       setError(err.message || '管理資料載入失敗，請稍後再試');
     } finally {
@@ -146,7 +146,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
         search: debouncedUserSearch,
         role: userRole
       });
-      setUsers(payload.data?.items || []);
+      setUsers(asArray(payload.data?.items));
       setUsersPagination(payload.data?.pagination || defaultPagination);
     } catch (err) {
       setError(err.message || '管理資料載入失敗，請稍後再試');
@@ -166,7 +166,7 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
         visibility: diaryVisibility,
         mood: diaryMood
       });
-      setDiaries(payload.data?.items || []);
+      setDiaries(asArray(payload.data?.items));
       setDiariesPagination(payload.data?.pagination || defaultPagination);
     } catch (err) {
       setError(err.message || '管理資料載入失敗，請稍後再試');
@@ -206,7 +206,8 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
       setRoleLoadingId(id);
       setError('');
       const payload = await api.updateAdminUserRole(id, role);
-      setUsers((current) => current.map((item) => (item._id === id ? { ...item, ...payload.data } : item)));
+      const nextUser = payload.data && typeof payload.data === 'object' ? payload.data : { role };
+      setUsers((current) => current.map((item) => (item._id === id ? { ...item, ...nextUser } : item)));
       setNotice(payload.message || '使用者權限已更新');
     } catch (err) {
       setError(err.message || '更新使用者權限失敗');
@@ -658,6 +659,10 @@ function formatRole(role) {
   if (role === 'owner') return 'Owner';
   if (role === 'admin') return 'Admin';
   return 'User';
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function DiariesTable({ diaries, loading, deleteLoadingId, onView, onDelete }) {

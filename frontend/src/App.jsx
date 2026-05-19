@@ -126,7 +126,7 @@ export default function App() {
       if (!silent) setDiaryLoading(true);
       setDiaryError('');
       const payload = await api.getDiaries(params);
-      setDiaries(payload.data?.diaries || payload.diaries || []);
+      setDiaries(asArray(payload.data?.diaries || payload.diaries));
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message);
     } finally {
@@ -143,7 +143,7 @@ export default function App() {
       if (!silent) setDiaryLoading(true);
       setDiaryError('');
       const payload = await api.getExploreDiaries(params);
-      const exploreDiaries = Array.isArray(payload.data) ? payload.data : payload.data?.diaries || [];
+      const exploreDiaries = Array.isArray(payload.data) ? payload.data : asArray(payload.data?.diaries);
       setDiaries(exploreDiaries.map((diary) => ({ ...diary, isExplore: true })));
     } catch (error) {
       if (error.status !== 401) setDiaryError(error.message || '無法取得附近日記，請稍後再試');
@@ -161,9 +161,9 @@ export default function App() {
         api.getFriendRequests(),
         api.getSentFriendRequests()
       ]);
-      const nextFriends = friendsPayload.data || [];
-      const nextRequests = requestsPayload.data || [];
-      const nextSentRequests = sentRequestsPayload.data || [];
+      const nextFriends = asArray(friendsPayload.data);
+      const nextRequests = asArray(requestsPayload.data);
+      const nextSentRequests = asArray(sentRequestsPayload.data);
 
       setFriends(nextFriends);
       setFriendRequests(nextRequests);
@@ -436,6 +436,9 @@ export default function App() {
       if (mode === 'login') {
         const token = payload.token || payload.data?.token;
         const nextUser = payload.user || payload.data?.user;
+        if (!token || !nextUser) {
+          throw new Error('登入回應格式不正確，請稍後再試');
+        }
         saveAuth(token, nextUser);
         setUser(nextUser);
         setMapMode('mine');
@@ -506,6 +509,9 @@ export default function App() {
       setDiaryError('');
       const payload = await api.createDiary(formData);
       const diary = payload.data?.diary || payload.diary;
+      if (!diary?._id) {
+        throw new Error('日記建立回應格式不正確，請稍後再試');
+      }
       if (mapMode === 'explore' && exploreCenter) {
         await loadExploreDiaries({ ...exploreCenter, radius: exploreRadius }, { silent: true });
       } else {
@@ -558,10 +564,12 @@ export default function App() {
       const response = await api.updateDiary(diaryId, payload);
       const diary = response.data?.diary || response.data || response.diary;
 
-      if (diary?._id) {
-        setDiaries((current) => current.map((item) => (item._id === diary._id ? { ...item, ...diary } : item)));
-        setSelectedDiary((current) => (current?._id === diary._id ? { ...current, ...diary } : current));
+      if (!diary?._id) {
+        throw new Error('日記更新回應格式不正確，請稍後再試');
       }
+
+      setDiaries((current) => current.map((item) => (item._id === diary._id ? { ...item, ...diary } : item)));
+      setSelectedDiary((current) => (current?._id === diary._id ? { ...current, ...diary } : current));
 
       setEditingDiary(null);
       setEditLocation(null);
@@ -679,6 +687,9 @@ export default function App() {
 
   async function searchFriendUser(userCode) {
     const payload = await api.searchUser(userCode);
+    if (!payload.data) {
+      throw new Error('找不到此使用者');
+    }
     return payload.data;
   }
 
@@ -708,12 +719,15 @@ export default function App() {
 
   async function getFriendProfile(friendId) {
     const payload = await api.getFriendProfile(friendId);
+    if (!payload.data) {
+      throw new Error('無法取得好友資料');
+    }
     return payload.data;
   }
 
   async function getFriendRecommendations(limit = 10) {
     const payload = await api.getFriendRecommendations(limit);
-    return payload.data || [];
+    return asArray(payload.data);
   }
 
   async function deleteFriend(friendId) {
@@ -1113,6 +1127,10 @@ function buildApproximatePlaceName(location) {
   if (location?.source !== 'ip') return '';
 
   return [location.city, location.region, location.country].filter(Boolean).join(', ');
+}
+
+function asArray(value) {
+  return Array.isArray(value) ? value : [];
 }
 
 function isHomePath(path) {

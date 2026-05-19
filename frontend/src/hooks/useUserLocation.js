@@ -8,6 +8,10 @@ const browserIpLocationProviders = [
   {
     url: 'https://ipwho.is/?fields=success,latitude,longitude,city,region,country,message',
     normalize(payload) {
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('IP location response failed');
+      }
+
       if (payload.success === false) {
         throw new Error(payload.message || 'IP location response failed');
       }
@@ -24,6 +28,10 @@ const browserIpLocationProviders = [
   {
     url: 'https://ipapi.co/json/',
     normalize(payload) {
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('IP location response failed');
+      }
+
       if (payload.error) {
         throw new Error(payload.reason || 'IP location response failed');
       }
@@ -40,6 +48,10 @@ const browserIpLocationProviders = [
   {
     url: 'https://ipinfo.io/json',
     normalize(payload) {
+      if (!payload || typeof payload !== 'object') {
+        throw new Error('IP location response failed');
+      }
+
       const [lat, lng] = typeof payload.loc === 'string' ? payload.loc.split(',') : [];
 
       return {
@@ -358,7 +370,7 @@ async function getBackendClientIpLocation() {
     throw new Error(payload?.message || 'Backend IP location request failed');
   }
 
-  const data = payload.data || {};
+  const data = payload?.data || {};
   const lat = Number(data.lat);
   const lng = Number(data.lng);
 

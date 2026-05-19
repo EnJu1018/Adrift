@@ -110,6 +110,14 @@ async function request(path, options = {}) {
     throw error;
   }
 
+  if (!payload || typeof payload !== 'object') {
+    return {
+      success: response.ok,
+      message: '',
+      data: null
+    };
+  }
+
   return payload;
 }
 
