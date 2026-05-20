@@ -53,6 +53,11 @@ export default function App() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userCodeCopied, setUserCodeCopied] = useState(false);
   const [userCodeCopyError, setUserCodeCopyError] = useState(false);
+  const [lifeMapState, setLifeMapState] = useState({
+    status: 'idle',
+    insight: null,
+    dataWarmup: null
+  });
   const userLocation = useUserLocation();
   const performanceMode = usePerformanceMode(diaries.length);
   const locating = userLocation.loading;
@@ -993,7 +998,11 @@ export default function App() {
             onOpenDiary={openDiaryFromFeed}
           />
         ) : user && isAiPage ? (
-          <LifeMapAI key="life-map-ai" onBack={() => navigate('/')} />
+          <LifeMapAI
+            state={lifeMapState}
+            onStateChange={setLifeMapState}
+            onBack={() => navigate('/')}
+          />
         ) : (
         <>
         <section className="experience-panel">

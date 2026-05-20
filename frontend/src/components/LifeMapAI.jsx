@@ -52,15 +52,26 @@ const emptyInsight = {
   suggestions: []
 };
 
-export default function LifeMapAI({ onBack }) {
-  const [status, setStatus] = useState('idle');
-  const [insight, setInsight] = useState(null);
-  const [dataWarmup, setDataWarmup] = useState(null);
+export default function LifeMapAI({ state, onStateChange, onBack }) {
   const [loadingIndex, setLoadingIndex] = useState(0);
+  const status = state?.status || 'idle';
+  const insight = state?.insight || null;
+  const dataWarmup = state?.dataWarmup || null;
+
+  function updateLifeMapState(nextState) {
+    onStateChange?.((current) => ({
+      status: 'idle',
+      insight: null,
+      dataWarmup: null,
+      ...(current || {}),
+      ...nextState
+    }));
+  }
 
   useEffect(() => {
     if (status !== 'loading') return undefined;
 
+    setLoadingIndex(0);
     const timer = window.setInterval(() => {
       setLoadingIndex((index) => (index + 1) % loadingMessages.length);
     }, 1200);
@@ -70,30 +81,24 @@ export default function LifeMapAI({ onBack }) {
 
   async function generateInsight() {
     try {
-      setStatus('loading');
-      setInsight(null);
-      setDataWarmup(null);
+      updateLifeMapState({ status: 'loading', insight: null, dataWarmup: null });
       setLoadingIndex(0);
       const payload = await api.getLifeMapInsight();
       const data = payload?.data || null;
 
       if (data?.notEnoughData) {
-        setDataWarmup(data);
-        setStatus('notEnoughData');
+        updateLifeMapState({ status: 'notEnoughData', insight: null, dataWarmup: data });
         return;
       }
 
       if (!data || typeof data !== 'object') {
-        setStatus('error');
+        updateLifeMapState({ status: 'error', insight: null, dataWarmup: null });
         return;
       }
 
-      setInsight(normalizeInsight(data));
-      setStatus('success');
+      updateLifeMapState({ status: 'success', insight: normalizeInsight(data), dataWarmup: null });
     } catch {
-      setInsight(null);
-      setDataWarmup(null);
-      setStatus('error');
+      updateLifeMapState({ status: 'error', insight: null, dataWarmup: null });
     }
   }
 
