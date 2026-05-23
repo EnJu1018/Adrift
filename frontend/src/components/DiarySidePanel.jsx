@@ -102,8 +102,8 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
             className="diary-side-empty"
             {...fadeUpMotion}
           >
-            <span className="brand-mark">
-              <MapPin size={20} />
+            <span className="brand-mark brand-icon-shell">
+              <img src="/adrift-icon.png" alt="" aria-hidden="true" />
             </span>
             <div>
               <p className="eyebrow">Diary Detail</p>

@@ -438,7 +438,8 @@ export default function FriendsPage({
       {deleteFriendModal}
       <motion.main className="friends-hub glass" {...pageFadeUp}>
         <header className="friends-hub-header">
-          <div>
+          <div className="friends-title-copy">
+            <p className="friends-hub-kicker">Friends</p>
             <h2>好友</h2>
             <span>透過使用者 ID 找到朋友，分享你的地圖日記。</span>
           </div>

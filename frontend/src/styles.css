@@ -9656,6 +9656,156 @@ select option {
   color: #8a1f17 !important;
 }
 
+/* Full-bleed product pages: Friends, Feed, and Adrift Intelligence should not be wrapped in one giant card. */
+.app-layout.authenticated.friends-mode,
+.app-layout.authenticated.feed-mode,
+.app-layout.authenticated.ai-mode {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 64px minmax(0, 1fr);
+}
+
+.app-layout.authenticated.friends-mode .friends-hub,
+.app-layout.authenticated.feed-mode .feed-page,
+.app-layout.authenticated.ai-mode .life-map-panel {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  min-height: 0;
+  justify-self: stretch;
+  align-self: stretch;
+  padding: clamp(24px, 4.5vw, 56px);
+  overflow: auto;
+  border-color: transparent !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.app-layout.authenticated.friends-mode .friends-new-user-flow,
+.app-layout.authenticated.feed-mode .feed-list,
+.app-layout.authenticated.ai-mode .life-map-dashboard,
+.app-layout.authenticated.ai-mode .life-map-prep-grid,
+.app-layout.authenticated.ai-mode .life-map-location-grid {
+  width: min(1440px, 100%);
+  margin-inline: auto;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub-header,
+.app-layout.authenticated.feed-mode .feed-page-hero,
+.app-layout.authenticated.ai-mode .life-map-hero {
+  width: min(1440px, 100%);
+  margin-inline: auto;
+}
+
+.app-layout.authenticated.feed-mode .feed-filter {
+  width: fit-content;
+  max-width: min(1440px, 100%);
+  margin-inline: max(0px, calc((100% - 1440px) / 2));
+}
+
+.app-layout.authenticated.ai-mode .life-map-privacy-card {
+  width: min(1440px, 100%);
+  margin-inline: auto;
+}
+
+:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub,
+:root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page,
+:root[data-theme="bright"] .app-layout.authenticated.ai-mode .life-map-panel {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(56, 189, 248, 0.16), transparent 34%),
+    radial-gradient(circle at 84% 12%, rgba(45, 212, 191, 0.12), transparent 30%),
+    linear-gradient(135deg, #fbfdff 0%, #eef8ff 46%, #f8fcff 100%) !important;
+}
+
+:root[data-theme="dark"] .app-layout.authenticated.friends-mode .friends-hub,
+:root[data-theme="dark"] .app-layout.authenticated.feed-mode .feed-page,
+:root[data-theme="dark"] .app-layout.authenticated.ai-mode .life-map-panel {
+  background:
+    radial-gradient(circle at 14% 18%, rgba(45, 183, 255, 0.14), transparent 32%),
+    radial-gradient(circle at 82% 12%, rgba(121, 241, 220, 0.08), transparent 30%),
+    linear-gradient(135deg, rgba(2, 5, 13, 0.25), rgba(6, 22, 37, 0.18)) !important;
+}
+
+/* Bright icon shells: remove dark-mode black bubbles from light UI. */
+:root[data-theme="bright"] :where(
+  .icon-button:not(.danger),
+  .nav-icon-button,
+  .copy-mini-button,
+  .subtle-icon,
+  .life-map-back,
+  .life-map-feature-icon,
+  .app-toast-icon
+) {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover);
+  border-color: rgba(15, 127, 156, 0.2) !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  box-shadow: 0 10px 24px rgba(14, 116, 144, 0.08) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .icon-button:not(.danger):hover,
+  .nav-icon-button:hover,
+  .copy-mini-button:hover,
+  .subtle-icon:hover,
+  .life-map-back:hover
+) {
+  color: var(--accent-hover) !important;
+  border-color: rgba(15, 127, 156, 0.3) !important;
+  background: rgba(15, 127, 156, 0.1) !important;
+}
+
+/* Bright Adrift Intelligence: daylight dashboard visuals instead of dark leftovers. */
+:root[data-theme="bright"] .life-map-hero {
+  border-color: rgba(14, 116, 144, 0.16) !important;
+  background:
+    radial-gradient(circle at 78% 18%, rgba(45, 212, 191, 0.16), transparent 34%),
+    radial-gradient(circle at 30% 82%, rgba(56, 189, 248, 0.18), transparent 42%),
+    rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 18px 45px rgba(14, 116, 144, 0.1) !important;
+}
+
+:root[data-theme="bright"] .life-map-visual,
+:root[data-theme="bright"] .life-map-loading-visual {
+  border-color: rgba(14, 116, 144, 0.14) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(245, 252, 255, 0.72)),
+    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.18), transparent 42%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+:root[data-theme="bright"] .life-map-glow-orb {
+  border-color: rgba(15, 127, 156, 0.2) !important;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.42), rgba(56, 189, 248, 0.18) 44%, transparent 70%) !important;
+  box-shadow: 0 0 36px rgba(14, 116, 144, 0.16) !important;
+}
+
+:root[data-theme="bright"] .life-map-trace,
+:root[data-theme="bright"] .loading-path {
+  background: linear-gradient(90deg, transparent, rgba(15, 127, 156, 0.52), transparent) !important;
+}
+
+:root[data-theme="bright"] .life-map-orbit-dot,
+:root[data-theme="bright"] .loading-node {
+  background: #0f7f9c !important;
+  box-shadow: 0 0 18px rgba(14, 116, 144, 0.28) !important;
+}
+
+:root[data-theme="bright"] .life-map-progress {
+  background: rgba(15, 127, 156, 0.12) !important;
+}
+
+:root[data-theme="bright"] .life-map-progress span {
+  background: linear-gradient(90deg, #0f7f9c, #14b8a6) !important;
+}
+
+:root[data-theme="bright"] .life-map-soft-list p,
+:root[data-theme="bright"] .life-map-pattern-list p {
+  border-left-color: rgba(15, 127, 156, 0.34) !important;
+}
+
 @keyframes lifeMapBreath {
   0%,
   100% {
@@ -10361,4 +10511,1036 @@ select option {
   .profile-logout-button span {
     display: none;
   }
+}
+
+/* Final bright-theme readability pass for map diary details and Friends.
+   These rules remove remaining gray/dark shells while keeping the dark theme untouched. */
+:root[data-theme="bright"] .friends-title-copy {
+  display: grid;
+  gap: 4px;
+}
+
+:root[data-theme="bright"] .friends-hub-kicker {
+  margin: 0;
+  color: var(--accent) !important;
+  -webkit-text-fill-color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+:root[data-theme="bright"] .friends-hub-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(15, 127, 156, 0.16) !important;
+  background: transparent !important;
+}
+
+:root[data-theme="bright"] .friends-hub-header h2 {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+}
+
+:root[data-theme="bright"] .friends-hub-header .friends-title-copy > span {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+:root[data-theme="bright"] .friends-new-user-flow,
+:root[data-theme="bright"] .friends-hub-grid,
+:root[data-theme="bright"] .friends-directory-grid {
+  background: transparent !important;
+}
+
+:root[data-theme="bright"] :where(
+  .friends-hub-card,
+  .friends-profile-card,
+  .search-social-card,
+  .invites-panel,
+  .friend-roster-card,
+  .recommendations-panel,
+  .social-person-row,
+  .social-friend-item,
+  .friends-empty-panel
+) {
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(245, 252, 255, 0.9)) !important;
+  box-shadow: 0 16px 38px rgba(14, 116, 144, 0.08) !important;
+}
+
+:root[data-theme="bright"] :where(.social-person-row:hover, .social-friend-item:hover) {
+  border-color: rgba(15, 127, 156, 0.28) !important;
+  background: rgba(244, 251, 255, 0.98) !important;
+}
+
+:root[data-theme="bright"] .social-friend-item.selected {
+  border-color: rgba(15, 127, 156, 0.36) !important;
+  background: linear-gradient(145deg, rgba(226, 247, 255, 0.98), rgba(240, 253, 250, 0.94)) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .friends-quick-search,
+  .friends-quick-search label,
+  .friend-directory-toolbar,
+  .friend-list-search,
+  .friend-sort-control,
+  .friend-segmented,
+  .friend-row-menu
+) {
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 127, 156, 0.18) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 10px 26px rgba(14, 116, 144, 0.07) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .friends-section-heading h3,
+  .friend-identity strong,
+  .friend-user-main strong,
+  .friends-profile-card h3,
+  .friends-empty-panel strong,
+  .friend-row-menu button
+) {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+}
+
+:root[data-theme="bright"] :where(
+  .friends-section-heading p,
+  .friend-identity small,
+  .friend-identity span,
+  .friends-profile-card > span,
+  .friends-profile-stats span,
+  .friends-empty-panel p,
+  .friend-sort-control span
+) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+:root[data-theme="bright"] :where(
+  .friends-section-heading svg,
+  .friends-empty-panel svg,
+  .friend-list-search svg,
+  .friends-quick-search label > svg,
+  .social-friend-item > svg
+) {
+  color: var(--accent) !important;
+  stroke: currentColor;
+}
+
+:root[data-theme="bright"] .friend-row-menu button:hover {
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="bright"] .friend-row-menu .danger-menu-item {
+  color: var(--danger) !important;
+  -webkit-text-fill-color: var(--danger);
+}
+
+:root[data-theme="bright"] :where(.memory-stats article, .visibility-filter, .visibility-filter-note) {
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 12px 28px rgba(14, 116, 144, 0.07) !important;
+}
+
+:root[data-theme="bright"] .memory-stats span {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+}
+
+:root[data-theme="bright"] .memory-stats p {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+  font-weight: 800;
+}
+
+:root[data-theme="bright"] :where(
+  .diary-side-empty .brand-mark,
+  .diary-side-image.empty,
+  .diary-time-pill,
+  .diary-place-pill,
+  .diary-meta-secondary span,
+  .diary-edited-pill,
+  .reaction-button,
+  .edit-availability
+) {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover);
+  border-color: rgba(15, 127, 156, 0.2) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 10px 24px rgba(14, 116, 144, 0.07) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .diary-side-empty svg,
+  .diary-side-image.empty svg,
+  .diary-time-pill svg,
+  .diary-place-pill svg,
+  .diary-meta-secondary svg
+) {
+  color: var(--accent) !important;
+  stroke: currentColor;
+}
+
+:root[data-theme="bright"] .diary-side-title {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+}
+
+:root[data-theme="bright"] .diary-side-text {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+:root[data-theme="bright"] :where(
+  .diary-detail-eyebrow,
+  .diary-popup-author-inline small,
+  .diary-side-empty .eyebrow,
+  .diary-owner-actions span
+) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+:root[data-theme="bright"] .reaction-button.active {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  border-color: rgba(15, 127, 156, 0.34) !important;
+  background: linear-gradient(135deg, #0f7f9c, #14b8a6) !important;
+}
+
+/* Bright polish: readable navbar menus, non-gray friends surfaces, and daylight map controls. */
+:root[data-theme="bright"] :where(.user-dropdown, .notifications-dropdown, .nav-dropdown.glass) {
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 127, 156, 0.18) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(245, 252, 255, 0.96)) !important;
+  box-shadow: 0 22px 54px rgba(14, 116, 144, 0.16) !important;
+  backdrop-filter: blur(18px);
+}
+
+:root[data-theme="bright"] .nav-dropdown-header {
+  border-bottom-color: rgba(15, 127, 156, 0.16) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .nav-dropdown-header strong,
+  .nav-user-summary strong,
+  .nav-dropdown button strong
+) {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+}
+
+:root[data-theme="bright"] :where(
+  .nav-dropdown-header span,
+  .nav-dropdown p,
+  .nav-dropdown small,
+  .nav-user-code-row > span
+) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+:root[data-theme="bright"] .nav-dropdown button:not(.copy-mini-button):not(.danger-menu-item) {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary);
+  border: 1px solid transparent !important;
+  background: transparent !important;
+}
+
+:root[data-theme="bright"] .nav-dropdown button:not(.copy-mini-button):not(.danger-menu-item):hover {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover);
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="bright"] .nav-dropdown button svg {
+  color: var(--accent) !important;
+  stroke: currentColor;
+}
+
+:root[data-theme="bright"] .nav-role-badge {
+  color: #0b6f89 !important;
+  -webkit-text-fill-color: #0b6f89;
+  border-color: rgba(15, 127, 156, 0.22) !important;
+  background: rgba(15, 127, 156, 0.1) !important;
+}
+
+:root[data-theme="bright"] .nav-role-badge.admin {
+  color: #1d4ed8 !important;
+  -webkit-text-fill-color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+  background: rgba(37, 99, 235, 0.1) !important;
+}
+
+:root[data-theme="bright"] .nav-role-badge.owner {
+  color: #92400e !important;
+  -webkit-text-fill-color: #92400e;
+  border-color: rgba(180, 83, 9, 0.24) !important;
+  background: rgba(180, 83, 9, 0.12) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .friends-preview-panel,
+  .activity-panel,
+  .friend-activity-item,
+  .friends-profile-stats article,
+  .recommendation-strip,
+  .friends-preview-list,
+  .social-invite-list,
+  .friend-activity-list,
+  .social-friend-list
+) {
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 127, 156, 0.14) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(.friend-activity-item, .friends-profile-stats article) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(245, 252, 255, 0.9)) !important;
+  box-shadow: 0 10px 24px rgba(14, 116, 144, 0.07) !important;
+}
+
+:root[data-theme="bright"] :where(.friend-activity-item strong, .friends-profile-stats strong) {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+}
+
+:root[data-theme="bright"] :where(.friend-activity-item span, .friend-activity-item small, .friends-profile-stats article) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+:root[data-theme="bright"] .friend-segmented {
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+}
+
+:root[data-theme="bright"] .friend-segmented button span {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  background: #0f7f9c !important;
+}
+
+:root[data-theme="bright"] .map-controls {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] .map-control-group {
+  border-color: rgba(15, 127, 156, 0.18) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+  box-shadow: 0 14px 34px rgba(14, 116, 144, 0.12) !important;
+  backdrop-filter: blur(16px);
+}
+
+:root[data-theme="bright"] .map-controls button,
+:root[data-theme="bright"] .map-controls > button.locate,
+:root[data-theme="bright"] .map-controls button.locate,
+:root[data-theme="bright"] .map-controls button.compass,
+:root[data-theme="bright"] .map-controls button.map-control-text {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover);
+  border-color: rgba(15, 127, 156, 0.2) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 10px 26px rgba(14, 116, 144, 0.1) !important;
+}
+
+:root[data-theme="bright"] .map-controls button:hover:not(:disabled) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+  border-color: rgba(15, 127, 156, 0.32) !important;
+  background: linear-gradient(135deg, #0f7f9c, #14b8a6) !important;
+  box-shadow: 0 14px 32px rgba(15, 127, 156, 0.2) !important;
+}
+
+:root[data-theme="bright"] .map-controls button svg {
+  stroke: currentColor;
+}
+
+/* Adrift Intelligence stability and bright readability.
+   The state stage keeps loading/result/error swaps from moving the whole page. */
+.life-map-state-stage {
+  display: grid;
+  min-height: clamp(300px, 34vh, 460px);
+  align-content: start;
+  overflow-anchor: none;
+}
+
+.life-map-state-stage > * {
+  min-width: 0;
+}
+
+.life-map-loading-state,
+.life-map-empty-state {
+  min-height: clamp(240px, 30vh, 360px);
+}
+
+.life-map-dashboard {
+  min-height: clamp(420px, 48vh, 620px);
+}
+
+.life-map-loading-state > div:last-child {
+  min-width: 0;
+}
+
+.life-map-loading-state p {
+  min-height: 1.7em;
+}
+
+:root[data-theme="bright"] .life-map-panel {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-hero-copy h1,
+  .life-map-summary-card h2,
+  .life-map-feature-card h3,
+  .life-map-empty-state h2,
+  .life-map-loading-state h2,
+  .life-map-card-heading span,
+  .life-map-card-heading strong,
+  .life-map-location-card strong,
+  .life-map-mood-metrics strong
+) {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading);
+  text-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-hero-copy p,
+  .life-map-hero-copy span,
+  .life-map-feature-card p,
+  .life-map-insight-card p,
+  .life-map-summary-card p,
+  .life-map-wide-section p,
+  .life-map-empty-state p,
+  .life-map-loading-state p,
+  .life-map-soft-list p,
+  .life-map-pattern-list p,
+  .life-map-location-card p,
+  .life-map-muted,
+  .life-map-privacy-card,
+  .life-map-privacy-card p
+) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary);
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-summary-card,
+  .life-map-feature-card,
+  .life-map-insight-card,
+  .life-map-wide-section,
+  .life-map-empty-state,
+  .life-map-loading-state,
+  .life-map-privacy-card,
+  .life-map-location-card
+) {
+  color: var(--text-primary) !important;
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(245, 252, 255, 0.92)) !important;
+  box-shadow: 0 16px 38px rgba(14, 116, 144, 0.08) !important;
+}
+
+:root[data-theme="bright"] .life-map-card-heading {
+  min-height: 38px;
+}
+
+:root[data-theme="bright"] .life-map-card-heading svg,
+:root[data-theme="bright"] .life-map-feature-icon svg,
+:root[data-theme="bright"] .life-map-empty-state svg,
+:root[data-theme="bright"] .life-map-privacy-card svg {
+  color: var(--accent) !important;
+  stroke: currentColor;
+}
+
+:root[data-theme="bright"] .life-map-feature-icon {
+  color: var(--accent-hover) !important;
+  border-color: rgba(15, 127, 156, 0.2) !important;
+  background: rgba(15, 127, 156, 0.1) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] .life-map-mood-metrics span,
+:root[data-theme="bright"] .life-map-location-card span {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover);
+  border: 1px solid rgba(15, 127, 156, 0.2) !important;
+  background: rgba(15, 127, 156, 0.1) !important;
+}
+
+:root[data-theme="bright"] .life-map-soft-list p,
+:root[data-theme="bright"] .life-map-pattern-list p {
+  border-left-color: rgba(15, 127, 156, 0.34) !important;
+  background: rgba(15, 127, 156, 0.055) !important;
+  border-radius: 0 12px 12px 0;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+:root[data-theme="bright"] .life-map-progress {
+  background: rgba(15, 127, 156, 0.12) !important;
+}
+
+:root[data-theme="bright"] .life-map-progress span {
+  background: linear-gradient(90deg, #0f7f9c, #14b8a6) !important;
+}
+
+:root[data-theme="bright"] .life-map-loading-visual,
+:root[data-theme="bright"] .life-map-visual {
+  flex: 0 0 auto;
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+:root[data-theme="bright"] .life-map-cta:disabled {
+  opacity: 0.78;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .life-map-state-stage *,
+  .life-map-visual *,
+  .life-map-loading-visual * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Final layout pass: keep Adrift Intelligence states and presentation slides from stacking or becoming low-contrast. */
+.app-layout.authenticated.ai-mode .life-map-panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(22px, 3vw, 34px);
+  overflow-x: hidden;
+}
+
+.app-layout.authenticated.ai-mode .life-map-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1.08fr) minmax(280px, 0.92fr);
+  align-items: center;
+  gap: clamp(18px, 3vw, 34px);
+}
+
+.app-layout.authenticated.ai-mode .life-map-hero-copy {
+  min-width: 0;
+}
+
+.app-layout.authenticated.ai-mode .life-map-hero-copy .eyebrow {
+  margin-bottom: 8px;
+}
+
+.app-layout.authenticated.ai-mode .life-map-state-stage,
+.app-layout.authenticated.ai-mode .life-map-dashboard,
+.app-layout.authenticated.ai-mode .life-map-prep-grid,
+.app-layout.authenticated.ai-mode .life-map-loading-state,
+.app-layout.authenticated.ai-mode .life-map-empty-state,
+.app-layout.authenticated.ai-mode .life-map-privacy-card {
+  position: relative;
+  width: min(1440px, 100%);
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+.app-layout.authenticated.ai-mode .life-map-state-stage {
+  display: block;
+  min-height: 0;
+  overflow: visible;
+}
+
+.app-layout.authenticated.ai-mode .life-map-state-stage > * {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-width: 100%;
+}
+
+.app-layout.authenticated.ai-mode .life-map-dashboard {
+  min-height: 0;
+}
+
+.app-layout.authenticated.ai-mode .life-map-location-grid {
+  width: 100%;
+  margin-inline: 0;
+}
+
+.app-layout.authenticated.ai-mode .life-map-card-heading,
+.app-layout.authenticated.ai-mode .life-map-summary-card,
+.app-layout.authenticated.ai-mode .life-map-insight-card,
+.app-layout.authenticated.ai-mode .life-map-wide-section,
+.app-layout.authenticated.ai-mode .life-map-location-card {
+  min-width: 0;
+}
+
+:root[data-theme="bright"] .app-layout.authenticated.ai-mode .life-map-hero-copy .eyebrow {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover);
+}
+
+:root[data-theme="dark"] .app-layout.authenticated.ai-mode .life-map-hero-copy .eyebrow {
+  color: #9bdaf4 !important;
+  -webkit-text-fill-color: #9bdaf4;
+}
+
+.presentation-page {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(45, 212, 191, 0.18), transparent 34%),
+    radial-gradient(circle at 86% 14%, rgba(96, 165, 250, 0.15), transparent 30%),
+    linear-gradient(135deg, #020617 0%, #071827 45%, #020617 100%);
+}
+
+.presentation-section {
+  padding: clamp(68px, 7vh, 86px) clamp(52px, 6.5vw, 112px) clamp(104px, 10vh, 132px);
+}
+
+.presentation-section-inner {
+  width: min(1500px, 100%);
+  gap: clamp(28px, 3.8vh, 46px);
+}
+
+.presentation-cover-inner {
+  width: min(1540px, 100%);
+  grid-template-columns: minmax(0, 1.03fr) minmax(360px, 0.92fr);
+  column-gap: clamp(34px, 5vw, 82px);
+}
+
+.presentation-card-grid,
+.presentation-feature-grid,
+.presentation-goal-grid,
+.tech-columns,
+.comparison-grid,
+.future-grid {
+  gap: clamp(22px, 2.4vw, 34px);
+}
+
+.presentation-section-heading h2 {
+  color: #ffffff;
+}
+
+.presentation-section-heading > span,
+.presentation-feature-card p,
+.presentation-info-card p,
+.presentation-goal-card p,
+.presentation-statement-card p,
+.presentation-card p,
+.presentation-card li,
+.presentation-warning-card span,
+.presentation-footnote,
+.future-copy,
+.demo-panel p,
+.ux-showcase p,
+.ux-showcase li,
+.team-row span,
+.compare-card p,
+.tech-map-node p,
+.flow-leaf,
+.system-leaves span,
+.horizontal-flow-copy p,
+.horizontal-flow-step li,
+.system-feature-chip span,
+.presentation-member-grid strong,
+.presentation-advisors {
+  color: #c8e1ed;
+  -webkit-text-fill-color: currentColor;
+}
+
+.presentation-feature-card strong,
+.presentation-feature-card h3,
+.presentation-info-card h3,
+.presentation-goal-card strong,
+.presentation-statement-card strong,
+.tech-map-core strong,
+.tech-map-node strong,
+.system-feature-chip strong,
+.branch-node,
+.module-node,
+.action-node,
+.system-action-node,
+.demo-panel h3,
+.team-row strong,
+.horizontal-flow-copy h3,
+.root-node,
+.presentation-warning-card strong {
+  color: #f7fdff;
+  -webkit-text-fill-color: currentColor;
+}
+
+:root[data-theme="bright"] .presentation-page {
+  color: #102033 !important;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(56, 189, 248, 0.17), transparent 32%),
+    radial-gradient(circle at 84% 14%, rgba(45, 212, 191, 0.13), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #eef8ff 50%, #fbfdff 100%) !important;
+}
+
+:root[data-theme="bright"] .presentation-page::before {
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(15, 127, 156, 0.065) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 127, 156, 0.052) 1px, transparent 1px),
+    radial-gradient(circle, rgba(15, 127, 156, 0.22) 0 1px, transparent 1.6px);
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-section-heading h2,
+  .cover-title-en,
+  .cover-title-zh,
+  .presentation-thanks h2,
+  .presentation-feature-card strong,
+  .presentation-feature-card h3,
+  .presentation-info-card h3,
+  .presentation-goal-card strong,
+  .presentation-statement-card strong,
+  .tech-map-core strong,
+  .tech-map-node strong,
+  .system-feature-chip strong,
+  .branch-node,
+  .module-node,
+  .action-node,
+  .system-action-node,
+  .demo-panel h3,
+  .team-row strong,
+  .horizontal-flow-copy h3,
+  .root-node,
+  .presentation-warning-card strong,
+  .presentation-member-grid span
+) {
+  color: #102033 !important;
+  -webkit-text-fill-color: #102033 !important;
+  text-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-section-heading > span,
+  .presentation-section-heading p,
+  .presentation-lead,
+  .presentation-tagline,
+  .presentation-feature-card p,
+  .presentation-info-card p,
+  .presentation-goal-card p,
+  .presentation-statement-card p,
+  .presentation-card p,
+  .presentation-card li,
+  .presentation-warning-card span,
+  .presentation-footnote,
+  .future-copy,
+  .demo-panel p,
+  .ux-showcase p,
+  .ux-showcase li,
+  .team-row span,
+  .compare-card p,
+  .tech-map-node p,
+  .flow-leaf,
+  .system-leaves span,
+  .horizontal-flow-copy p,
+  .horizontal-flow-step li,
+  .system-feature-chip span,
+  .presentation-member-grid strong,
+  .presentation-advisors,
+  .presentation-thanks p,
+  .presentation-thanks span,
+  .presentation-thanks small
+) {
+  color: #2f465c !important;
+  -webkit-text-fill-color: #2f465c !important;
+  text-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-kicker,
+  .presentation-section-heading .eyebrow,
+  .presentation-nav button.active,
+  .presentation-controls strong,
+  .presentation-footnote strong
+) {
+  color: #0b6f89 !important;
+  -webkit-text-fill-color: #0b6f89 !important;
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-info-card,
+  .presentation-feature-card,
+  .presentation-goal-card,
+  .presentation-statement-card,
+  .presentation-warning-card,
+  .presentation-member-grid span,
+  .presentation-advisors,
+  .team-row,
+  .demo-panel,
+  .ux-showcase,
+  .tech-map-node,
+  .tech-map-core,
+  .horizontal-flow-step,
+  .root-node,
+  .branch-node,
+  .module-node,
+  .action-node,
+  .system-action-node,
+  .system-feature-chip,
+  .compare-card,
+  .future-grid article
+) {
+  border-color: rgba(15, 127, 156, 0.17) !important;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(245, 252, 255, 0.92)) !important;
+  box-shadow: 0 16px 38px rgba(14, 116, 144, 0.09) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-info-card > span,
+  .presentation-feature-card > span,
+  .presentation-statement-card > span,
+  .presentation-goal-card::before,
+  .horizontal-flow-index
+) {
+  color: #0b6f89 !important;
+  -webkit-text-fill-color: #0b6f89 !important;
+  border-color: rgba(15, 127, 156, 0.22) !important;
+  background: rgba(15, 127, 156, 0.1) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] .presentation-nav,
+:root[data-theme="bright"] .presentation-controls {
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 18px 42px rgba(14, 116, 144, 0.12) !important;
+}
+
+:root[data-theme="bright"] .presentation-nav button,
+:root[data-theme="bright"] .presentation-controls button {
+  color: #2f465c !important;
+  -webkit-text-fill-color: #2f465c !important;
+}
+
+:root[data-theme="bright"] .presentation-nav button.active,
+:root[data-theme="bright"] .presentation-nav button:hover,
+:root[data-theme="bright"] .presentation-controls button:hover:not(:disabled) {
+  color: #0b6f89 !important;
+  -webkit-text-fill-color: #0b6f89 !important;
+  background: rgba(15, 127, 156, 0.11) !important;
+}
+
+:root[data-theme="bright"] .presentation-controls button:disabled {
+  color: #7b8fa3 !important;
+  -webkit-text-fill-color: #7b8fa3 !important;
+  background: rgba(15, 127, 156, 0.04) !important;
+}
+
+:root[data-theme="bright"] .presentation-dot i {
+  color: #102033 !important;
+  -webkit-text-fill-color: #102033;
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background: rgba(255, 255, 255, 0.88) !important;
+}
+
+:root[data-theme="bright"] .presentation-path {
+  background: linear-gradient(90deg, transparent, rgba(15, 127, 156, 0.5), transparent) !important;
+}
+
+@media (max-width: 1080px) {
+  .app-layout.authenticated.ai-mode .life-map-hero {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .app-layout.authenticated.ai-mode .life-map-visual {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 780px) {
+  .presentation-section {
+    padding: 60px 22px 112px;
+  }
+
+  .presentation-section-inner,
+  .presentation-cover-inner {
+    width: 100%;
+  }
+
+  .app-layout.authenticated.ai-mode .life-map-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Pointer-event safety net.
+   Decorative layers must never sit above the app and steal clicks from controls. */
+.ambient-bg,
+.particles,
+.presentation-page::before,
+.presentation-page::after,
+.presentation-atmosphere,
+.presentation-atmosphere *,
+.atmosphere-line,
+.atmosphere-glow,
+.presentation-section::after,
+.presentation-visual,
+.presentation-visual *,
+.life-map-visual,
+.life-map-visual *,
+.life-map-loading-visual,
+.life-map-loading-visual * {
+  pointer-events: none !important;
+}
+
+.topbar,
+.topbar *,
+.mobile-bottom-nav,
+.mobile-bottom-nav *,
+.presentation-nav,
+.presentation-nav *,
+.presentation-controls,
+.presentation-controls *,
+.nav-popover-wrap,
+.nav-popover-wrap *,
+.nav-dropdown,
+.nav-dropdown *,
+.notifications-dropdown,
+.notifications-dropdown *,
+.modal-backdrop,
+.modal-backdrop *,
+.admin-modal-backdrop,
+.admin-modal-backdrop *,
+.toast-viewport,
+.toast-viewport *,
+.life-map-panel,
+.life-map-panel *,
+.friends-hub,
+.friends-hub *,
+.feed-page,
+.feed-page *,
+.presentation-section-inner,
+.presentation-section-inner * {
+  pointer-events: auto;
+}
+
+.topbar,
+.mobile-bottom-nav,
+.presentation-nav,
+.presentation-controls,
+.nav-dropdown,
+.notifications-dropdown {
+  isolation: isolate;
+}
+
+.presentation-page::before,
+.presentation-page::after,
+.presentation-atmosphere,
+.presentation-atmosphere *,
+.presentation-visual,
+.presentation-visual *,
+.life-map-visual,
+.life-map-visual *,
+.life-map-loading-visual,
+.life-map-loading-visual * {
+  pointer-events: none !important;
+}
+
+/* Adrift brand icon system. */
+.brand-mark,
+.brand-icon-shell {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(164, 237, 255, 0.24);
+  border-radius: 50%;
+  color: #e9fcff;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.18), transparent 34%),
+    rgba(3, 14, 26, 0.76);
+  box-shadow: 0 0 24px rgba(105, 222, 255, 0.18);
+}
+
+.brand-icon-shell img,
+.auth-brand-icon,
+.boot-brand-icon,
+.presentation-orb img {
+  display: block;
+  object-fit: cover;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.brand-icon-shell img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.brand-nav-button .brand-icon-shell.small {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  padding: 2px;
+  background: rgba(2, 13, 24, 0.58);
+}
+
+.diary-side-empty .brand-icon-shell {
+  width: 52px;
+  height: 52px;
+  padding: 3px;
+}
+
+.auth-brand-icon {
+  width: clamp(78px, 10vw, 118px);
+  height: clamp(78px, 10vw, 118px);
+  border: 1px solid rgba(164, 237, 255, 0.2);
+  border-radius: 50%;
+  box-shadow: 0 22px 64px rgba(77, 197, 255, 0.18);
+}
+
+.boot-brand-icon {
+  width: 58px;
+  height: 58px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  box-shadow: 0 16px 36px rgba(77, 197, 255, 0.2);
+}
+
+.presentation-orb {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(140, 220, 255, 0.16);
+  background:
+    radial-gradient(circle at 42% 30%, rgba(255, 255, 255, 0.18), transparent 36%),
+    rgba(2, 13, 24, 0.72);
+  box-shadow:
+    0 0 52px rgba(121, 241, 220, 0.22),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.presentation-orb img {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+:root[data-theme="bright"] .brand-mark,
+:root[data-theme="bright"] .brand-icon-shell {
+  border-color: rgba(15, 127, 156, 0.22) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 12px 28px rgba(14, 116, 144, 0.12) !important;
+}
+
+:root[data-theme="bright"] .auth-brand-icon,
+:root[data-theme="bright"] .boot-brand-icon,
+:root[data-theme="bright"] .presentation-orb {
+  border-color: rgba(15, 127, 156, 0.18) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 18px 42px rgba(14, 116, 144, 0.14) !important;
 }

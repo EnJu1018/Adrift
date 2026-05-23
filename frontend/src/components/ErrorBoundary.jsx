@@ -19,6 +19,7 @@ export default class ErrorBoundary extends React.Component {
       return (
         <main className="boot-fallback">
           <section className="glass boot-card">
+            <img className="boot-brand-icon" src="/adrift-icon.png" alt="Adrift" />
             <p className="eyebrow">Adrift</p>
             <h1>畫面載入時遇到錯誤</h1>
             <p>{this.state.error.message}</p>

@@ -292,6 +292,7 @@ function AuthBrand({ copy, isRegister }) {
       <div className="auth-floating-light two" />
       <div className="auth-floating-light three" />
 
+      <img className="auth-brand-icon" src="/adrift-icon.png" alt="Adrift" />
       <h1>{isRegister ? 'Start drifting.' : 'Adrift'}</h1>
       <p className="auth-brand-english">{copy.title}</p>
       <p className="auth-brand-body">{copy.body}</p>

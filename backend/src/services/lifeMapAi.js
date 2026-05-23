@@ -5,7 +5,7 @@ const defaultModelName = 'gemini-2.0-flash';
 const fallbackModelNames = ['gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-2.5-flash'];
 
 const systemPrompt = `
-你是 Adrift 的 Life Map AI。
+你是 Adrift Intelligence。
 
 你的任務是分析使用者的：
 日記內容

@@ -30,15 +30,15 @@ router.get('/life-map', requireAuth, async (req, res) => {
 
     return res.json({
       success: true,
-      message: '取得 Adrift AI 人生地圖洞察成功',
+      message: '取得 Adrift Intelligence 洞察成功',
       data: insight
     });
   } catch (error) {
-    console.error('Life Map AI failed:', error);
+    console.error('Adrift Intelligence failed:', error);
 
     return res.status(503).json({
       success: false,
-      message: 'AI 分析暫時無法使用'
+      message: 'Adrift Intelligence 暫時無法使用'
     });
   }
 });

@@ -862,7 +862,9 @@ export default function App() {
         <>
         <header className="product-navbar glass">
           <button className="brand-nav-button" type="button" onClick={() => navigate('/')} aria-label="回到地圖">
-            <span className="brand-mark small">A</span>
+            <span className="brand-mark small brand-icon-shell">
+              <img src="/adrift-icon.png" alt="" aria-hidden="true" />
+            </span>
             <strong>Adrift</strong>
           </button>
 
@@ -883,7 +885,7 @@ export default function App() {
                 </button>
                 <button className={isAiPage ? 'active' : ''} type="button" onClick={() => navigate('/ai/life-map')}>
                   <Brain size={16} />
-                  Life Map AI
+                  Adrift Intelligence
                 </button>
               </nav>
 
@@ -993,7 +995,7 @@ export default function App() {
                 </button>
                 <button className={isAiPage ? 'active' : ''} type="button" onClick={() => navigate('/ai/life-map')}>
                   <Brain size={18} />
-                  <span>AI</span>
+                  <span>Intelligence</span>
                 </button>
               </nav>
             </>
