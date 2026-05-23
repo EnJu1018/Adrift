@@ -31,7 +31,7 @@ const moodFilterOptions = MOOD_FILTER_OPTIONS.map((value) => ({
   label: value === 'all' ? 'All moods' : value
 }));
 
-export default function AdminDashboard({ user, onBack, onLogout }) {
+export default function AdminDashboard({ user, theme = 'dark', onThemeChange, onBack, onLogout }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [stats, setStats] = useState(null);
   const [users, setUsers] = useState([]);
@@ -258,6 +258,27 @@ export default function AdminDashboard({ user, onBack, onLogout }) {
           <p>以低密度工作台管理系統、使用者與日記內容。</p>
         </div>
         <div className="admin-hero-actions">
+          <div className="admin-theme-switcher" aria-label="主題模式">
+            <span>主題模式</span>
+            <div>
+              <button
+                className={theme === 'dark' ? 'active' : ''}
+                type="button"
+                onClick={() => onThemeChange?.('dark')}
+                aria-pressed={theme === 'dark'}
+              >
+                深色
+              </button>
+              <button
+                className={theme === 'bright' ? 'active' : ''}
+                type="button"
+                onClick={() => onThemeChange?.('bright')}
+                aria-pressed={theme === 'bright'}
+              >
+                明亮
+              </button>
+            </div>
+          </div>
           <span className="admin-badge">
             <Shield size={15} />
             {user?.userCode ? `@${user.userCode}` : 'admin'}

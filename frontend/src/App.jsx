@@ -13,6 +13,7 @@ import LifeMapAI from './components/LifeMapAI.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
+import PresentationPage from './components/PresentationPage.jsx';
 import ToastViewport from './components/ToastViewport.jsx';
 import { pageFadeUp } from './constants/animations.js';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
@@ -25,7 +26,21 @@ const exploreRadiusOptions = [
   { label: '50km', value: 50000 }
 ];
 
+const THEME_KEY = 'adrift-theme';
+const themes = ['dark', 'bright'];
+
+function getInitialTheme() {
+  try {
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    if (savedTheme === 'lightened') return 'bright';
+    return themes.includes(savedTheme) ? savedTheme : 'dark';
+  } catch {
+    return 'dark';
+  }
+}
+
 export default function App() {
+  const [theme, setThemeState] = useState(getInitialTheme);
   const [user, setUser] = useState(() => getStoredAuth().user);
   const [diaries, setDiaries] = useState([]);
   const [friends, setFriends] = useState([]);
@@ -64,6 +79,10 @@ export default function App() {
   const autoLocateRequestedRef = useRef(false);
   const navbarActionsRef = useRef(null);
 
+  const setTheme = useCallback((nextTheme) => {
+    setThemeState(themes.includes(nextTheme) ? nextTheme : 'dark');
+  }, []);
+
   const isAuthPage = currentPath === '/login' || currentPath === '/register';
   const authMode = currentPath === '/register' ? 'register' : 'login';
   const isFriendsPage = currentPath === '/friends';
@@ -71,7 +90,18 @@ export default function App() {
   const isSettingsPage = currentPath === '/settings/account';
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
+  const isPresentationPage = currentPath === '/presentation';
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // localStorage can be unavailable in private browsing; the in-memory theme still applies.
+    }
+  }, [theme]);
 
   const navigate = useCallback((path) => {
     if (window.location.pathname !== path) {
@@ -279,7 +309,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!user && !isAuthPage) {
+    if (!user && !isAuthPage && !isPresentationPage) {
       navigate('/login');
       return;
     }
@@ -287,7 +317,7 @@ export default function App() {
     if (user && isAuthPage) {
       navigate('/');
     }
-  }, [isAuthPage, navigate, user]);
+  }, [isAuthPage, isPresentationPage, navigate, user]);
 
   useEffect(() => {
     if (!user) {
@@ -804,12 +834,14 @@ export default function App() {
       <Particles lowPerformance={performanceMode.lowPerformance} reducedMotion={performanceMode.reducedMotion} />
 
       <motion.div
-        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage ? 'guest' : ''} ${isAdminPage ? 'admin-mode' : ''}`}
+        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPresentationPage ? 'guest' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''}`}
         {...pageFadeUp}
       >
-        {user && isAdminPage ? (
+        {isPresentationPage ? (
+          <PresentationPage />
+        ) : user && isAdminPage ? (
           isAdmin ? (
-            <AdminDashboard user={user} onBack={() => navigate('/')} onLogout={() => logout()} />
+            <AdminDashboard user={user} theme={theme} onThemeChange={setTheme} onBack={() => navigate('/')} onLogout={() => logout()} />
           ) : (
             <AdminForbidden onBack={() => navigate('/')} />
           )
@@ -1017,6 +1049,7 @@ export default function App() {
               onEdit={openEditDiary}
             />
             <MapView
+              key={`map-${theme}`}
               diaries={displayedDiaries}
               selectedDiary={selectedDiary}
               onSelect={setSelectedDiary}
@@ -1031,6 +1064,7 @@ export default function App() {
               disabled={!user}
               lowPerformance={performanceMode.lowPerformance}
               reducedMotion={performanceMode.reducedMotion}
+              theme={theme}
             />
           </div>
 

@@ -7,6 +7,11 @@ import { getMoodMarkerStyle } from '../constants/moodStyles.js';
 import FallbackMap from './FallbackMap.jsx';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const mapStyles = {
+  dark: 'mapbox://styles/mapbox/dark-v11',
+  bright: 'mapbox://styles/mapbox/streets-v12'
+};
+
 export default function MapView({
   diaries,
   selectedDiary,
@@ -21,7 +26,8 @@ export default function MapView({
   onLocateUser,
   disabled,
   lowPerformance = false,
-  reducedMotion = false
+  reducedMotion = false,
+  theme = 'dark'
 }) {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
@@ -78,7 +84,7 @@ export default function MapView({
     mapboxgl.accessToken = MAPBOX_TOKEN;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
+      style: mapStyles[theme] || mapStyles.dark,
       center: [121.5654, 25.033],
       zoom: 3.2,
       attributionControl: false
@@ -829,5 +835,4 @@ function distanceMeters(lat1, lng1, lat2, lng2) {
 function toRadians(value) {
   return (value * Math.PI) / 180;
 }
-
 

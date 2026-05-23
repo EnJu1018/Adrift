@@ -3,7 +3,7 @@ const TOKEN_KEY = 'adrift_token';
 const USER_KEY = 'adrift_user';
 
 function resolveApiUrl(configuredUrl) {
-  const fallbackUrl = configuredUrl || 'http://localhost:5000';
+  const fallbackUrl = configuredUrl || '/api';
 
   if (typeof window === 'undefined') {
     return trimTrailingSlash(fallbackUrl);
@@ -21,10 +21,7 @@ function resolveApiUrl(configuredUrl) {
     const apiIsLocal = ['localhost', '127.0.0.1', '::1'].includes(apiHost);
 
     if (!pageIsLocal && apiIsLocal) {
-      apiUrl.hostname = pageHost;
-      apiUrl.protocol = window.location.protocol;
-      apiUrl.port = apiUrl.port || '5000';
-      return trimTrailingSlash(`${apiUrl.origin}${apiUrl.pathname === '/' ? '' : apiUrl.pathname}`);
+      return '/api';
     }
 
     return trimTrailingSlash(`${apiUrl.origin}${apiUrl.pathname === '/' ? '' : apiUrl.pathname}`);

@@ -6,6 +6,16 @@
     <title>Adrift: Echoes of Places</title>
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          var savedTheme = localStorage.getItem('adrift-theme');
+          document.documentElement.dataset.theme = savedTheme === 'bright' || savedTheme === 'lightened' ? 'bright' : 'dark';
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
