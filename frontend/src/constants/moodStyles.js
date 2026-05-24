@@ -48,6 +48,14 @@ export const MOOD_MARKER_STYLES = {
     glass: 'rgba(8, 18, 32, 0.78)',
     core: '#ede9fe'
   },
+  confused: {
+    icon: '\u25CF',
+    color: '#818cf8',
+    rgb: '129, 140, 248',
+    glow: 'rgba(129, 140, 248, 0.34)',
+    glass: 'rgba(8, 18, 32, 0.78)',
+    core: '#e0e7ff'
+  },
   angry: {
     icon: '\u25CF',
     color: '#f08278',

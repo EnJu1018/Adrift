@@ -14,6 +14,7 @@ const moodIcons = {
   happy: '😊',
   sad: '🌧',
   anxious: '◌',
+  confused: '◔',
   wonder: '✨',
   excited: '✨',
   nostalgic: '◐',

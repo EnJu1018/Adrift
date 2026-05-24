@@ -11,6 +11,7 @@ const mapStyles = {
   dark: 'mapbox://styles/mapbox/dark-v11',
   bright: 'mapbox://styles/mapbox/streets-v12'
 };
+const OVERLAP_GROUP_DISTANCE_METERS = 20;
 
 export default function MapView({
   diaries,
@@ -41,7 +42,6 @@ export default function MapView({
   const [hoveredDiaryId, setHoveredDiaryId] = useState(null);
   const [expandedGroupKey, setExpandedGroupKey] = useState(null);
   const [htmlMarkerMode, setHtmlMarkerMode] = useState(false);
-  const [mapTransformTick, setMapTransformTick] = useState(0);
   const diariesById = useMemo(() => {
     return new Map((diaries || []).map((diary) => [diary._id, diary]));
   }, [diaries]);
@@ -53,20 +53,6 @@ export default function MapView({
       features: buildDiaryFeatures(diaries || [], selectedDiary?._id, hoveredDiaryId, theme)
     };
   }, [diaries, hoveredDiaryId, selectedDiary?._id, theme]);
-
-  const expandedGeoJson = useMemo(() => {
-    return buildExpandedDiaryFeatures({
-      diaries: diaries || [],
-      expandedGroupKey,
-      selectedId: selectedDiary?._id,
-      hoveredId: hoveredDiaryId,
-      map: mapRef.current,
-      mapReady,
-      theme
-    });
-  }, [diaries, expandedGroupKey, hoveredDiaryId, mapReady, mapTransformTick, selectedDiary?._id, theme]);
-  const expandedPointGeoJson = expandedGeoJson.points;
-  const expandedLineGeoJson = expandedGeoJson.lines;
 
   const currentLocationGeoJson = useMemo(() => {
     const lat = Number(currentLocation?.lat);
@@ -120,16 +106,6 @@ export default function MapView({
         cluster: true,
         clusterMaxZoom: 13,
         clusterRadius: 54
-      });
-
-      map.addSource('expanded-diary-points', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-      });
-
-      map.addSource('expanded-diary-lines', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
       });
 
       map.addSource('current-location', {
@@ -426,88 +402,6 @@ export default function MapView({
       });
 
       map.addLayer({
-        id: 'diary-expanded-connectors',
-        type: 'line',
-        source: 'expanded-diary-lines',
-        paint: {
-          'line-color': ['get', 'lineColor'],
-          'line-width': 1.2,
-          'line-opacity': 0.68,
-          'line-dasharray': [1.2, 1.4],
-          'line-emissive-strength': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'diary-expanded-hitbox',
-        type: 'circle',
-        source: 'expanded-diary-points',
-        paint: {
-          'circle-color': 'rgba(255, 255, 255, 0.01)',
-          'circle-radius': 22,
-          'circle-opacity': 0.01
-        }
-      });
-
-      map.addLayer({
-        id: 'diary-expanded-glow',
-        type: 'circle',
-        source: 'expanded-diary-points',
-        paint: {
-          'circle-color': ['get', 'markerHaloColor'],
-          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 23, ['boolean', ['get', 'hovered'], false], 20, 18],
-          'circle-opacity': ['case', ['boolean', ['get', 'selected'], false], 0.54, 0.36],
-          'circle-blur': 0.46,
-          'circle-emissive-strength': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'diary-expanded-shell',
-        type: 'circle',
-        source: 'expanded-diary-points',
-        paint: {
-          'circle-color': ['get', 'markerShellColor'],
-          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 13.8, ['boolean', ['get', 'hovered'], false], 12.8, 12],
-          'circle-stroke-color': ['case', ['boolean', ['get', 'selected'], false], ['get', 'markerFocusColor'], ['get', 'markerStrokeColor']],
-          'circle-stroke-width': ['case', ['boolean', ['get', 'selected'], false], 2.5, 1.8],
-          'circle-opacity': 0.96,
-          'circle-emissive-strength': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'diary-expanded-core',
-        type: 'circle',
-        source: 'expanded-diary-points',
-        paint: {
-          'circle-color': ['get', 'markerColor'],
-          'circle-radius': ['case', ['boolean', ['get', 'selected'], false], 5.2, 4.2],
-          'circle-opacity': 0.9,
-          'circle-emissive-strength': 1
-        }
-      });
-
-      map.addLayer({
-        id: 'diary-expanded-glyph',
-        type: 'symbol',
-        source: 'expanded-diary-points',
-        layout: {
-          'text-field': ['get', 'markerGlyph'],
-          'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-          'text-size': ['case', ['boolean', ['get', 'selected'], false], 14, 12],
-          'text-allow-overlap': true,
-          'text-ignore-placement': true
-        },
-        paint: {
-          'text-color': ['get', 'markerGlyphColor'],
-          'text-halo-color': ['get', 'markerGlyphHaloColor'],
-          'text-halo-width': 0.8,
-          'text-emissive-strength': 1
-        }
-      });
-
-      map.addLayer({
         id: 'current-location-radius',
         type: 'circle',
         source: 'current-location',
@@ -584,17 +478,6 @@ export default function MapView({
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    const pointSource = map.getSource('expanded-diary-points');
-    const lineSource = map.getSource('expanded-diary-lines');
-
-    pointSource?.setData(expandedPointGeoJson);
-    lineSource?.setData(expandedLineGeoJson);
-  }, [expandedLineGeoJson, expandedPointGeoJson, mapReady]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-
     const source = map.getSource('current-location');
     source?.setData(currentLocationGeoJson);
   }, [currentLocationGeoJson, mapReady]);
@@ -632,10 +515,11 @@ export default function MapView({
     const nextMarkerKeys = new Set();
 
     for (const [groupKey, group] of diaryGroupMeta.entries()) {
-      const center = group[0]?.location?.coordinates;
+      const center = group.center || getDiaryCoordinates(group[0]);
       if (!Array.isArray(center) || center.length < 2 || !center.every(Number.isFinite)) continue;
 
       const isExpanded = groupKey === expandedGroupKey && group.length > 1;
+      const isSelectedStack = group.some((diary) => diary._id === selectedDiary?._id);
 
       if (group.length > 1) {
         const key = `stack-${groupKey}`;
@@ -650,7 +534,7 @@ export default function MapView({
             theme,
             sampleDiary: group[0],
             groupKey,
-            selected: group.some((diary) => diary._id === selectedDiary?._id)
+            selected: isSelectedStack
           });
 
           stackElement.addEventListener('click', (event) => {
@@ -664,10 +548,12 @@ export default function MapView({
             setExpandedGroupKey((current) => (current === groupKey ? null : groupKey));
           });
           stackElement.addEventListener('mouseenter', () => {
-            showMarkerTooltip(map, tooltipRef, center, `<strong>這裡有 ${group.length} 篇日記</strong><span>點擊展開選擇</span>`);
+            const count = Number(stackElement.dataset.count || group.length);
+            showMarkerTooltip(map, tooltipRef, center, `<strong>這裡有 ${count} 篇日記</strong><span>點擊展開選擇</span>`);
           });
           stackElement.addEventListener('focus', () => {
-            showMarkerTooltip(map, tooltipRef, center, `<strong>這裡有 ${group.length} 篇日記</strong><span>按 Enter 展開選擇</span>`);
+            const count = Number(stackElement.dataset.count || group.length);
+            showMarkerTooltip(map, tooltipRef, center, `<strong>這裡有 ${count} 篇日記</strong><span>按 Enter 展開選擇</span>`);
           });
           stackElement.addEventListener('mouseleave', () => {
             tooltipRef.current?.remove();
@@ -693,9 +579,16 @@ export default function MapView({
           count: group.length,
           expanded: isExpanded,
           theme,
+          map,
+          center,
+          group,
           sampleDiary: group[0],
           groupKey,
-          selected: group.some((diary) => diary._id === selectedDiary?._id)
+          selected: isSelectedStack,
+          selectedId: selectedDiary?._id,
+          onSelect,
+          setHoveredDiaryId,
+          tooltipRef
         });
         if (entry.lngLatKey !== groupKey) {
           entry.marker.setLngLat(center);
@@ -730,48 +623,6 @@ export default function MapView({
         continue;
       }
 
-      if (isExpanded) {
-        const radius = getSpiderfyRadius(group.length);
-        const startAngle = group.length === 2 ? -Math.PI / 2 : -Math.PI / 2 - Math.PI / group.length;
-
-        group.forEach((diary, index) => {
-          const angle = startAngle + (Math.PI * 2 * index) / group.length;
-          const visualOffset = [Math.cos(angle) * radius, Math.sin(angle) * radius];
-          const key = `expanded-${groupKey}-${diary._id}`;
-          nextMarkerKeys.add(key);
-
-          let entry = htmlMarkersRef.current.get(key);
-          if (!entry) {
-            entry = {
-              marker: createHtmlDiaryMarker({
-                map,
-                diary,
-                lngLat: center,
-                visualOffset,
-                compact: true,
-                theme,
-                selectedId: selectedDiary?._id,
-                onSelect,
-                setHoveredDiaryId,
-                tooltipRef
-              })
-            };
-            htmlMarkersRef.current.set(key, entry);
-          }
-
-          updateHtmlDiaryMarkerElement(entry.marker.getElement(), {
-            diary,
-            compact: true,
-            theme,
-            selectedId: selectedDiary?._id,
-            visualOffset
-          });
-          if (entry.lngLatKey !== groupKey) {
-            entry.marker.setLngLat(center);
-            entry.lngLatKey = groupKey;
-          }
-        });
-      }
     }
 
     htmlMarkersRef.current.forEach((entry, key) => {
@@ -794,18 +645,19 @@ export default function MapView({
       if (!element) return;
 
       const isSelectedDiary = element.dataset.diaryId === selectedId;
-      const isSelectedStack = Boolean(selectedId && element.dataset.groupKey && element.dataset.groupKey === getDiaryGroupKey(selectedDiary));
+      const selectedGroupKey = selectedDiary ? findDiaryGroupKey(selectedDiary, diaryGroupMeta) : '';
+      const isSelectedStack = Boolean(selectedId && element.dataset.groupKey && element.dataset.groupKey === selectedGroupKey);
 
       element.classList.toggle('is-selected', isSelectedDiary || isSelectedStack);
       element.querySelector('.memory-marker')?.classList.toggle('is-selected', isSelectedDiary);
       element.querySelector('.memory-stack-marker')?.classList.toggle('is-selected', isSelectedStack);
     });
-  }, [selectedDiary]);
+  }, [diaryGroupMeta, selectedDiary]);
 
   useEffect(() => {
     if (!selectedDiary?._id) return;
 
-    const groupKey = getDiaryGroupKey(selectedDiary);
+    const groupKey = findDiaryGroupKey(selectedDiary, diaryGroupMeta);
     const group = groupKey ? diaryGroupMeta.get(groupKey) : null;
 
     if (group?.length > 1) {
@@ -850,6 +702,7 @@ export default function MapView({
     if (!map || !mapReady) return;
 
     function openCluster(event) {
+      event?.originalEvent?.stopPropagation?.();
       const features = map.queryRenderedFeatures(event.point, { layers: ['diary-clusters'] });
       const cluster = features[0];
       const source = map.getSource('diaries');
@@ -867,6 +720,7 @@ export default function MapView({
     }
 
     function openDiary(event) {
+      event?.originalEvent?.stopPropagation?.();
       const feature = event.features?.[0];
       const overlapCount = Number(feature?.properties?.overlapCount || 1);
       const groupKey = feature?.properties?.groupKey || '';
@@ -880,12 +734,6 @@ export default function MapView({
       if (diary) onSelect(diary);
     }
 
-    function openExpandedDiary(event) {
-      const feature = event.features?.[0];
-      const diary = diariesById.get(feature?.properties?.id);
-      if (diary) onSelect(diary);
-    }
-
     function showDiaryHover(event) {
       updateCursor();
 
@@ -893,25 +741,24 @@ export default function MapView({
       setHoveredDiaryId(feature?.properties?.id || null);
 
       const overlapCount = Number(feature?.properties?.overlapCount || 1);
-
-      if (overlapCount <= 1 && !feature?.properties?.approximate && !feature?.properties?.title) return;
+      const diary = diariesById.get(feature?.properties?.id);
 
       tooltipRef.current?.remove();
-      const tooltipText =
-        overlapCount > 1
-          ? `這裡有 ${overlapCount} 篇日記，點擊展開`
-          : feature?.properties?.approximate
-            ? '此日記使用大略位置'
-            : feature?.properties?.title;
+      const tooltipHtml = overlapCount > 1
+        ? `<strong>這裡有 ${overlapCount} 篇日記</strong><span>點擊展開選擇</span>`
+        : diary
+          ? getMarkerTooltipHtml(diary)
+          : `<strong>${escapeHtml(feature?.properties?.title || '日記')}</strong><span>心情 · 時間</span>`;
 
       tooltipRef.current = new mapboxgl.Popup({
         closeButton: false,
         closeOnClick: false,
-        className: 'approximate-tooltip',
-        offset: 12
+        className: 'memory-marker-tooltip',
+        offset: 18,
+        maxWidth: '220px'
       })
         .setLngLat(feature.geometry.coordinates)
-        .setHTML(`<span>${escapeHtml(tooltipText)}</span>`)
+        .setHTML(tooltipHtml)
         .addTo(map);
     }
 
@@ -930,6 +777,10 @@ export default function MapView({
       map.getCanvas().style.cursor = '';
     }
 
+    function closeExpandedStack() {
+      setExpandedGroupKey(null);
+    }
+
     map.on('click', 'diary-cluster-glow', openCluster);
     map.on('click', 'diary-clusters', openCluster);
     map.on('click', 'diary-cluster-count', openCluster);
@@ -939,10 +790,7 @@ export default function MapView({
     map.on('click', 'diary-marker-glyph', openDiary);
     map.on('click', 'diary-stack-count', openDiary);
     map.on('click', 'diary-selected-ring', openDiary);
-    map.on('click', 'diary-expanded-hitbox', openExpandedDiary);
-    map.on('click', 'diary-expanded-shell', openExpandedDiary);
-    map.on('click', 'diary-expanded-core', openExpandedDiary);
-    map.on('click', 'diary-expanded-glyph', openExpandedDiary);
+    map.on('click', closeExpandedStack);
     map.on('mouseenter', 'diary-cluster-glow', updateCursor);
     map.on('mouseenter', 'diary-clusters', updateCursor);
     map.on('mouseenter', 'diary-cluster-count', updateCursor);
@@ -951,10 +799,6 @@ export default function MapView({
     map.on('mouseenter', 'diary-marker-core', showDiaryHover);
     map.on('mouseenter', 'diary-marker-glyph', showDiaryHover);
     map.on('mouseenter', 'diary-stack-count', showDiaryHover);
-    map.on('mouseenter', 'diary-expanded-hitbox', showDiaryHover);
-    map.on('mouseenter', 'diary-expanded-shell', showDiaryHover);
-    map.on('mouseenter', 'diary-expanded-core', showDiaryHover);
-    map.on('mouseenter', 'diary-expanded-glyph', showDiaryHover);
     map.on('mouseleave', 'diary-cluster-glow', resetCursor);
     map.on('mouseleave', 'diary-clusters', resetCursor);
     map.on('mouseleave', 'diary-cluster-count', resetCursor);
@@ -963,10 +807,6 @@ export default function MapView({
     map.on('mouseleave', 'diary-marker-core', hideDiaryHover);
     map.on('mouseleave', 'diary-marker-glyph', hideDiaryHover);
     map.on('mouseleave', 'diary-stack-count', hideDiaryHover);
-    map.on('mouseleave', 'diary-expanded-hitbox', hideDiaryHover);
-    map.on('mouseleave', 'diary-expanded-shell', hideDiaryHover);
-    map.on('mouseleave', 'diary-expanded-core', hideDiaryHover);
-    map.on('mouseleave', 'diary-expanded-glyph', hideDiaryHover);
 
     return () => {
       map.off('click', 'diary-cluster-glow', openCluster);
@@ -978,10 +818,7 @@ export default function MapView({
       map.off('click', 'diary-marker-glyph', openDiary);
       map.off('click', 'diary-stack-count', openDiary);
       map.off('click', 'diary-selected-ring', openDiary);
-      map.off('click', 'diary-expanded-hitbox', openExpandedDiary);
-      map.off('click', 'diary-expanded-shell', openExpandedDiary);
-      map.off('click', 'diary-expanded-core', openExpandedDiary);
-      map.off('click', 'diary-expanded-glyph', openExpandedDiary);
+      map.off('click', closeExpandedStack);
       map.off('mouseenter', 'diary-cluster-glow', updateCursor);
       map.off('mouseenter', 'diary-clusters', updateCursor);
       map.off('mouseenter', 'diary-cluster-count', updateCursor);
@@ -990,10 +827,6 @@ export default function MapView({
       map.off('mouseenter', 'diary-marker-core', showDiaryHover);
       map.off('mouseenter', 'diary-marker-glyph', showDiaryHover);
       map.off('mouseenter', 'diary-stack-count', showDiaryHover);
-      map.off('mouseenter', 'diary-expanded-hitbox', showDiaryHover);
-      map.off('mouseenter', 'diary-expanded-shell', showDiaryHover);
-      map.off('mouseenter', 'diary-expanded-core', showDiaryHover);
-      map.off('mouseenter', 'diary-expanded-glyph', showDiaryHover);
       map.off('mouseleave', 'diary-cluster-glow', resetCursor);
       map.off('mouseleave', 'diary-clusters', resetCursor);
       map.off('mouseleave', 'diary-cluster-count', resetCursor);
@@ -1002,10 +835,6 @@ export default function MapView({
       map.off('mouseleave', 'diary-marker-core', hideDiaryHover);
       map.off('mouseleave', 'diary-marker-glyph', hideDiaryHover);
       map.off('mouseleave', 'diary-stack-count', hideDiaryHover);
-      map.off('mouseleave', 'diary-expanded-hitbox', hideDiaryHover);
-      map.off('mouseleave', 'diary-expanded-shell', hideDiaryHover);
-      map.off('mouseleave', 'diary-expanded-core', hideDiaryHover);
-      map.off('mouseleave', 'diary-expanded-glyph', hideDiaryHover);
       tooltipRef.current?.remove();
       tooltipRef.current = null;
     };
@@ -1052,7 +881,6 @@ export default function MapView({
 
     function handleMoveEnd() {
       setIsMapMoving(false);
-      setMapTransformTick((tick) => tick + 1);
       if (map.getZoom() < 13) {
         setExpandedGroupKey(null);
       }
@@ -1288,22 +1116,16 @@ function isNorthUp(bearing) {
 
 function buildDiaryFeatures(diaries, selectedId, hoveredId, theme = 'dark') {
   const validDiaries = diaries.filter((diary) => {
-    const coordinates = diary.location?.coordinates;
+    const coordinates = getDiaryCoordinates(diary);
     return Array.isArray(coordinates) && coordinates.length >= 2 && coordinates.every(Number.isFinite);
   });
 
-  const coordinateGroups = validDiaries.reduce((groups, diary) => {
-    const key = getDiaryGroupKey(diary);
-    if (!key) return groups;
-    const group = groups.get(key) || [];
-    group.push(diary);
-    groups.set(key, group);
-    return groups;
-  }, new Map());
+  const coordinateGroups = buildDiaryGroupMeta(validDiaries);
+  const diaryGroupKeyById = buildDiaryGroupLookup(coordinateGroups);
 
   return validDiaries.map((diary) => {
-    const coordinates = diary.location.coordinates;
-    const key = getDiaryGroupKey(diary);
+    const coordinates = getDiaryCoordinates(diary);
+    const key = diaryGroupKeyById.get(diary._id) || getDiaryGroupKey(diary);
     const group = coordinateGroups.get(key) || [diary];
     const groupIndex = group.findIndex((item) => item._id === diary._id);
     const locationAccuracy = normalizeLocationAccuracy(diary.locationAccuracy);
@@ -1351,118 +1173,112 @@ function buildDiaryFeatures(diaries, selectedId, hoveredId, theme = 'dark') {
 }
 
 function buildDiaryGroupMeta(diaries) {
-  return diaries.reduce((groups, diary) => {
-    const key = getDiaryGroupKey(diary);
-    if (!key) return groups;
-    const group = groups.get(key) || [];
-    group.push(diary);
-    groups.set(key, group);
-    return groups;
-  }, new Map());
-}
+  const sortedDiaries = sortDiariesForStack(diaries);
+  const groupedItems = [];
 
-function buildExpandedDiaryFeatures({ diaries, expandedGroupKey, selectedId, hoveredId, map, mapReady, theme }) {
-  if (!expandedGroupKey || !map || !mapReady) {
-    return emptyExpandedDiaryFeatures();
-  }
+  sortedDiaries.forEach((diary) => {
+    const coordinates = getDiaryLngLat(diary);
+    if (!coordinates) return;
 
-  const group = diaries.filter((diary) => getDiaryGroupKey(diary) === expandedGroupKey);
-
-  if (group.length < 2) {
-    return emptyExpandedDiaryFeatures();
-  }
-
-  const center = group[0]?.location?.coordinates;
-  if (!Array.isArray(center) || center.length < 2 || !center.every(Number.isFinite)) {
-    return emptyExpandedDiaryFeatures();
-  }
-
-  const centerPoint = map.project(center);
-  const radius = getSpiderfyRadius(group.length);
-  const startAngle = group.length === 2 ? -Math.PI / 2 : -Math.PI / 2 - Math.PI / group.length;
-  const pointFeatures = [];
-  const lineFeatures = [];
-
-  group.forEach((diary, index) => {
-    const angle = startAngle + (Math.PI * 2 * index) / group.length;
-    const point = {
-      x: centerPoint.x + Math.cos(angle) * radius,
-      y: centerPoint.y + Math.sin(angle) * radius
-    };
-    const expandedCoordinates = map.unproject([point.x, point.y]).toArray();
-    const moodType = diary.mood?.type || 'other';
-    const markerStyle = getMoodMarkerStyle(moodType, { explore: Boolean(diary.isExplore) });
-    const palette = getDiaryMarkerPalette(markerStyle, theme, Boolean(diary.isExplore));
-    const isSelected = diary._id === selectedId;
-    const isHovered = diary._id === hoveredId;
-
-    lineFeatures.push({
-      type: 'Feature',
-      properties: {
-        id: `line-${diary._id}`,
-        diaryId: diary._id,
-        lineColor: palette.connectorColor
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: [center, expandedCoordinates]
-      }
+    const existingGroup = groupedItems.find((group) => {
+      return getDistanceMeters(group.center, coordinates) <= OVERLAP_GROUP_DISTANCE_METERS;
     });
 
-    pointFeatures.push({
-      type: 'Feature',
-      properties: {
-        id: diary._id,
-        title: getDiaryTitle(diary),
-        groupKey: expandedGroupKey,
-        markerGlyph: palette.markerGlyph,
-        markerColor: palette.markerColor,
-        markerHaloColor: palette.markerHaloColor,
-        markerShellColor: palette.markerShellColor,
-        markerStrokeColor: palette.markerStrokeColor,
-        markerFocusColor: palette.markerFocusColor,
-        markerGlyphColor: palette.markerGlyphColor,
-        markerGlyphHaloColor: palette.markerGlyphHaloColor,
-        selected: isSelected,
-        hovered: isHovered,
-        expanded: true,
-        approximate: normalizeLocationAccuracy(diary.locationAccuracy) === 'approximate',
-        overlapIndex: index,
-        overlapCount: group.length,
-        stackRoot: false
-      },
-      geometry: {
-        type: 'Point',
-        coordinates: expandedCoordinates
-      }
+    if (existingGroup) {
+      existingGroup.diaries.push(diary);
+      return;
+    }
+
+    groupedItems.push({
+      groupKey: getCoordinateGroupKey(coordinates),
+      center: coordinates,
+      diaries: [diary]
     });
   });
 
-  return {
-    points: {
-      type: 'FeatureCollection',
-      features: pointFeatures
-    },
-    lines: {
-      type: 'FeatureCollection',
-      features: lineFeatures
-    }
-  };
+  const groups = new Map();
+
+  groupedItems.forEach((item) => {
+    const group = sortDiariesForStack(item.diaries);
+    group.groupKey = item.groupKey;
+    group.center = [item.center.lng, item.center.lat];
+    groups.set(item.groupKey, group);
+  });
+
+  groups.forEach((group, key) => {
+    groups.set(key, sortDiariesForStack(group));
+    groups.get(key).groupKey = group.groupKey;
+    groups.get(key).center = group.center;
+  });
+
+  return groups;
 }
 
-function emptyExpandedDiaryFeatures() {
-  return {
-    points: { type: 'FeatureCollection', features: [] },
-    lines: { type: 'FeatureCollection', features: [] }
-  };
+function buildDiaryGroupLookup(groups) {
+  const lookup = new Map();
+
+  groups.forEach((group, groupKey) => {
+    group.forEach((diary) => {
+      if (diary?._id) lookup.set(diary._id, groupKey);
+    });
+  });
+
+  return lookup;
 }
 
 function getDiaryGroupKey(diary) {
-  const coordinates = diary?.location?.coordinates;
-  if (!Array.isArray(coordinates) || coordinates.length < 2) return '';
-  const [lng, lat] = coordinates.map(Number);
-  if (!Number.isFinite(lng) || !Number.isFinite(lat)) return '';
-  return `${lng.toFixed(5)},${lat.toFixed(5)}`;
+  const coordinates = getDiaryLngLat(diary);
+  return coordinates ? getCoordinateGroupKey(coordinates) : '';
+}
+
+function getCoordinateGroupKey({ lng, lat }) {
+  return `${lng.toFixed(5)}:${lat.toFixed(5)}`;
+}
+
+function getDiaryCoordinates(diary) {
+  const coordinates = diary?.location?.coordinates || diary?.geo?.coordinates || diary?.coordinates;
+  if (Array.isArray(coordinates) && coordinates.length >= 2) {
+    const lng = Number(coordinates[0]);
+    const lat = Number(coordinates[1]);
+    if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
+  }
+
+  const lng = Number(diary?.location?.lng ?? diary?.location?.longitude ?? diary?.lng ?? diary?.longitude);
+  const lat = Number(diary?.location?.lat ?? diary?.location?.latitude ?? diary?.lat ?? diary?.latitude);
+  if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
+  return null;
+}
+
+function getDiaryLngLat(diary) {
+  const coordinates = getDiaryCoordinates(diary);
+  if (!coordinates) return null;
+
+  const [lng, lat] = coordinates;
+  return { lng, lat };
+}
+
+function findDiaryGroupKey(diary, groups) {
+  if (!diary?._id || !groups?.size) return getDiaryGroupKey(diary);
+
+  for (const [groupKey, group] of groups.entries()) {
+    if (group.some((item) => item?._id === diary._id)) return groupKey;
+  }
+
+  return getDiaryGroupKey(diary);
+}
+
+function getDistanceMeters(a, b) {
+  return distanceMeters(a.lat, a.lng, b.lat, b.lng);
+}
+
+function sortDiariesForStack(diaries = []) {
+  return [...diaries].sort((left, right) => {
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+
+    if (rightTime !== leftTime) return rightTime - leftTime;
+    return (right?._id || '').localeCompare(left?._id || '');
+  });
 }
 
 function getSpiderfyRadius(count) {
@@ -1470,6 +1286,17 @@ function getSpiderfyRadius(count) {
   if (count <= 5) return 50;
   if (count <= 9) return 60;
   return 72;
+}
+
+function getExpandedPosition(index, count) {
+  const radius = Math.min(58 + count * 5, 96);
+  const startAngle = count <= 4 ? -Math.PI / 2 : -Math.PI / 2 - Math.PI / count;
+  const angle = count === 1 ? 0 : startAngle + (Math.PI * 2 * index) / count;
+
+  return {
+    x: Math.round(Math.cos(angle) * radius),
+    y: Math.round(Math.sin(angle) * radius)
+  };
 }
 
 function getDiaryTitle(diary) {
@@ -1480,15 +1307,12 @@ function setMapboxMarkerVisualVisibility(map, visible) {
   const visibility = visible ? 'visible' : 'none';
   const visualLayerIds = [
     'diary-marker-glow',
+    'diary-marker-hitbox',
     'diary-marker-shell',
     'diary-marker-core',
     'diary-marker-glyph',
     'diary-stack-count',
-    'diary-selected-ring',
-    'diary-expanded-glow',
-    'diary-expanded-shell',
-    'diary-expanded-core',
-    'diary-expanded-glyph'
+    'diary-selected-ring'
   ];
 
   visualLayerIds.forEach((layerId) => {
@@ -1513,6 +1337,7 @@ function createMemoryStackElement({ count, expanded, theme, sampleDiary, groupKe
   element.setAttribute('tabindex', '0');
   element.setAttribute('aria-label', expanded ? `收合 ${count} 篇日記` : `展開 ${count} 篇日記`);
   element.dataset.groupKey = groupKey || '';
+  element.dataset.count = count.toString();
   applyMarkerCssVars(element, palette, markerStyle);
   element.innerHTML = `
     <div class="marker-hit-area">
@@ -1523,6 +1348,7 @@ function createMemoryStackElement({ count, expanded, theme, sampleDiary, groupKe
           <span class="memory-stack-count">${escapeHtml(count)}</span>
           <span class="memory-stack-shine" aria-hidden="true"></span>
         </button>
+        <div class="memory-stack-expanded" aria-hidden="true"></div>
       </div>
     </div>
   `;
@@ -1530,20 +1356,144 @@ function createMemoryStackElement({ count, expanded, theme, sampleDiary, groupKe
   return element;
 }
 
-function updateMemoryStackElement(element, { count, expanded, theme, sampleDiary, groupKey, selected }) {
+function updateMemoryStackElement(element, {
+  count,
+  expanded,
+  theme,
+  map,
+  center,
+  group,
+  sampleDiary,
+  groupKey,
+  selected,
+  selectedId,
+  onSelect,
+  setHoveredDiaryId,
+  tooltipRef
+}) {
   const moodType = sampleDiary?.mood?.type || 'calm';
   const markerStyle = getMoodMarkerStyle(moodType, { explore: Boolean(sampleDiary?.isExplore) });
   const palette = getDiaryMarkerPalette(markerStyle, theme, Boolean(sampleDiary?.isExplore));
   const visual = element.querySelector('.memory-stack-marker');
   const countElement = element.querySelector('.memory-stack-count');
+  const expandedLayer = element.querySelector('.memory-stack-expanded');
 
   element.dataset.groupKey = groupKey || '';
+  element.dataset.count = count.toString();
   element.classList.toggle('is-selected', Boolean(selected));
+  element.classList.toggle('is-expanded', Boolean(expanded));
   visual?.classList.toggle('is-expanded', Boolean(expanded));
   visual?.classList.toggle('is-selected', Boolean(selected));
   if (countElement) countElement.textContent = count.toString();
   element.setAttribute('aria-label', expanded ? `收合 ${count} 篇日記` : `展開 ${count} 篇日記`);
   applyMarkerCssVars(element, palette, markerStyle);
+
+  if (!expandedLayer) return;
+
+  expandedLayer.setAttribute('aria-hidden', expanded ? 'false' : 'true');
+  expandedLayer.onclick = (event) => event.stopPropagation();
+  expandedLayer.onkeydown = (event) => event.stopPropagation();
+
+  if (!expanded) {
+    expandedLayer.innerHTML = '';
+    return;
+  }
+
+  const sortedGroup = sortDiariesForStack(group || []);
+  const usePanel = sortedGroup.length > 8;
+
+  if (usePanel) {
+    expandedLayer.innerHTML = `
+      <section class="memory-stack-panel" role="dialog" aria-label="選擇這裡的日記">
+        <div class="memory-stack-panel-header">
+          <strong>這裡有 ${escapeHtml(sortedGroup.length)} 篇日記</strong>
+          <span>選擇一篇查看</span>
+        </div>
+        <div class="memory-stack-panel-list">
+          ${sortedGroup.map((diary) => {
+            const diaryMoodType = diary?.mood?.type || 'calm';
+            const diaryMarkerStyle = getMoodMarkerStyle(diaryMoodType, { explore: Boolean(diary?.isExplore) });
+            const diaryPalette = getDiaryMarkerPalette(diaryMarkerStyle, theme, Boolean(diary?.isExplore));
+            return `
+              <button class="memory-stack-panel-item ${diary?._id === selectedId ? 'is-selected' : ''}" type="button" data-diary-id="${escapeHtml(diary?._id || '')}" style="--marker-rgb: ${escapeHtml(hexToRgbString(diaryPalette.markerColor) || diaryMarkerStyle.rgb || '45, 212, 191')}">
+                <span class="memory-stack-panel-dot" aria-hidden="true"></span>
+                <span>
+                  <strong>${escapeHtml(getDiaryTitle(diary))}</strong>
+                  <small>${escapeHtml(getMoodLabel(diaryMoodType))} · ${escapeHtml(formatMarkerTime(diary?.createdAt))}</small>
+                </span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </section>
+    `;
+  } else {
+    expandedLayer.innerHTML = `
+      <svg class="memory-stack-connector-layer" viewBox="-120 -120 240 240" aria-hidden="true">
+        ${sortedGroup.map((diary, index) => {
+          const { x, y } = getExpandedPosition(index, sortedGroup.length);
+          return `<line x1="0" y1="0" x2="${x}" y2="${y}" />`;
+        }).join('')}
+      </svg>
+      ${sortedGroup.map((diary, index) => {
+        const { x, y } = getExpandedPosition(index, sortedGroup.length);
+        const diaryMoodType = diary?.mood?.type || 'calm';
+        const diaryMarkerStyle = getMoodMarkerStyle(diaryMoodType, { explore: Boolean(diary?.isExplore) });
+        const diaryPalette = getDiaryMarkerPalette(diaryMarkerStyle, theme, Boolean(diary?.isExplore));
+        const rgb = hexToRgbString(diaryPalette.markerColor) || diaryMarkerStyle.rgb || '45, 212, 191';
+
+        return `
+          <button
+            class="memory-stack-expanded-item ${diary?._id === selectedId ? 'is-selected' : ''}"
+            type="button"
+            data-diary-id="${escapeHtml(diary?._id || '')}"
+            style="--expanded-x: ${x}px; --expanded-y: ${y}px; --marker-rgb: ${escapeHtml(rgb)}; --marker-color: ${escapeHtml(diaryPalette.markerColor)}"
+            aria-label="查看日記：${escapeHtml(getDiaryTitle(diary))}"
+          >
+            <span class="memory-expanded-aura" aria-hidden="true"></span>
+            <span class="memory-expanded-core" aria-hidden="true">
+              <span class="memory-expanded-dot"></span>
+              <span class="memory-expanded-shine"></span>
+            </span>
+          </button>
+        `;
+      }).join('')}
+    `;
+  }
+
+  expandedLayer.querySelectorAll('[data-diary-id]').forEach((button) => {
+    const diary = sortedGroup.find((item) => item?._id === button.getAttribute('data-diary-id'));
+    if (!diary) return;
+
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      onSelect?.(diary);
+    });
+    button.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      event.stopPropagation();
+      onSelect?.(diary);
+    });
+    button.addEventListener('mouseenter', () => {
+      setHoveredDiaryId?.(diary?._id || null);
+      showMarkerTooltip(map, tooltipRef, center, getMarkerTooltipHtml(diary));
+    });
+    button.addEventListener('focus', () => {
+      setHoveredDiaryId?.(diary?._id || null);
+      showMarkerTooltip(map, tooltipRef, center, getMarkerTooltipHtml(diary));
+    });
+    button.addEventListener('mouseleave', () => {
+      setHoveredDiaryId?.(null);
+      tooltipRef.current?.remove();
+      tooltipRef.current = null;
+    });
+    button.addEventListener('blur', () => {
+      setHoveredDiaryId?.(null);
+      tooltipRef.current?.remove();
+      tooltipRef.current = null;
+    });
+  });
 }
 
 function createHtmlDiaryMarker({
@@ -1703,6 +1653,7 @@ function getMoodLabel(type) {
     sad: '難過',
     anxious: '焦慮',
     anxiety: '焦慮',
+    confused: '疑惑',
     angry: '生氣',
     excited: '興奮',
     wonder: '驚喜',
@@ -1780,6 +1731,7 @@ function getBrightMarkerColor(color, explore) {
     '#f4d278': '#b7791f',
     '#78aae6': '#2563eb',
     '#aa8cf0': '#6d5bd0',
+    '#818cf8': '#4f46e5',
     '#f08278': '#dc2626',
     '#dcbcff': '#7c3aed',
     '#c9ad84': '#9a6b28',

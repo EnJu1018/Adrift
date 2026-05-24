@@ -13,6 +13,7 @@ export const MOOD_OPTIONS = [
   ['sad', '低落'],
   ['wonder', '驚奇'],
   ['anxious', '焦慮'],
+  ['confused', '疑惑'],
   ['nostalgic', '懷舊'],
   ['other', '其他']
 ];
@@ -25,6 +26,7 @@ export const MOOD_LABELS = {
   sad: '● 低落',
   wonder: '◇ 驚奇',
   anxious: '△ 焦慮',
+  confused: '◔ 疑惑',
   nostalgic: '● 懷舊',
   other: '• 其他'
 };

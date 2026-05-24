@@ -28,7 +28,7 @@ const diarySchema = new mongoose.Schema(
         type: String,
         required: true,
         trim: true,
-        enum: ['calm', 'joy', 'sad', 'wonder', 'anxious', 'nostalgic', 'other']
+        enum: ['calm', 'joy', 'sad', 'wonder', 'anxious', 'confused', 'nostalgic', 'other']
       },
       intensity: {
         type: Number,

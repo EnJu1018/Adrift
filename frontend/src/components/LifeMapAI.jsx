@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { fadeUpMotion, listItemMotion, pageFadeUp } from '../constants/animations.js';
+import { MOOD_LABELS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const loadingMessages = [
@@ -302,7 +303,7 @@ function normalizeInsight(value) {
     summary: typeof value.summary === 'string' ? normalizeTaiwanPlaceName(value.summary) : '',
     moodTrend: {
       description: typeof moodTrend.description === 'string' ? normalizeTaiwanPlaceName(moodTrend.description) : '',
-      dominantMood: typeof moodTrend.dominantMood === 'string' ? normalizeTaiwanPlaceName(moodTrend.dominantMood) : '',
+      dominantMood: typeof moodTrend.dominantMood === 'string' ? formatInsightMood(moodTrend.dominantMood) : '',
       averageIntensity: Number.isFinite(Number(moodTrend.averageIntensity)) ? Number(moodTrend.averageIntensity) : 0
     },
     locationInsights: Array.isArray(value.locationInsights)
@@ -312,12 +313,20 @@ function normalizeInsight(value) {
             ...item,
             place: normalizeTaiwanPlaceName(item.place || ''),
             insight: normalizeTaiwanPlaceName(item.insight || ''),
-            dominantMood: normalizeTaiwanPlaceName(item.dominantMood || '')
+            dominantMood: formatInsightMood(item.dominantMood || '')
           }))
       : [],
     behaviorPatterns: toStringList(value.behaviorPatterns),
     suggestions: toStringList(value.suggestions)
   };
+}
+
+function formatInsightMood(value) {
+  const normalized = normalizeTaiwanPlaceName(value || '').trim();
+  const label = MOOD_LABELS[normalized];
+
+  if (!label) return normalized;
+  return label.replace(/^[^\p{L}\p{N}]+/u, '').trim();
 }
 
 function toStringList(value) {

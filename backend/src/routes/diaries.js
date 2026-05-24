@@ -18,7 +18,7 @@ const authorFields = 'name avatar userCode';
 const diaryEventClients = new Map();
 const DIARY_EDIT_WINDOW_MS = 60 * 60 * 1000;
 const DIARY_EDIT_DISTANCE_LIMIT_METERS = 1000;
-const MOOD_TYPES = ['calm', 'joy', 'sad', 'wonder', 'anxious', 'nostalgic', 'other'];
+const MOOD_TYPES = ['calm', 'joy', 'sad', 'wonder', 'anxious', 'confused', 'nostalgic', 'other'];
 
 const storage = multer.diskStorage({
   destination: path.join(__dirname, '..', 'uploads'),

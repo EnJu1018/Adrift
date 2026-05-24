@@ -62,10 +62,16 @@ const problemCards = [
   ['互動性有限', '傳統日記偏向個人紀錄，好友間的共鳴與分享較少。', <MessageCircle size={22} />]
 ];
 
+const motivationPoints = [
+  ['文字之外', '日記不只是寫下事件，也應該保留當下所在的地方。'],
+  ['回到現場', '把回憶放回地圖上，使用者能用位置重新找回生活片段。'],
+  ['形成足跡', '當地點、心情與時間累積，就會形成自己的情緒地圖。']
+];
+
 const goalCards = [
   ['地點化', '讓日記與真實地點連結。', <MapIcon size={24} />],
   ['情緒化', '讓每篇日記記錄當下心情。', <Heart size={24} />],
-  ['社交化', '讓使用者選擇私密、好友或公開分享。', <Users size={24} />]
+  ['社交化', '讓使用者選擇分享範圍。', <Users size={24} />]
 ];
 
 const overviewCards = [
@@ -101,6 +107,13 @@ const aiFeatureCards = [
   ['情緒趨勢', '辨識主要 mood 與平均強度。', <Heart size={22} />],
   ['地點洞察', '找出常承載特定心情的地點。', <MapPin size={22} />],
   ['智慧建議', '用溫和語氣提供自我回顧方向。', <Brain size={22} />]
+];
+
+const uxPrinciples = [
+  ['地圖優先', '地圖保持主視覺，日記詳情與列表輔助探索。', <MapIcon size={22} />],
+  ['社交中心', '好友頁整理搜尋、邀請、好友與推薦，降低操作負擔。', <Users size={22} />],
+  ['洞察儀表板', 'Adrift Intelligence 用卡片化結果呈現，不做聊天框。', <Brain size={22} />],
+  ['低干擾回饋', 'Toast、空狀態與動畫都服務操作，不遮擋內容。', <Sparkles size={22} />]
 ];
 
 const frontendTech = [
@@ -376,7 +389,26 @@ const systemTreeModules = [
   }
 ];
 
-const futureItems = ['手機版體驗', '完整通知系統', '日記回憶功能', '好友互動深化', '地點情緒熱力圖', 'Adrift Intelligence 優化'];
+const futureRoadmap = [
+  {
+    phase: '短期',
+    title: '持續優化網站功能',
+    text: '修整日記、地圖、好友、通知與管理流程，讓網站版更穩定、更完整。',
+    icon: <Compass size={22} />
+  },
+  {
+    phase: '中期',
+    title: '行動端雙系統 App',
+    text: '設計 iOS 與 Android 行動應用，讓定位記錄與回顧體驗更貼近日常使用。',
+    icon: <Users size={22} />
+  },
+  {
+    phase: '長期',
+    title: '個人化記憶平台',
+    text: '延伸長期情緒地圖、跨裝置備份與更細緻的隱私控管，成為可持續使用的生活記憶系統。',
+    icon: <Brain size={22} />
+  }
+];
 const teamRows = [
   ['張惠芯', '圖形繪製、文書資料處理、協助手機版程式製作'],
   ['洪藝文', '圖形繪製、文書資料處理、協助手機版程式製作'],
@@ -574,7 +606,7 @@ export default function PresentationPage() {
             <h2 className="cover-title-zh">漂流足跡</h2>
             <p className="presentation-tagline">A map-based social diary where emotions drift across the world.</p>
             <p className="presentation-lead">結合地圖、日記、情緒、社交與 Adrift Intelligence 的互動式生活記錄平台。</p>
-            <p className="presentation-advisors">張怡君老師、張瑋珊老師 共同執導</p>
+            <p className="presentation-advisors">張怡君老師、張瑋珊老師 共同指導</p>
             <div className="presentation-member-grid">
               {memberList.map(([name, id]) => (
                 <span key={id}>{name} <strong>{id}</strong></span>
@@ -586,21 +618,27 @@ export default function PresentationPage() {
       </section>
 
       <SlideSection id="motivation" eyebrow="Motivation" title="為什麼需要 Adrift？" subtitle="日記不該只是一段文字，它也應該記得當時的地點、心情與生活情境。">
-        <div className="presentation-split">
+        <div className="presentation-split motivation-layout">
           <article className="presentation-statement-card">
             <strong>讓記憶回到現場</strong>
             <p>Adrift 希望把日記從文字清單，轉成能在地圖上被重新看見的生活足跡。</p>
           </article>
-          <div className="presentation-card-grid three">
-            {problemCards.map(([title, text, icon], index) => (
-              <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
+          <div className="motivation-point-list" aria-label="Adrift 專題動機">
+            {motivationPoints.map(([title, text], index) => (
+              <motion.article key={title} className="motivation-point" {...listItemMotion(index)}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <div>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </div>
+              </motion.article>
             ))}
           </div>
         </div>
       </SlideSection>
 
       <SlideSection id="problem" eyebrow="Problem Analysis" title="現有日記工具的不足" subtitle="文字能記錄事件，但常常缺少能喚回記憶的脈絡。">
-        <div className="presentation-card-grid three spacious">
+        <div className="presentation-card-grid three spacious problem-analysis-grid">
           {problemCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} large />
           ))}
@@ -672,7 +710,7 @@ export default function PresentationPage() {
         <HorizontalUserFlow steps={userFlowBranches} />
       </SlideSection>
 
-      <SlideSection id="architecture" eyebrow="Architecture" title="系統架構" subtitle="以七個主要模組呈現 Adrift 的使用者功能、互動能力、Adrift Intelligence 與管理機制。">
+      <SlideSection id="architecture" eyebrow="Architecture" title="系統架構" subtitle="以八個主要模組呈現 Adrift 的使用者功能、互動能力、Adrift Intelligence 與管理機制。">
         <PresentationSystemTree rootTitle="Adrift 漂流足跡" modules={systemTreeModules} compact compactColumns={4} />
       </SlideSection>
 
@@ -684,18 +722,24 @@ export default function PresentationPage() {
         <TechMap items={backendTech} icon={<Server size={24} />} />
       </SlideSection>
 
-      <SlideSection id="ux" eyebrow="Design System" title="UI / UX 設計理念" subtitle="用深色地圖、玻璃質感與低調動畫，把日記呈現成漂浮的記憶光點。">
-        <div className="ux-showcase">
-          <div>
-            <h3>以地圖作為主介面</h3>
-            <p>Adrift 採用深色地圖介面與 玻璃擬態視覺，讓日記像漂浮在地圖上的記憶光點。</p>
+      <SlideSection id="ux" eyebrow="Design System" title="UI / UX 設計理念" subtitle="以地圖為主舞台，把日記、好友與智慧洞察整理成一致的產品體驗。">
+        <div className="ux-principle-board">
+          <article className="ux-principle-hero">
+            <span><MapPin size={26} /></span>
+            <h3>記憶像光點，漂浮在地圖上</h3>
+            <p>Adrift 以地圖承載日記，用玻璃質感、柔和動畫與清楚提示，讓使用者專注於地點、情緒與回憶本身。</p>
+          </article>
+          <div className="ux-principle-grid">
+            {uxPrinciples.map(([title, text, icon], index) => (
+              <motion.article key={title} className="ux-principle-card" {...listItemMotion(index)}>
+                <span>{icon}</span>
+                <div>
+                  <strong>{title}</strong>
+                  <p>{text}</p>
+                </div>
+              </motion.article>
+            ))}
           </div>
-          <ul>
-            <li>左側日記詳情，右側日記列表，地圖維持主要視覺焦點。</li>
-            <li>好友頁作為社交中心，整理搜尋、邀請、好友與推薦。</li>
-            <li>Adrift Intelligence 作為洞察儀表板，而不是普通聊天框。</li>
-            <li>動畫以過渡為主，提示訊息不遮擋重要資訊。</li>
-          </ul>
         </div>
       </SlideSection>
 
@@ -716,13 +760,17 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection id="future" eyebrow="Roadmap" title="未來展望" subtitle="持續強化真實性、好友互動、手機體驗與 Adrift Intelligence，讓 Adrift 更接近正式產品。">
-        <div className="future-grid">
-          {futureItems.map((item, index) => (
-            <motion.span key={item} {...listItemMotion(index)}>
-              <CheckCircle2 size={16} />
-              {item}
-            </motion.span>
+      <SlideSection id="future" eyebrow="Roadmap" title="未來展望" subtitle="持續強化真實性、好友互動、手機版體驗，讓 Adrift 更接近正式產品。">
+        <div className="future-roadmap" aria-label="Adrift 未來規劃">
+          {futureRoadmap.map((item, index) => (
+            <motion.article key={item.phase} className="future-roadmap-card" {...listItemMotion(index)}>
+              <div className="future-roadmap-head">
+                <span className="future-roadmap-icon">{item.icon}</span>
+                <span className="future-roadmap-phase">{item.phase}</span>
+              </div>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </motion.article>
           ))}
         </div>
         <p className="future-copy">未來 Adrift 將持續強化定位式日記的真實性、好友互動與 Adrift Intelligence 洞察能力，讓使用者能更自然地回顧生活中的地點、情緒與記憶。</p>

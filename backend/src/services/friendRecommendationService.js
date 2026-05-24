@@ -10,6 +10,16 @@ const DIARY_LOOKBACK_DAYS = 90;
 const DIARY_LIMIT = 600;
 const NEARBY_DISTANCE_METERS = 25000;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const MOOD_LABELS = {
+  calm: '平靜',
+  joy: '喜悅',
+  happy: '喜悅',
+  sad: '低落',
+  wonder: '驚奇',
+  anxious: '焦慮',
+  confused: '疑惑',
+  nostalgic: '懷舊'
+};
 
 export function parseRecommendationLimit(value) {
   const parsed = Number.parseInt(value, 10);
@@ -172,7 +182,7 @@ export async function generateFriendRecommendationReason(recommendation) {
     '請限制在 30 字以內。',
     '',
     `共同好友數量：${recommendation.mutualFriendsCount}`,
-    `相似心情：${recommendation.sharedMoods.join(', ') || '無'}`,
+    `相似心情：${recommendation.sharedMoods.map(formatMoodName).join(', ') || '無'}`,
     `相近地點：${recommendation.nearbyPlaces.join(', ') || '無'}`,
     `最近活躍狀態：${recommendation.publicDiaryCount > 0 ? '最近有公開日記' : '無公開日記'}`
   ].join('\n');
@@ -191,7 +201,7 @@ function serializeRecommendation(recommendation) {
     score: Math.round(recommendation.score),
     reasons: recommendation.reasons,
     mutualFriendsCount: recommendation.mutualFriendsCount,
-    sharedMoods: recommendation.sharedMoods,
+    sharedMoods: recommendation.sharedMoods.map(formatMoodName),
     nearbyPlaces: recommendation.nearbyPlaces
   };
 }
@@ -208,7 +218,7 @@ function buildRuleReasons({ mutualFriendsCount, sharedMoods, nearbyPlaces, recen
   }
 
   if (sharedMoods.length > 0) {
-    reasons.push(`你們最近都常記錄 ${sharedMoods[0]} 心情`);
+    reasons.push(`你們最近都常記錄 ${formatMoodName(sharedMoods[0])} 心情`);
   }
 
   if (recentActivityScore > 0) {
@@ -220,6 +230,10 @@ function buildRuleReasons({ mutualFriendsCount, sharedMoods, nearbyPlaces, recen
   }
 
   return reasons.slice(0, 3);
+}
+
+function formatMoodName(value) {
+  return MOOD_LABELS[value] || value;
 }
 
 function groupDiariesByUser(diaries) {
