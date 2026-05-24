@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { api, getImageUrl } from '../api/client.js';
 import { dropdownMotion, fadeUpMotion, modalBackdropMotion, modalPopMotion, pageFadeUp } from '../constants/animations.js';
 import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
 import Select from './ui/Select.jsx';
 
@@ -808,7 +809,7 @@ function DeleteUserModal({ user, loading, onClose, onConfirm }) {
 
 function DiaryDetailModal({ diary, deleteLoading, onClose, onDelete }) {
   const [lng, lat] = diary.location?.coordinates || [];
-  const placeName = diary.location?.placeName || (Number.isFinite(lat) && Number.isFinite(lng) ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : '未記錄地點');
+  const placeName = normalizeTaiwanPlaceName(diary.location?.placeName || (Number.isFinite(lat) && Number.isFinite(lng) ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : '未記錄地點'));
 
   return (
     <motion.div className="admin-modal-backdrop" {...modalBackdropMotion}>

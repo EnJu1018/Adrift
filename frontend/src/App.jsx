@@ -18,6 +18,7 @@ import ToastViewport from './components/ToastViewport.jsx';
 import { pageFadeUp } from './constants/animations.js';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
+import { normalizeTaiwanPlaceName } from './utils/locationFormatter.js';
 
 const exploreRadiusOptions = [
   { label: '1km', value: 1000 },
@@ -37,6 +38,38 @@ function getInitialTheme() {
   } catch {
     return 'dark';
   }
+}
+
+function getDiaryFocusLocation(diary) {
+  const coordinates = diary?.location?.coordinates;
+  const lng = Array.isArray(coordinates) ? Number(coordinates[0]) : Number(diary?.location?.lng);
+  const lat = Array.isArray(coordinates) ? Number(coordinates[1]) : Number(diary?.location?.lat);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  const isApproximate = diary?.locationAccuracy === 'approximate';
+
+  return {
+    lat,
+    lng,
+    accuracyType: isApproximate ? 'approximate' : 'precise',
+    source: isApproximate ? 'diary-approximate' : 'diary',
+    focusId: `${diary?._id || 'diary'}-${Date.now()}`
+  };
+}
+
+function getEntityId(entity) {
+  if (!entity) return '';
+  if (typeof entity === 'string') return entity;
+  return entity._id || entity.id || '';
+}
+
+function getDiaryAuthorId(diary) {
+  return getEntityId(diary?.user) || getEntityId(diary?.author) || getEntityId(diary?.userId);
+}
+
+function sameId(left, right) {
+  return Boolean(left && right && left.toString() === right.toString());
 }
 
 export default function App() {
@@ -398,18 +431,42 @@ export default function App() {
     };
   }, [applyRealtimeDiary, removeRealtimeDiary, updateRealtimeDiary, user?.id]);
 
+  const currentUserId = getEntityId(user);
   const stats = useMemo(() => {
-    const mine = diaries.filter((diary) => diary.user?._id === user?.id || diary.user?.id === user?.id).length;
+    const mine = diaries.filter((diary) => sameId(getDiaryAuthorId(diary), currentUserId)).length;
     return { total: diaries.length, mine };
-  }, [diaries, user?.id]);
+  }, [currentUserId, diaries]);
+
+  const friendIdSet = useMemo(() => {
+    return new Set((friends || []).map(getEntityId).filter(Boolean).map((id) => id.toString()));
+  }, [friends]);
 
   const displayedDiaries = useMemo(() => {
     if (mapMode === 'explore' || visibilityFilter === 'all') {
       return diaries;
     }
 
-    return diaries.filter((diary) => diary.visibility === visibilityFilter);
-  }, [diaries, mapMode, visibilityFilter]);
+    return diaries.filter((diary) => {
+      const visibility = diary.visibility || 'private';
+      const authorId = getDiaryAuthorId(diary);
+      const isOwnDiary = sameId(authorId, currentUserId);
+      const isFriendDiary = Boolean(authorId && friendIdSet.has(authorId.toString()));
+
+      if (visibilityFilter === 'private') {
+        return isOwnDiary && visibility === 'private';
+      }
+
+      if (visibilityFilter === 'friends') {
+        return isFriendDiary && (visibility === 'friends' || visibility === 'public');
+      }
+
+      if (visibilityFilter === 'public') {
+        return visibility === 'public';
+      }
+
+      return true;
+    });
+  }, [currentUserId, diaries, friendIdSet, mapMode, visibilityFilter]);
 
   const currentLocationMarker = useMemo(() => {
     const lat = Number(userLocation.lat);
@@ -461,6 +518,17 @@ export default function App() {
       setSelectedDiary(null);
     }
   }, [displayedDiaries, selectedDiary]);
+
+  const selectDiaryAndFocus = useCallback((diary) => {
+    if (!diary?._id) return;
+
+    setSelectedDiary(diary);
+    const focus = getDiaryFocusLocation(diary);
+
+    if (focus) {
+      setMapFocusLocation(focus);
+    }
+  }, []);
 
   async function handleAuth(mode, form) {
     try {
@@ -660,17 +728,12 @@ export default function App() {
   }
 
   const handleMapViewportChange = useCallback((params) => {
-    if (!user) return;
+    if (!user || mapMode !== 'explore') return;
 
-    if (mapMode === 'explore') {
-      const nextCenter = { lat: params.lat, lng: params.lng };
-      setExploreCenter(nextCenter);
-      loadExploreDiaries({ ...nextCenter, radius: exploreRadius }, { silent: true });
-      return;
-    }
-
-    loadDiaries(params, { silent: true });
-  }, [exploreRadius, loadDiaries, loadExploreDiaries, mapMode, user]);
+    const nextCenter = { lat: params.lat, lng: params.lng };
+    setExploreCenter(nextCenter);
+    loadExploreDiaries({ ...nextCenter, radius: exploreRadius }, { silent: true });
+  }, [exploreRadius, loadExploreDiaries, mapMode, user]);
 
   async function activateMineMode() {
     setMapMode('mine');
@@ -821,7 +884,7 @@ export default function App() {
 
   function openDiaryFromFeed(diary) {
     if (!diary?._id) return;
-    setSelectedDiary(diary);
+    selectDiaryAndFocus(diary);
     setVisibilityFilter('all');
     navigate('/');
   }
@@ -862,9 +925,7 @@ export default function App() {
         <>
         <header className="product-navbar glass">
           <button className="brand-nav-button" type="button" onClick={() => navigate('/')} aria-label="回到地圖">
-            <span className="brand-mark small brand-icon-shell">
-              <img src="/adrift-icon.png" alt="" aria-hidden="true" />
-            </span>
+            <img className="brand-icon nav-brand-icon" src="/adrift-icon.png" alt="" aria-hidden="true" />
             <strong>Adrift</strong>
           </button>
 
@@ -1051,10 +1112,9 @@ export default function App() {
               onEdit={openEditDiary}
             />
             <MapView
-              key={`map-${theme}`}
               diaries={displayedDiaries}
               selectedDiary={selectedDiary}
-              onSelect={setSelectedDiary}
+              onSelect={selectDiaryAndFocus}
               onViewportChange={handleMapViewportChange}
               focusLocation={mapFocusLocation}
               currentLocation={currentLocationMarker}
@@ -1117,7 +1177,7 @@ export default function App() {
               visibilityFilter={visibilityFilter}
               onVisibilityFilterChange={setVisibilityFilter}
               selectedDiaryId={selectedDiary?._id}
-              onSelectDiary={setSelectedDiary}
+              onSelectDiary={selectDiaryAndFocus}
               onNewDiary={openNewDiary}
               createDiaryDisabled={locating}
               onSearchUser={searchFriendUser}
@@ -1171,7 +1231,7 @@ export default function App() {
 function buildApproximatePlaceName(location) {
   if (location?.source !== 'ip') return '';
 
-  return [location.city, location.region, location.country].filter(Boolean).join(', ');
+  return normalizeTaiwanPlaceName([location.city, location.region, location.country].filter(Boolean).join(', '));
 }
 
 function asArray(value) {

@@ -25,9 +25,9 @@ import ToastViewport from './ToastViewport.jsx';
 
 const VISIBILITY_FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
-  { value: 'private', label: '私人' },
+  { value: 'public', label: '公開' },
   { value: 'friends', label: '朋友' },
-  { value: 'public', label: '公開' }
+  { value: 'private', label: '私人' }
 ];
 
 export default function MemoryPanel({
@@ -506,7 +506,7 @@ export default function MemoryPanel({
               <div className="memory-controls">
                 <div className="map-mode-switch sidebar-map-mode" aria-label="地圖模式">
                   <button className={mapMode === 'mine' ? 'active' : ''} type="button" onClick={onActivateMineMode}>
-                    我的地圖
+                    日記地圖
                   </button>
                   <button className={mapMode === 'explore' ? 'active' : ''} type="button" onClick={() => onActivateExploreMode?.()}>
                     <Compass size={15} />
@@ -999,7 +999,7 @@ function getRecommendationTags(recommendation) {
 function getVisibilityEmptyMessage(filter) {
   const messages = {
     private: '沒有私人日記',
-    friends: '沒有朋友可見日記',
+    friends: '沒有好友日記',
     public: '沒有公開日記',
     all: '還沒有日記'
   };

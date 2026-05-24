@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { MOOD_OPTIONS, VISIBILITY_OPTIONS } from '../constants/app.js';
 import { modalBackdropMotion, modalPopMotion } from '../constants/animations.js';
 import { getDistanceInMeters } from '../utils/distance.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 import Select from './ui/Select.jsx';
 
@@ -25,15 +26,23 @@ const visibilityIcons = {
   public: '🌐'
 };
 
-const moodSelectOptions = MOOD_OPTIONS.map(([value, label]) => ({
-  value,
-  label,
-  icon: moodIcons[value] || moodIcons.other
-}));
+const visibilityLabels = {
+  private: '私人',
+  friends: '好友',
+  public: '公開'
+};
+
+const moodSelectOptions = MOOD_OPTIONS
+  .filter(([value]) => value !== 'other')
+  .map(([value, label]) => ({
+    value,
+    label,
+    icon: moodIcons[value] || moodIcons.calm
+  }));
 
 const visibilitySelectOptions = VISIBILITY_OPTIONS.map((value) => ({
   value,
-  label: value,
+  label: visibilityLabels[value] || value,
   icon: visibilityIcons[value]
 }));
 
@@ -55,7 +64,7 @@ export default function DiaryModal({
     text: diary?.text || diary?.content || '',
     moodType: diary?.mood?.type || 'calm',
     moodIntensity: diary?.mood?.intensity || 3,
-    visibility: diary?.visibility || 'private',
+    visibility: isEditMode ? diary?.visibility || 'private' : 'public',
     image: null
   });
   const [fieldErrors, setFieldErrors] = useState({});
@@ -106,14 +115,14 @@ export default function DiaryModal({
     const lat = isEditMode ? Number(diaryLat) : Number(location.lat);
     const lng = isEditMode ? Number(diaryLng) : Number(location.lng);
 
-    setPlaceName((isEditMode ? diary?.location?.placeName : location.placeName) || formatCoordinates(lat, lng));
+    setPlaceName(normalizeTaiwanPlaceName((isEditMode ? diary?.location?.placeName : location.placeName) || formatCoordinates(lat, lng)));
 
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (!isEditMode && location.source === 'ip')) {
       return undefined;
     }
 
     resolvePlaceName(lat, lng).then((name) => {
-      if (!cancelled) setPlaceName(name);
+      if (!cancelled) setPlaceName(normalizeTaiwanPlaceName(name));
     });
 
     return () => {
@@ -202,7 +211,7 @@ export default function DiaryModal({
         text: '',
         moodType: 'calm',
         moodIntensity: 3,
-        visibility: 'private',
+        visibility: 'public',
         image: null
       });
     } catch {
@@ -273,16 +282,21 @@ export default function DiaryModal({
             value={form.moodType}
             options={moodSelectOptions}
             onChange={(value) => updateField('moodType', value)}
+            className="mood-select-field"
           />
 
-          <label>
-            強度 {form.moodIntensity}
+          <label className="mood-intensity-field">
+            <span className="mood-intensity-label">心情強度：{form.moodIntensity} / 5</span>
             <input
+              className="mood-intensity-slider"
               type="range"
               min="1"
               max="5"
               value={form.moodIntensity}
               onChange={(event) => updateField('moodIntensity', event.target.value)}
+              style={{
+                '--slider-progress': `${((Number(form.moodIntensity) - 1) / 4) * 100}%`
+              }}
             />
           </label>
         </div>

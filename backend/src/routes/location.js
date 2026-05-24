@@ -1,4 +1,5 @@
 import express from 'express';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const router = express.Router();
 
@@ -62,9 +63,9 @@ router.get('/ip', async (req, res) => {
         lng: location.lng,
         accuracyType: 'approximate',
         source: 'ip',
-        city: location.city || '',
-        region: location.region || '',
-        country: location.country || ''
+        city: normalizeTaiwanPlaceName(location.city || ''),
+        region: normalizeTaiwanPlaceName(location.region || ''),
+        country: normalizeTaiwanPlaceName(location.country || '')
       }
     });
   } catch {

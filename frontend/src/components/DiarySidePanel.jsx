@@ -5,6 +5,7 @@ import { getImageUrl } from '../api/client.js';
 import { fadeUpMotion, panelSlideLeft } from '../constants/animations.js';
 import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constants/app.js';
 import { getDistanceInMeters } from '../utils/distance.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 
 const visibilityIcons = {
@@ -14,9 +15,9 @@ const visibilityIcons = {
 };
 
 const visibilityLabels = {
-  private: 'private',
-  friends: 'friends',
-  public: 'public'
+  private: '私人',
+  friends: '好友',
+  public: '公開'
 };
 
 const EDIT_DISTANCE_LIMIT_METERS = 1000;
@@ -34,7 +35,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
   const diaryUserId = diary?.user?._id || diary?.user?.id || diary?.author?._id;
   const isOwner = Boolean(currentUserId && diaryUserId && currentUserId === diaryUserId.toString());
   const author = diary?.user || diary?.author || {};
-  const locationText = resolvedPlaceName || diary?.location?.placeName || formatCoordinates(lat, lng);
+  const locationText = normalizeTaiwanPlaceName(resolvedPlaceName || diary?.location?.placeName || formatCoordinates(lat, lng));
   const timeText = hasDiary ? formatDiaryDateTime(diary.createdAt) : '';
   const lastEditedText = diary?.lastEditedAt ? formatDiaryEditedTime(diary.lastEditedAt) : '';
   const titleText = diary?.title?.trim() || FALLBACK_DIARY_TITLE;
@@ -54,13 +55,13 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
     }
 
     if (diary?.location?.placeName) {
-      setResolvedPlaceName(diary.location.placeName);
+      setResolvedPlaceName(normalizeTaiwanPlaceName(diary.location.placeName));
       return undefined;
     }
 
     setResolvedPlaceName(formatCoordinates(lat, lng));
     resolvePlaceName(lat, lng).then((name) => {
-      if (!cancelled) setResolvedPlaceName(name);
+      if (!cancelled) setResolvedPlaceName(normalizeTaiwanPlaceName(name));
     });
 
     return () => {
@@ -102,9 +103,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
             className="diary-side-empty"
             {...fadeUpMotion}
           >
-            <span className="brand-mark brand-icon-shell">
-              <img src="/adrift-icon.png" alt="" aria-hidden="true" />
-            </span>
+            <img className="brand-icon diary-empty-brand-icon" src="/adrift-icon.png" alt="" aria-hidden="true" />
             <div>
               <p className="eyebrow">Diary Detail</p>
               <h2>選擇一則日記查看內容</h2>
@@ -194,17 +193,18 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
 
             {isOwner && (
               <div className="diary-owner-actions">
-                <div className={`edit-availability ${editStatus.canEdit ? 'available' : 'locked'}`}>
-                  <strong>{editStatus.canEdit ? `可編輯時間剩餘 ${editStatus.remainingText}` : editStatus.reason}</strong>
-                  <span>
-                    日記只能在發布後 1 小時內，且距離原位置 1 公里內編輯。
-                  </span>
-                  {currentLocation?.accuracyType === 'approximate' && <span>目前為大略位置，可能影響是否可編輯。</span>}
-                </div>
-                <button className="secondary-button edit-diary-button" onClick={() => onEdit?.(diary)} disabled={!editStatus.canEdit && !editStatus.needsLocation}>
-                  <Edit3 size={16} />
-                  編輯日記
-                </button>
+                {editStatus.canEdit && (
+                  <>
+                    <div className="edit-availability available">
+                      <strong>可編輯時間剩餘 {editStatus.remainingText}</strong>
+                      {currentLocation?.accuracyType === 'approximate' && <span>目前為大略位置，可能影響是否可編輯。</span>}
+                    </div>
+                    <button className="secondary-button edit-diary-button" onClick={() => onEdit?.(diary)}>
+                      <Edit3 size={16} />
+                      編輯日記
+                    </button>
+                  </>
+                )}
                 <button className="danger-button" onClick={() => onDelete(diary._id)}>
                   <Trash2 size={16} />
                   刪除日記

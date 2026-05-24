@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fadeUpMotion, listItemMotion, modalBackdropMotion, modalPopMotion, pageFadeUp } from '../constants/animations.js';
 import { USER_CODE_PATTERN } from '../constants/app.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
 
 export default function FriendsPage({
@@ -633,7 +634,7 @@ function RecommendationsPanel({
               return (
                 <motion.article className="social-suggestion-card" key={recommendation._id} {...listItemMotion(index)}>
                   <FriendIdentity user={recommendation} compact />
-                  <p>{recommendation.reasons?.[0] || '你們可能有相近的 Adrift 足跡。'}</p>
+                  <p>{normalizeTaiwanPlaceName(recommendation.reasons?.[0] || '你們可能有相近的 Adrift 足跡。')}</p>
                   {tags.length > 0 && (
                     <div className="recommendation-tags">
                       {tags.map((tag) => (
@@ -1125,7 +1126,7 @@ function getRecommendationTags(recommendation) {
   const tags = [];
 
   (recommendation.sharedMoods || []).slice(0, 2).forEach((mood) => tags.push(mood));
-  (recommendation.nearbyPlaces || []).slice(0, 2).forEach((place) => tags.push(place));
+  (recommendation.nearbyPlaces || []).slice(0, 2).forEach((place) => tags.push(normalizeTaiwanPlaceName(place)));
 
   if (recommendation.mutualFriendsCount > 0) {
     tags.push(`${recommendation.mutualFriendsCount} 位共同好友`);

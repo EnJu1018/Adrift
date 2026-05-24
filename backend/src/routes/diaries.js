@@ -9,6 +9,7 @@ import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getDistanceInMeters } from '../utils/distance.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -197,7 +198,7 @@ function serializeMemory(diary) {
     location: {
       lat,
       lng,
-      placeName: diary.location?.placeName || ''
+      placeName: normalizeTaiwanPlaceName(diary.location?.placeName || '')
     },
     locationAccuracy: normalizeLocationAccuracy(diary.locationAccuracy),
     visibility: diary.visibility,
@@ -302,7 +303,7 @@ function serializeExploreDiary(diary, userId) {
       coordinates: diary.location?.coordinates || [],
       lat,
       lng,
-      placeName: diary.location?.placeName || ''
+      placeName: normalizeTaiwanPlaceName(diary.location?.placeName || '')
     },
     locationAccuracy: normalizeLocationAccuracy(diary.locationAccuracy),
     visibility: diary.visibility,
@@ -629,10 +630,10 @@ router.post('/', requireAuth, upload.single('image'), async (req, res, next) => 
       location: {
         type: 'Point',
         coordinates: [parsedLng, parsedLat],
-        placeName: typeof placeName === 'string' ? placeName.trim().slice(0, 120) : ''
+        placeName: typeof placeName === 'string' ? normalizeTaiwanPlaceName(placeName).slice(0, 120) : ''
       },
       locationAccuracy: diaryLocationAccuracy,
-      visibility: visibility || 'private'
+      visibility: visibility || 'public'
     });
 
     const populatedDiary = await diary.populate('user', authorFields);

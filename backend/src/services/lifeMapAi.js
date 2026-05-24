@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const requiredDiaryCount = 3;
 const defaultModelName = 'gemini-2.0-flash';
@@ -81,7 +82,7 @@ export function serializeDiaryForAi(diary) {
       intensity: diary.mood?.intensity || null
     },
     location: {
-      placeName: diary.location?.placeName || '',
+      placeName: normalizeTaiwanPlaceName(diary.location?.placeName || ''),
       lat,
       lng
     },
@@ -175,15 +176,15 @@ function normalizeLifeMapInsight(value) {
   }
 
   return {
-    summary: stringify(value.summary),
+    summary: normalizeTaiwanPlaceName(stringify(value.summary)),
     moodTrend: {
-      description: stringify(value.moodTrend?.description),
-      dominantMood: stringify(value.moodTrend?.dominantMood),
+      description: normalizeTaiwanPlaceName(stringify(value.moodTrend?.description)),
+      dominantMood: normalizeTaiwanPlaceName(stringify(value.moodTrend?.dominantMood)),
       averageIntensity: numberOrZero(value.moodTrend?.averageIntensity)
     },
     locationInsights: normalizeLocationInsights(value.locationInsights),
-    behaviorPatterns: normalizeStringArray(value.behaviorPatterns),
-    suggestions: normalizeStringArray(value.suggestions)
+    behaviorPatterns: normalizeStringArray(value.behaviorPatterns).map((item) => normalizeTaiwanPlaceName(item)),
+    suggestions: normalizeStringArray(value.suggestions).map((item) => normalizeTaiwanPlaceName(item))
   };
 }
 
@@ -193,9 +194,9 @@ function normalizeLocationInsights(value) {
   return value
     .filter((item) => item && typeof item === 'object')
     .map((item) => ({
-      place: stringify(item.place),
-      insight: stringify(item.insight),
-      dominantMood: stringify(item.dominantMood)
+      place: normalizeTaiwanPlaceName(stringify(item.place)),
+      insight: normalizeTaiwanPlaceName(stringify(item.insight)),
+      dominantMood: normalizeTaiwanPlaceName(stringify(item.dominantMood))
     }));
 }
 

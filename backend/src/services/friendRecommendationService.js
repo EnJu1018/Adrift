@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Diary from '../models/Diary.js';
 import User from '../models/User.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
@@ -284,7 +285,7 @@ function getCoordinates(diary) {
 
 function normalizePlaceName(value) {
   if (!value || typeof value !== 'string') return '';
-  return value.split(/[、,，]/)[0].trim().slice(0, 18);
+  return normalizeTaiwanPlaceName(value.split(/[、,，]/)[0].trim()).slice(0, 18);
 }
 
 function toIdSet(values) {

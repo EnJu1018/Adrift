@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import { API_URL } from '../api/client.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const LOCATION_CACHE_TTL = 5 * 60 * 1000;
 const IP_LOCATION_TIMEOUT = 7000;
@@ -90,6 +91,9 @@ export function useUserLocation() {
   const commitLocation = useCallback((location, options = {}) => {
     const nextLocation = {
       ...location,
+      city: normalizeTaiwanPlaceName(location.city || ''),
+      region: normalizeTaiwanPlaceName(location.region || ''),
+      country: normalizeTaiwanPlaceName(location.country || ''),
       loading: false,
       error: '',
       message: getLocationMessage(location, options, approximateNoticeShownRef),

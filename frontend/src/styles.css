@@ -55,6 +55,11 @@
   --z-modal: 400;
   --z-toast: 500;
   --z-tooltip: 550;
+  --icon-xs: 14px;
+  --icon-sm: 16px;
+  --icon-md: 20px;
+  --icon-lg: 28px;
+  --icon-xl: 42px;
   color: #edf8ff;
   background: #02050d;
   font-family:
@@ -11449,98 +11454,1789 @@ select option {
   pointer-events: none !important;
 }
 
-/* Adrift brand icon system. */
-.brand-mark,
-.brand-icon-shell {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  overflow: hidden;
-  border: 1px solid rgba(164, 237, 255, 0.24);
-  border-radius: 50%;
-  color: #e9fcff;
-  background:
-    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.18), transparent 34%),
-    rgba(3, 14, 26, 0.76);
-  box-shadow: 0 0 24px rgba(105, 222, 255, 0.18);
-}
-
-.brand-icon-shell img,
-.auth-brand-icon,
+/* Adrift icon system: icons should feel native to the UI, not trapped in heavy boxes. */
+.brand-icon,
 .boot-brand-icon,
-.presentation-orb img {
+.presentation-orb {
   display: block;
-  object-fit: cover;
+  object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
 }
 
-.brand-icon-shell img {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
+.nav-brand-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 8px 18px rgba(77, 197, 255, 0.16));
 }
 
-.brand-nav-button .brand-icon-shell.small {
-  width: 34px;
-  height: 34px;
-  min-width: 34px;
-  padding: 2px;
-  background: rgba(2, 13, 24, 0.58);
+.diary-empty-brand-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  opacity: 0.94;
+  filter: drop-shadow(0 10px 20px rgba(77, 197, 255, 0.14));
 }
 
-.diary-side-empty .brand-icon-shell {
-  width: 52px;
-  height: 52px;
-  padding: 3px;
-}
-
-.auth-brand-icon {
-  width: clamp(78px, 10vw, 118px);
-  height: clamp(78px, 10vw, 118px);
-  border: 1px solid rgba(164, 237, 255, 0.2);
-  border-radius: 50%;
-  box-shadow: 0 22px 64px rgba(77, 197, 255, 0.18);
+.brand-nav-button:hover .nav-brand-icon {
+  filter: drop-shadow(0 10px 22px rgba(121, 241, 220, 0.2));
 }
 
 .boot-brand-icon {
   width: 58px;
   height: 58px;
   margin-bottom: 12px;
-  border-radius: 50%;
-  box-shadow: 0 16px 36px rgba(77, 197, 255, 0.2);
+  filter: drop-shadow(0 16px 32px rgba(77, 197, 255, 0.18));
 }
 
 .presentation-orb {
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid rgba(140, 220, 255, 0.16);
-  background:
-    radial-gradient(circle at 42% 30%, rgba(255, 255, 255, 0.18), transparent 36%),
-    rgba(2, 13, 24, 0.72);
-  box-shadow:
-    0 0 52px rgba(121, 241, 220, 0.22),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  filter: drop-shadow(0 0 42px rgba(121, 241, 220, 0.22));
 }
 
-.presentation-orb img {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-}
-
-:root[data-theme="bright"] .brand-mark,
-:root[data-theme="bright"] .brand-icon-shell {
-  border-color: rgba(15, 127, 156, 0.22) !important;
-  background: rgba(255, 255, 255, 0.92) !important;
-  box-shadow: 0 12px 28px rgba(14, 116, 144, 0.12) !important;
-}
-
-:root[data-theme="bright"] .auth-brand-icon,
+:root[data-theme="bright"] .nav-brand-icon,
+:root[data-theme="bright"] .diary-empty-brand-icon,
 :root[data-theme="bright"] .boot-brand-icon,
 :root[data-theme="bright"] .presentation-orb {
-  border-color: rgba(15, 127, 156, 0.18) !important;
+  filter: drop-shadow(0 12px 24px rgba(14, 116, 144, 0.14));
+}
+
+.section-title svg,
+.friends-section-heading svg,
+.settings-section-header svg,
+.life-map-card-heading svg,
+.presentation-section-heading svg {
+  width: var(--icon-md);
+  height: var(--icon-md);
+  flex-shrink: 0;
+  color: var(--accent);
+  opacity: 0.92;
+}
+
+.primary-button svg,
+.secondary-button svg,
+.danger-button svg,
+.icon-button svg,
+.nav-dropdown button svg,
+.primary-nav button svg,
+.mobile-bottom-nav button svg,
+.life-map-cta svg,
+.life-map-secondary-action svg,
+.presentation-control-button svg {
+  width: var(--icon-sm);
+  height: var(--icon-sm);
+  flex-shrink: 0;
+}
+
+.life-map-feature-icon,
+.app-toast-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+  color: var(--accent);
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.life-map-feature-icon svg,
+.app-toast-icon svg {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+}
+
+:root[data-theme="dark"] .life-map-feature-icon,
+:root[data-theme="dark"] .app-toast-icon,
+:root[data-theme="dark"] .section-title svg,
+:root[data-theme="dark"] .friends-section-heading svg,
+:root[data-theme="dark"] .life-map-card-heading svg {
+  filter: drop-shadow(0 0 8px rgba(121, 241, 220, 0.18));
+}
+
+:root[data-theme="bright"] :where(
+  .icon-button:not(.danger),
+  .nav-icon-button,
+  .copy-mini-button,
+  .subtle-icon,
+  .life-map-back
+) {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .icon-button:not(.danger):hover,
+  .nav-icon-button:hover,
+  .copy-mini-button:hover,
+  .subtle-icon:hover,
+  .life-map-back:hover
+) {
+  background: rgba(15, 127, 156, 0.08) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-feature-icon,
+  .app-toast-icon
+) {
+  color: var(--accent) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Icon polish pass: remove heavy permanent icon boxes across product and presentation surfaces. */
+.nav-icon-button {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.nav-icon-button:hover,
+.nav-icon-button.active {
+  border-color: rgba(121, 241, 220, 0.16);
+  background: rgba(121, 241, 220, 0.08);
+  box-shadow: none;
+}
+
+.presentation-info-card > span,
+.presentation-feature-card > span,
+.presentation-statement-card > span,
+.ai-summary-card > svg,
+.ai-metric-card > svg,
+.goal-card-orbit,
+.goal-card-orbit span {
+  width: auto;
+  height: auto;
+  min-width: var(--icon-lg);
+  min-height: var(--icon-lg);
+  border: 0 !important;
+  border-radius: 0;
+  color: var(--accent) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.presentation-info-card > span svg,
+.presentation-feature-card > span svg,
+.presentation-statement-card > span svg,
+.goal-card-orbit svg {
+  width: var(--icon-lg);
+  height: var(--icon-lg);
+}
+
+.goal-card-orbit::before,
+.goal-card-orbit::after {
+  display: none;
+}
+
+.presentation-split .presentation-feature-card > span {
+  grid-row: auto;
+}
+
+.friends-section-heading svg,
+.friends-empty-panel svg,
+.friend-list-search svg,
+.friends-quick-search label > svg,
+.social-friend-item > svg,
+.friends-profile-stats svg,
+.life-map-card-heading svg,
+.life-map-privacy-card svg,
+.settings-section-header svg {
+  color: var(--accent) !important;
+  filter: none;
+  stroke: currentColor;
+}
+
+:root[data-theme="dark"] :where(
+  .presentation-info-card > span,
+  .presentation-feature-card > span,
+  .presentation-statement-card > span,
+  .goal-card-orbit,
+  .friends-section-heading svg,
+  .life-map-card-heading svg,
+  .settings-section-header svg
+) {
+  filter: drop-shadow(0 0 8px rgba(121, 241, 220, 0.16));
+}
+
+:root[data-theme="bright"] .nav-icon-button {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] .nav-icon-button:hover,
+:root[data-theme="bright"] .nav-icon-button.active {
+  border-color: rgba(15, 127, 156, 0.14) !important;
+  background: rgba(15, 127, 156, 0.08) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-info-card > span,
+  .presentation-feature-card > span,
+  .presentation-statement-card > span,
+  .goal-card-orbit,
+  .goal-card-orbit span,
+  .ai-summary-card > svg,
+  .ai-metric-card > svg
+) {
+  color: var(--accent) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Diary form and notification polish: public-by-default flow, readable prompts, and theme-aware mood controls. */
+:root[data-theme="dark"] {
+  --toast-text: #eafdff;
+  --toast-muted: rgba(234, 253, 255, 0.78);
+  --toast-border: rgba(140, 220, 255, 0.18);
+  --toast-shadow: 0 18px 50px rgba(0, 0, 0, 0.42), 0 0 28px rgba(78, 221, 199, 0.1);
+  --slider-track: rgba(148, 163, 184, 0.22);
+  --slider-thumb: #ecfeff;
+  --slider-thumb-border: rgba(94, 234, 212, 0.8);
+  --slider-thumb-shadow: 0 0 0 4px rgba(94, 234, 212, 0.14), 0 0 18px rgba(94, 234, 212, 0.35);
+}
+
+:root[data-theme="bright"] {
+  --toast-text: #102033;
+  --toast-muted: #41566d;
+  --toast-border: rgba(14, 116, 144, 0.18);
+  --toast-shadow: 0 18px 45px rgba(14, 116, 144, 0.14);
+  --slider-track: rgba(14, 116, 144, 0.16);
+  --slider-thumb: #ffffff;
+  --slider-thumb-border: rgba(14, 116, 144, 0.55);
+  --slider-thumb-shadow: 0 0 0 4px rgba(14, 116, 144, 0.12), 0 8px 18px rgba(14, 116, 144, 0.18);
+}
+
+.mood-select-field .ui-select-trigger,
+.mood-select-field .ui-select-value,
+.ui-select-menu button,
+.ui-select-menu .ui-select-icon {
+  align-items: center;
+}
+
+.mood-select-field .ui-select-value,
+.ui-select-menu button {
+  line-height: 1;
+}
+
+.mood-select-field .ui-select-icon,
+.ui-select-menu .ui-select-icon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 20px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.mood-intensity-field {
+  display: grid;
+  align-content: start;
+  gap: 11px;
+}
+
+.mood-intensity-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.mood-intensity-slider {
+  width: 100%;
+  height: 8px;
+  margin: 12px 0 0;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  outline: none;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    var(--accent) var(--slider-progress, 50%),
+    var(--slider-track) var(--slider-progress, 50%),
+    var(--slider-track) 100%
+  );
+  cursor: pointer;
+}
+
+.mood-intensity-slider::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  appearance: none;
+  border: 2px solid var(--slider-thumb-border);
+  border-radius: 999px;
+  background: var(--slider-thumb);
+  box-shadow: var(--slider-thumb-shadow);
+  cursor: pointer;
+}
+
+.mood-intensity-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--slider-thumb-border);
+  border-radius: 999px;
+  background: var(--slider-thumb);
+  box-shadow: var(--slider-thumb-shadow);
+  cursor: pointer;
+}
+
+.mood-intensity-slider::-moz-range-track {
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+:root[data-theme="bright"] .app-toast {
+  color: var(--toast-text) !important;
+  border-color: var(--toast-border) !important;
+  background: var(--toast-bg, rgba(255, 255, 255, 0.96)) !important;
+  box-shadow: var(--toast-shadow) !important;
+}
+
+:root[data-theme="bright"] .app-toast p {
+  color: var(--toast-text) !important;
+  -webkit-text-fill-color: var(--toast-text) !important;
+}
+
+:root[data-theme="bright"] .app-toast button {
+  color: var(--toast-muted) !important;
+}
+
+:root[data-theme="bright"] .app-toast button:hover {
+  color: var(--accent-hover) !important;
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="bright"] .app-toast-icon {
+  color: var(--accent) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] .field-hint,
+:root[data-theme="bright"] .location-line,
+:root[data-theme="bright"] .edit-authenticity-box span,
+:root[data-theme="bright"] .mood-intensity-label {
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="bright"] .field-error,
+:root[data-theme="bright"] .form-error {
+  color: var(--danger) !important;
+  -webkit-text-fill-color: var(--danger) !important;
+}
+
+:root[data-theme="bright"] .form-error {
+  border-color: rgba(180, 35, 24, 0.2) !important;
+  background: rgba(180, 35, 24, 0.08) !important;
+}
+
+:root[data-theme="bright"] .mood-select-field .ui-select-trigger {
+  color: var(--text-primary) !important;
+  border-color: var(--border-medium) !important;
   background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 18px 42px rgba(14, 116, 144, 0.14) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+:root[data-theme="bright"] .ui-select-menu {
+  color: var(--text-primary) !important;
+  border-color: var(--border-soft) !important;
+  background: var(--dropdown-bg, rgba(255, 255, 255, 0.98)) !important;
+  box-shadow: 0 18px 40px rgba(14, 116, 144, 0.14) !important;
+}
+
+:root[data-theme="bright"] .ui-select-menu button {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] .ui-select-menu button:hover,
+:root[data-theme="bright"] .ui-select-menu button.active {
+  color: var(--accent-hover) !important;
+  background: rgba(15, 127, 156, 0.09) !important;
+}
+
+/* Product UI/UX quality pass: unify surfaces, readability, page rhythm, and theme behavior. */
+:root[data-theme="bright"] {
+  --bg-primary: #fbfdff;
+  --bg-secondary: #eef8ff;
+  --bg-tertiary: #e8f7ff;
+  --bg-soft: #f4fbff;
+  --page-bg:
+    radial-gradient(circle at 16% 18%, rgba(56, 189, 248, 0.16), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(45, 212, 191, 0.12), transparent 30%),
+    linear-gradient(135deg, #ffffff 0%, #eef8ff 48%, #fbfdff 100%);
+  --surface: rgba(255, 255, 255, 0.92);
+  --surface-strong: rgba(255, 255, 255, 0.98);
+  --surface-soft: rgba(246, 252, 255, 0.94);
+  --surface-card: rgba(255, 255, 255, 0.92);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-bg-strong: rgba(255, 255, 255, 0.98);
+  --card-border: rgba(14, 116, 144, 0.16);
+  --card-shadow: 0 18px 45px rgba(14, 116, 144, 0.1);
+  --text-primary: #102033;
+  --text-heading: #0a1e30;
+  --text-secondary: #2f465c;
+  --text-muted: #5f7286;
+  --text-faint: #7890a4;
+  --accent: #0f7f9c;
+  --accent-hover: #0b6f89;
+  --accent-soft: rgba(15, 127, 156, 0.1);
+  --accent-medium: rgba(15, 127, 156, 0.18);
+  --border-soft: rgba(14, 116, 144, 0.16);
+  --border-medium: rgba(14, 116, 144, 0.24);
+  --input-bg: rgba(255, 255, 255, 0.94);
+  --input-border: rgba(14, 116, 144, 0.24);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --modal-bg: rgba(255, 255, 255, 0.98);
+  --toast-bg: rgba(255, 255, 255, 0.98);
+}
+
+:root[data-theme="dark"] {
+  --page-bg:
+    radial-gradient(circle at 16% 18%, rgba(45, 183, 255, 0.14), transparent 34%),
+    radial-gradient(circle at 82% 12%, rgba(121, 241, 220, 0.08), transparent 30%),
+    linear-gradient(135deg, #02050d 0%, #061625 52%, #02050d 100%);
+  --surface: rgba(8, 18, 32, 0.76);
+  --surface-strong: rgba(8, 18, 32, 0.94);
+}
+
+:root[data-theme="bright"],
+:root[data-theme="bright"] body,
+:root[data-theme="bright"] #root,
+:root[data-theme="bright"] .app-frame,
+:root[data-theme="bright"] .app-layout {
+  color: var(--text-primary);
+  background: var(--page-bg) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .glass,
+  .auth-card,
+  .memory-panel,
+  .diary-side-panel,
+  .settings-panel,
+  .admin-hero,
+  .admin-card,
+  .admin-table,
+  .admin-table-wrapper,
+  .friends-hub-card,
+  .friends-profile-card,
+  .friend-page-card,
+  .friend-user-card,
+  .social-person-row,
+  .social-friend-item,
+  .social-suggestion-card,
+  .friends-empty-panel,
+  .friend-empty-state,
+  .feed-card,
+  .feed-empty,
+  .life-map-hero,
+  .life-map-summary-card,
+  .life-map-feature-card,
+  .life-map-insight-card,
+  .life-map-wide-section,
+  .life-map-empty-state,
+  .life-map-loading-state,
+  .life-map-privacy-card,
+  .life-map-location-card,
+  .settings-section,
+  .profile-popover,
+  .friend-profile-modal,
+  .admin-detail-modal,
+  .admin-danger-modal,
+  .diary-modal,
+  .nav-dropdown,
+  .ui-select-menu,
+  .friend-row-menu,
+  .app-toast,
+  .presentation-card,
+  .presentation-info-card,
+  .presentation-feature-card,
+  .presentation-statement-card,
+  .presentation-warning-card,
+  .presentation-member-grid span,
+  .team-row,
+  .demo-panel,
+  .flowchart-node,
+  .system-tree-node
+) {
+  color: var(--text-primary) !important;
+  border-color: var(--card-border) !important;
+  background: var(--surface) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+:root[data-theme="bright"] :where(
+  h1, h2, h3, h4,
+  .friends-hub-header h2,
+  .feed-page-hero h2,
+  .life-map-hero-copy h1,
+  .life-map-summary-card h2,
+  .life-map-feature-card h3,
+  .life-map-card-heading strong,
+  .life-map-card-heading span,
+  .admin-hero h1,
+  .admin-card h1,
+  .admin-card h2,
+  .settings-header h1,
+  .settings-section h2,
+  .diary-side-title,
+  .friend-user-main strong,
+  .social-person-row strong,
+  .social-friend-item strong,
+  .feed-card h3,
+  .presentation-section-heading h2,
+  .cover-title-en,
+  .cover-title-zh
+) {
+  color: var(--text-heading) !important;
+  -webkit-text-fill-color: var(--text-heading) !important;
+}
+
+:root[data-theme="bright"] :where(
+  p,
+  small,
+  span,
+  label,
+  .eyebrow,
+  .field-hint,
+  .friends-section-heading p,
+  .friends-subtle-copy,
+  .friends-hub-header span,
+  .friends-hub-pills span,
+  .feed-page-hero span,
+  .feed-card p,
+  .feed-card footer span,
+  .life-map-hero-copy p,
+  .life-map-hero-copy span,
+  .life-map-feature-card p,
+  .life-map-insight-card p,
+  .life-map-summary-card p,
+  .life-map-wide-section p,
+  .life-map-empty-state p,
+  .life-map-loading-state p,
+  .life-map-muted,
+  .life-map-location-card span,
+  .life-map-privacy-card p,
+  .admin-card p,
+  .admin-empty,
+  .settings-section p,
+  .presentation-section-heading p,
+  .presentation-lead,
+  .presentation-card p,
+  .presentation-card li,
+  .diary-side-text,
+  .memory-item p
+) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+:root[data-theme="bright"] :where(
+  .friends-hub,
+  .feed-page,
+  .life-map-panel,
+  .admin-dashboard-container,
+  .settings-panel
+) {
+  background: var(--page-bg) !important;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub,
+.app-layout.authenticated.feed-mode .feed-page,
+.app-layout.authenticated.ai-mode .life-map-panel,
+.admin-dashboard-container {
+  width: 100%;
+  max-width: none;
+  border-radius: 0 !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.app-layout.authenticated.friends-mode .friends-new-user-flow,
+.app-layout.authenticated.feed-mode :where(.feed-page-hero, .feed-filter, .feed-list),
+.app-layout.authenticated.ai-mode :where(.life-map-hero, .life-map-state-stage, .life-map-privacy-card),
+.admin-dashboard-container :where(.admin-hero, .admin-card) {
+  width: min(1440px, 100%);
+  margin-inline: auto;
+}
+
+:root[data-theme="bright"] :where(
+  input,
+  textarea,
+  select,
+  .ui-select-trigger,
+  .auth-input input,
+  .friend-list-search,
+  .friends-quick-search label,
+  .admin-search,
+  .role-trigger,
+  .friend-sort-control select
+) {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary);
+  border-color: var(--input-border) !important;
+  background: var(--input-bg) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72) !important;
+}
+
+:root[data-theme="bright"] :where(input, textarea, select)::placeholder {
+  color: var(--text-faint) !important;
+  -webkit-text-fill-color: var(--text-faint) !important;
+}
+
+:root[data-theme="bright"] :where(
+  input:focus,
+  textarea:focus,
+  select:focus,
+  .ui-select-trigger:focus-visible,
+  .auth-input input:focus
+) {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(15, 127, 156, 0.14) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .primary-button,
+  .friend-primary-button,
+  .life-map-cta,
+  .create-diary-button,
+  .auth-submit,
+  .presentation-cta,
+  .presentation-control-button.primary
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #0f7f9c, #14b8a6) !important;
+  box-shadow: 0 12px 28px rgba(15, 127, 156, 0.22) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .secondary-button,
+  .friend-secondary-button,
+  .ghost-button,
+  .chip-button,
+  .compact-action,
+  .life-map-secondary-action,
+  .feed-filter button,
+  .visibility-filter button,
+  .friend-segmented button,
+  .admin-tabs button,
+  .presentation-control-button,
+  .map-controls button
+) {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover) !important;
+  border-color: rgba(15, 127, 156, 0.22) !important;
+  background: rgba(255, 255, 255, 0.78) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .secondary-button:hover:not(:disabled),
+  .friend-secondary-button:hover:not(:disabled),
+  .ghost-button:hover:not(:disabled),
+  .chip-button:hover:not(:disabled),
+  .compact-action:hover:not(:disabled),
+  .life-map-secondary-action:hover:not(:disabled),
+  .feed-filter button:hover,
+  .visibility-filter button:hover,
+  .friend-segmented button:hover,
+  .map-controls button:hover:not(:disabled)
+) {
+  border-color: rgba(15, 127, 156, 0.32) !important;
+  background: rgba(15, 127, 156, 0.09) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .feed-filter button.active,
+  .visibility-filter button.active,
+  .friend-segmented button.active,
+  .admin-tabs button.active
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: transparent !important;
+  background: linear-gradient(135deg, #0f7f9c, #14b8a6) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .danger-button,
+  .friend-danger-button,
+  .ghost-button.danger,
+  .icon-button.danger,
+  .compact-danger,
+  .danger-menu-item
+) {
+  color: var(--danger) !important;
+  -webkit-text-fill-color: var(--danger) !important;
+  border-color: rgba(180, 35, 24, 0.22) !important;
+  background: rgba(180, 35, 24, 0.08) !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .icon-button,
+  .nav-icon-button,
+  .copy-mini-button,
+  .subtle-icon,
+  .life-map-back,
+  .friend-secondary-button.icon-only
+) {
+  color: var(--accent-hover) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .icon-button:hover:not(:disabled),
+  .nav-icon-button:hover,
+  .copy-mini-button:hover,
+  .subtle-icon:hover,
+  .life-map-back:hover,
+  .friend-secondary-button.icon-only:hover
+) {
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .section-title svg,
+  .friends-section-heading svg,
+  .settings-section-header svg,
+  .life-map-card-heading svg,
+  .life-map-feature-icon,
+  .feed-empty svg,
+  .friends-empty-panel svg,
+  .friend-empty-state svg,
+  .admin-card svg,
+  .presentation-section-heading svg,
+  .map-controls button svg
+) {
+  color: var(--accent) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+:root[data-theme="bright"] :where(
+  .nav-dropdown,
+  .notifications-dropdown,
+  .user-dropdown,
+  .ui-select-menu,
+  .role-menu,
+  .friend-row-menu
+) {
+  color: var(--text-primary) !important;
+  border-color: var(--border-soft) !important;
+  background: var(--dropdown-bg) !important;
+  box-shadow: 0 18px 42px rgba(14, 116, 144, 0.16) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .nav-dropdown button,
+  .ui-select-menu button,
+  .role-menu button,
+  .friend-row-menu button
+) {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .nav-dropdown button:hover,
+  .ui-select-menu button:hover,
+  .ui-select-menu button.active,
+  .role-menu button:hover:not(:disabled),
+  .role-menu button.active,
+  .friend-row-menu button:hover
+) {
+  color: var(--accent-hover) !important;
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="dark"] :where(.nav-dropdown, .ui-select-menu, .role-menu, .friend-row-menu, .app-toast) {
+  background: rgba(8, 18, 32, 0.96) !important;
+}
+
+:root[data-theme="dark"] :where(.nav-dropdown, .ui-select-menu, .role-menu, .friend-row-menu) {
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
+}
+
+:root[data-theme="bright"] .admin-dashboard-container {
+  min-height: calc(100vh - 76px);
+  padding: 36px clamp(20px, 4.5vw, 64px);
+  background: var(--page-bg) !important;
+}
+
+:root[data-theme="bright"] :where(.admin-table, .admin-table-row, .admin-table-row span) {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] .admin-table-row.header {
+  color: var(--text-secondary) !important;
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="bright"] .admin-table-row:not(.header):hover,
+:root[data-theme="bright"] .admin-diary-row.active {
+  background: rgba(15, 127, 156, 0.06) !important;
+}
+
+:root[data-theme="bright"] .role-pill.user {
+  color: #334155 !important;
+  border-color: rgba(100, 116, 139, 0.22) !important;
+  background: rgba(100, 116, 139, 0.12) !important;
+}
+
+:root[data-theme="bright"] .role-pill.admin {
+  color: #1d4ed8 !important;
+  border-color: rgba(37, 99, 235, 0.22) !important;
+  background: rgba(37, 99, 235, 0.1) !important;
+}
+
+:root[data-theme="bright"] .role-pill.owner {
+  color: #92400e !important;
+  border-color: rgba(180, 83, 9, 0.24) !important;
+  background: rgba(180, 83, 9, 0.12) !important;
+}
+
+.life-map-state-stage {
+  min-height: clamp(360px, 42vh, 620px);
+}
+
+.life-map-state-stage > * {
+  width: 100%;
+}
+
+:root[data-theme="bright"] .life-map-panel {
+  background: var(--page-bg) !important;
+}
+
+:root[data-theme="bright"] .life-map-visual,
+:root[data-theme="bright"] .life-map-loading-visual {
+  border-color: rgba(15, 127, 156, 0.16) !important;
+  background:
+    radial-gradient(circle at 45% 45%, rgba(56, 189, 248, 0.18), transparent 45%),
+    rgba(255, 255, 255, 0.42) !important;
+  filter: none !important;
+}
+
+:root[data-theme="bright"] :where(.life-map-trace, .loading-path) {
+  background: linear-gradient(90deg, transparent, rgba(15, 127, 156, 0.38), transparent) !important;
+}
+
+:root[data-theme="bright"] :where(.life-map-orbit-dot, .loading-node) {
+  background: var(--accent) !important;
+  box-shadow: 0 0 0 5px rgba(15, 127, 156, 0.1) !important;
+}
+
+:root[data-theme="bright"] .feed-card {
+  cursor: pointer;
+}
+
+:root[data-theme="bright"] .feed-visibility,
+:root[data-theme="bright"] .friend-status-pill,
+:root[data-theme="bright"] .diary-time-pill,
+:root[data-theme="bright"] .diary-place-pill,
+:root[data-theme="bright"] .diary-edited-pill,
+:root[data-theme="bright"] .diary-meta-secondary span,
+:root[data-theme="bright"] .friends-hub-pills span,
+:root[data-theme="bright"] .recommendation-tags span,
+:root[data-theme="bright"] .nav-role-badge {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover) !important;
+  border-color: rgba(15, 127, 156, 0.18) !important;
+  background: rgba(15, 127, 156, 0.08) !important;
+}
+
+:root[data-theme="bright"] .modal-backdrop,
+:root[data-theme="bright"] .admin-modal-backdrop {
+  background: rgba(38, 70, 95, 0.22) !important;
+}
+
+:root[data-theme="bright"] .app-toast {
+  color: var(--toast-text) !important;
+  border-color: var(--toast-border) !important;
+  background: var(--toast-bg) !important;
+  box-shadow: var(--toast-shadow) !important;
+}
+
+:root[data-theme="bright"] .app-toast p {
+  color: var(--toast-text) !important;
+  -webkit-text-fill-color: var(--toast-text) !important;
+}
+
+:root[data-theme="bright"] .presentation-page {
+  color: var(--text-primary) !important;
+  background: var(--presentation-bg, var(--page-bg)) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .presentation-section,
+  .presentation-section-inner,
+  .presentation-lead,
+  .presentation-card,
+  .flowchart-node,
+  .system-tree-node,
+  .presentation-nav,
+  .presentation-controls
+) {
+  color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] :where(.flowchart-connector, .system-tree-connector, .presentation-path) {
+  stroke: rgba(15, 127, 156, 0.48) !important;
+}
+
+@media (max-width: 760px) {
+  .app-layout.authenticated.friends-mode .friends-hub,
+  .app-layout.authenticated.feed-mode .feed-page,
+  .app-layout.authenticated.ai-mode .life-map-panel,
+  .admin-dashboard-container {
+    padding: 20px 16px !important;
+  }
+
+  .life-map-state-stage {
+    min-height: 320px;
+  }
+}
+
+/* Align Friends page title area with Feed page title rhythm. */
+.app-layout.authenticated.friends-mode .friends-hub-header,
+.app-layout.authenticated.feed-mode .feed-page-hero {
+  display: flex;
+  min-height: 78px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 14px !important;
+  border-bottom: 1px solid rgba(196, 235, 255, 0.12);
+  background: transparent !important;
+}
+
+.app-layout.authenticated.friends-mode .friends-title-copy,
+.app-layout.authenticated.feed-mode .feed-page-hero > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub-kicker,
+.app-layout.authenticated.feed-mode .feed-page-hero .eyebrow {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub-header h2,
+.app-layout.authenticated.feed-mode .feed-page-hero h2 {
+  margin: 0;
+  font-size: 1.65rem;
+  font-weight: 850;
+  line-height: 1.14;
+  letter-spacing: 0;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub-header .friends-title-copy > span,
+.app-layout.authenticated.feed-mode .feed-page-hero span {
+  display: block;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub-pills {
+  align-self: flex-end;
+  flex: 0 0 auto;
+  margin-bottom: 1px;
+}
+
+.app-layout.authenticated.friends-mode .friends-hub-pills span {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 0.76rem;
+}
+
+:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub-header,
+:root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page-hero {
+  border-bottom-color: rgba(15, 127, 156, 0.16) !important;
+}
+
+:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub-kicker,
+:root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page-hero .eyebrow {
+  color: var(--accent) !important;
+  -webkit-text-fill-color: var(--accent) !important;
+}
+
+:root[data-theme="bright"] .mapboxgl-popup.approximate-tooltip .mapboxgl-popup-content {
+  color: #053d56 !important;
+  border-color: rgba(0, 143, 199, 0.22) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 14px 32px rgba(0, 143, 199, 0.16) !important;
+}
+
+:root[data-theme="bright"] .mapboxgl-popup.approximate-tooltip .mapboxgl-popup-tip {
+  border-top-color: rgba(255, 255, 255, 0.94) !important;
+}
+
+@media (max-width: 640px) {
+  .app-layout.authenticated.friends-mode .friends-hub-header,
+  .app-layout.authenticated.feed-mode .feed-page-hero {
+    min-height: auto;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .app-layout.authenticated.friends-mode .friends-hub-pills {
+    align-self: flex-start;
+  }
+}
+
+/* Bright theme vitality + form/AI stability pass.
+   Keep this at the end so broad input/button rules cannot wash out range sliders or AI actions. */
+:root[data-theme="bright"] {
+  --accent: #008fc7;
+  --accent-hover: #05739f;
+  --accent-strong: #00b4d8;
+  --accent-soft: rgba(0, 143, 199, 0.12);
+  --accent-medium: rgba(0, 143, 199, 0.22);
+  --accent-border: rgba(0, 143, 199, 0.3);
+  --tech-cyan: #00a6d6;
+  --tech-mint: #0bbf9f;
+  --page-bg:
+    radial-gradient(circle at 14% 14%, rgba(56, 189, 248, 0.2), transparent 32%),
+    radial-gradient(circle at 84% 10%, rgba(20, 184, 166, 0.16), transparent 28%),
+    linear-gradient(135deg, #ffffff 0%, #eefaff 45%, #fbfeff 100%);
+  --bg-page: var(--page-bg);
+  --bg-frame: #fbfeff;
+  --card-border: rgba(0, 143, 199, 0.18);
+  --border-soft: rgba(0, 143, 199, 0.18);
+  --border-medium: rgba(0, 143, 199, 0.28);
+  --shadow-soft: 0 14px 34px rgba(0, 143, 199, 0.1);
+  --shadow-medium: 0 20px 54px rgba(0, 143, 199, 0.16);
+  --card-shadow: 0 18px 44px rgba(0, 143, 199, 0.12);
+  --input-border: rgba(0, 143, 199, 0.28);
+  --slider-track: rgba(0, 143, 199, 0.2);
+  --slider-thumb: #ffffff;
+  --slider-thumb-border: rgba(0, 143, 199, 0.68);
+  --slider-thumb-shadow: 0 0 0 5px rgba(0, 143, 199, 0.14), 0 10px 22px rgba(0, 143, 199, 0.22);
+}
+
+:root[data-theme="bright"] :where(
+  .primary-button,
+  .friend-primary-button,
+  .life-map-cta,
+  .create-diary-button,
+  .auth-submit,
+  .presentation-cta,
+  .presentation-control-button.primary
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
+  background: linear-gradient(135deg, #008fc7 0%, #00b4d8 52%, #12c8a8 100%) !important;
+  box-shadow: 0 14px 30px rgba(0, 143, 199, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.32) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .primary-button:hover:not(:disabled),
+  .friend-primary-button:hover:not(:disabled),
+  .life-map-cta:hover:not(:disabled),
+  .create-diary-button:hover:not(:disabled),
+  .auth-submit:hover:not(:disabled)
+) {
+  background: linear-gradient(135deg, #05739f 0%, #009bd4 52%, #0bbf9f 100%) !important;
+  box-shadow: 0 18px 38px rgba(0, 143, 199, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
+}
+
+.mood-intensity-field input.mood-intensity-slider,
+input.mood-intensity-slider {
+  display: block !important;
+  width: 100% !important;
+  min-height: 24px !important;
+  height: 24px !important;
+  margin: 8px 0 0 !important;
+  padding: 0 !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  color: var(--accent) !important;
+  -webkit-text-fill-color: currentColor !important;
+  box-shadow: none !important;
+  background:
+    linear-gradient(
+      90deg,
+      var(--accent) 0%,
+      var(--accent) var(--slider-progress, 50%),
+      var(--slider-track) var(--slider-progress, 50%),
+      var(--slider-track) 100%
+    ) center / 100% 8px no-repeat !important;
+}
+
+.mood-intensity-field input.mood-intensity-slider::-webkit-slider-runnable-track,
+input.mood-intensity-slider::-webkit-slider-runnable-track {
+  height: 8px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+}
+
+.mood-intensity-field input.mood-intensity-slider::-webkit-slider-thumb,
+input.mood-intensity-slider::-webkit-slider-thumb {
+  width: 22px !important;
+  height: 22px !important;
+  margin-top: -7px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  border: 2px solid var(--slider-thumb-border) !important;
+  border-radius: 999px !important;
+  background: var(--slider-thumb) !important;
+  box-shadow: var(--slider-thumb-shadow) !important;
+  cursor: pointer !important;
+}
+
+.mood-intensity-field input.mood-intensity-slider::-moz-range-track,
+input.mood-intensity-slider::-moz-range-track {
+  height: 8px !important;
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+}
+
+.mood-intensity-field input.mood-intensity-slider::-moz-range-thumb,
+input.mood-intensity-slider::-moz-range-thumb {
+  width: 22px !important;
+  height: 22px !important;
+  border: 2px solid var(--slider-thumb-border) !important;
+  border-radius: 999px !important;
+  background: var(--slider-thumb) !important;
+  box-shadow: var(--slider-thumb-shadow) !important;
+  cursor: pointer !important;
+}
+
+.app-layout.authenticated.ai-mode .life-map-panel {
+  isolation: isolate;
+  min-height: calc(100vh - 76px);
+}
+
+.app-layout.authenticated.ai-mode .life-map-hero {
+  position: relative;
+  z-index: 2;
+}
+
+.app-layout.authenticated.ai-mode .life-map-hero-actions {
+  position: relative;
+  z-index: 5;
+  align-items: center;
+}
+
+.app-layout.authenticated.ai-mode .life-map-hero-actions .life-map-cta {
+  min-width: 178px;
+  flex: 0 0 auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.app-layout.authenticated.ai-mode .life-map-cta:disabled {
+  opacity: 0.88 !important;
+  visibility: visible !important;
+}
+
+.app-layout.authenticated.ai-mode .life-map-state-stage {
+  display: block !important;
+  clear: both;
+  min-height: 0 !important;
+  overflow: visible !important;
+  position: relative;
+  z-index: 1;
+}
+
+.app-layout.authenticated.ai-mode .life-map-state-stage > * {
+  position: relative !important;
+  inset: auto !important;
+  transform-origin: center top;
+}
+
+.app-layout.authenticated.ai-mode .life-map-loading-state {
+  display: grid;
+  grid-template-columns: minmax(96px, 136px) minmax(0, 1fr);
+  align-items: center;
+  min-height: 0 !important;
+  gap: clamp(16px, 2.5vw, 24px);
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-panel,
+  .life-map-hero,
+  .life-map-summary-card,
+  .life-map-feature-card,
+  .life-map-insight-card,
+  .life-map-wide-section,
+  .life-map-empty-state,
+  .life-map-loading-state,
+  .life-map-privacy-card,
+  .life-map-location-card
+) {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.94), rgba(243, 252, 255, 0.88)),
+    radial-gradient(circle at 0% 0%, rgba(0, 180, 216, 0.08), transparent 48%) !important;
+  border-color: rgba(0, 143, 199, 0.18) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-hero-copy h1,
+  .life-map-loading-state h2,
+  .life-map-empty-state h2,
+  .life-map-summary-card p,
+  .life-map-card-heading span,
+  .life-map-feature-card h3,
+  .life-map-location-card strong,
+  .life-map-mood-metrics strong
+) {
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+:root[data-theme="bright"] :where(
+  .life-map-hero-copy p,
+  .life-map-hero-copy span,
+  .life-map-loading-state p,
+  .life-map-empty-state p,
+  .life-map-feature-card p,
+  .life-map-insight-card p,
+  .life-map-wide-section p,
+  .life-map-privacy-card p,
+  .life-map-muted
+) {
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
+}
+
+:root[data-theme="bright"] .life-map-mood-metrics span,
+:root[data-theme="bright"] .life-map-location-card span {
+  color: var(--accent-hover) !important;
+  -webkit-text-fill-color: var(--accent-hover) !important;
+  background: rgba(0, 143, 199, 0.1) !important;
+}
+
+@media (max-width: 760px) {
+  .app-layout.authenticated.ai-mode .life-map-loading-state {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .app-layout.authenticated.ai-mode .life-map-hero-actions .life-map-cta,
+  .app-layout.authenticated.ai-mode .life-map-hero-actions .life-map-secondary-action {
+    width: 100%;
+  }
+}
+
+/* Final unified Memory Node skin.
+   Mapbox owns `.marker-mapbox-anchor` positioning; do not set transform/animation there. */
+:root[data-theme="dark"] {
+  --marker-surface-top: rgba(20, 42, 67, 0.97);
+  --marker-surface-bottom: rgba(4, 13, 27, 0.96);
+  --marker-drop-shadow: rgba(0, 0, 0, 0.42);
+  --marker-rim: rgba(229, 252, 255, 0.18);
+  --marker-inner-glow: rgba(255, 255, 255, 0.12);
+  --marker-lower-depth: rgba(0, 0, 0, 0.32);
+  --marker-text: rgba(244, 254, 255, 0.98);
+  --marker-tooltip-bg: rgba(8, 18, 32, 0.97);
+  --marker-tooltip-border: rgba(140, 220, 255, 0.22);
+}
+
+:root[data-theme="bright"] {
+  --marker-surface-top: rgba(255, 255, 255, 0.99);
+  --marker-surface-bottom: rgba(229, 248, 255, 0.98);
+  --marker-drop-shadow: rgba(14, 116, 144, 0.24);
+  --marker-rim: rgba(14, 116, 144, 0.2);
+  --marker-inner-glow: rgba(255, 255, 255, 0.76);
+  --marker-lower-depth: rgba(14, 116, 144, 0.09);
+  --marker-text: #053d56;
+  --marker-tooltip-bg: rgba(255, 255, 255, 0.98);
+  --marker-tooltip-border: rgba(0, 143, 199, 0.22);
+}
+
+.marker-mapbox-anchor {
+  width: 72px !important;
+  height: 72px !important;
+  margin: 0 !important;
+  overflow: visible;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.marker-hit-area {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  pointer-events: auto;
+}
+
+.marker-visual {
+  transform: translate(var(--marker-offset-x, 0), var(--marker-offset-y, 0));
+  transform-origin: center center;
+  pointer-events: auto;
+}
+
+.memory-marker,
+.memory-stack-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.memory-marker {
+  width: 50px;
+  height: 50px;
+}
+
+.memory-marker.is-compact {
+  width: 44px;
+  height: 44px;
+}
+
+.memory-marker-aura,
+.memory-stack-aura {
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0.46;
+  pointer-events: none;
+  transform-origin: center center;
+  background:
+    radial-gradient(circle, rgba(var(--marker-rgb), 0.24) 0%, rgba(var(--marker-rgb), 0.1) 42%, transparent 74%);
+  animation: memoryAuraBreath 3.9s ease-in-out infinite;
+}
+
+.memory-marker-aura {
+  width: 44px;
+  height: 44px;
+}
+
+.memory-marker.is-selected .memory-marker-aura,
+.memory-stack-marker.is-selected .memory-stack-aura,
+.memory-stack-marker.is-expanded .memory-stack-aura {
+  opacity: 0.58;
+  background:
+    radial-gradient(circle, rgba(var(--marker-rgb), 0.3) 0%, rgba(var(--marker-rgb), 0.13) 44%, transparent 76%);
+}
+
+.memory-marker-orbit {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(var(--marker-rgb), 0.38);
+  border-radius: 999px;
+  opacity: 0.72;
+  pointer-events: none;
+  transform-origin: center center;
+  box-shadow:
+    inset 0 0 12px rgba(var(--marker-rgb), 0.08),
+    0 0 18px rgba(var(--marker-rgb), 0.16);
+  transition:
+    opacity 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.memory-marker-orbit::before,
+.memory-stack-rings::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background:
+    conic-gradient(
+      from 214deg,
+      transparent 0deg 138deg,
+      rgba(var(--marker-rgb), 0.5) 154deg,
+      rgba(255, 255, 255, 0.48) 166deg,
+      transparent 184deg 360deg
+    );
+  opacity: 0.5;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  pointer-events: none;
+  animation: memoryOrbitDrift 8.5s linear infinite;
+}
+
+.memory-marker-core,
+.memory-stack-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid rgba(var(--marker-rgb), 0.64);
+  border-radius: 999px;
+  color: var(--marker-text);
+  cursor: pointer;
+  isolation: isolate;
+  outline: none;
+  overflow: hidden;
+  transform-origin: center center;
+  background:
+    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, 0.42), transparent 22%),
+    linear-gradient(145deg, var(--marker-surface-top), var(--marker-surface-bottom));
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.62),
+    inset 0 -7px 14px var(--marker-lower-depth),
+    0 11px 24px var(--marker-drop-shadow),
+    0 0 22px rgba(var(--marker-rgb), 0.22);
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    filter 180ms ease;
+}
+
+.memory-marker-core {
+  width: 28px;
+  height: 28px;
+}
+
+.memory-marker.is-compact .memory-marker-core {
+  width: 24px;
+  height: 24px;
+}
+
+.memory-marker-core::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: 1;
+  border: 1px solid var(--marker-rim);
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 34% 22%, var(--marker-inner-glow), transparent 32%),
+    radial-gradient(circle at 72% 78%, rgba(var(--marker-rgb), 0.14), transparent 36%);
+  pointer-events: none;
+}
+
+.memory-marker-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, transparent 42%, var(--marker-lower-depth) 100%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 44%);
+  pointer-events: none;
+}
+
+.memory-marker-glass {
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  background:
+    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.62), transparent 28%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.16), transparent 58%);
+  opacity: 0.82;
+  pointer-events: none;
+}
+
+.memory-marker-dot {
+  position: relative;
+  z-index: 3;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgb(var(--marker-rgb));
+  box-shadow:
+    0 0 11px rgba(var(--marker-rgb), 0.72),
+    inset 0 1px 1px rgba(255, 255, 255, 0.72);
+}
+
+.memory-marker.is-compact .memory-marker-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.memory-marker-shine,
+.memory-stack-shine {
+  position: absolute;
+  z-index: 3;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.54);
+  filter: blur(0.35px);
+  transform: rotate(-22deg);
+  pointer-events: none;
+}
+
+.memory-marker-shine {
+  top: 6px;
+  left: 8px;
+  width: 10px;
+  height: 5px;
+}
+
+.memory-marker:hover .memory-marker-core,
+.memory-marker.is-hovered .memory-marker-core {
+  transform: scale(1.09);
+  border-color: rgba(var(--marker-rgb), 0.78);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.68),
+    inset 0 -7px 14px var(--marker-lower-depth),
+    0 13px 30px var(--marker-drop-shadow),
+    0 0 28px rgba(var(--marker-rgb), 0.34);
+}
+
+.memory-marker:hover .memory-marker-orbit,
+.memory-marker.is-hovered .memory-marker-orbit,
+.memory-marker.is-selected .memory-marker-orbit {
+  opacity: 1;
+  border-color: rgba(var(--marker-rgb), 0.62);
+  box-shadow:
+    inset 0 0 14px rgba(var(--marker-rgb), 0.1),
+    0 0 24px rgba(var(--marker-rgb), 0.24);
+}
+
+.memory-marker.is-selected .memory-marker-core {
+  transform: scale(1.14);
+  border-color: rgba(var(--marker-rgb), 0.92);
+  filter: saturate(1.08);
+}
+
+.memory-marker.is-selected .memory-marker-dot {
+  width: 9px;
+  height: 9px;
+  box-shadow:
+    0 0 14px rgba(var(--marker-rgb), 0.82),
+    0 0 24px rgba(var(--marker-rgb), 0.32),
+    inset 0 1px 1px rgba(255, 255, 255, 0.75);
+}
+
+.memory-marker.is-selected::after,
+.marker-mapbox-anchor:focus-visible .memory-marker::after {
+  content: "";
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--marker-rgb), 0.46);
+  box-shadow:
+    0 0 0 6px rgba(var(--marker-rgb), 0.11),
+    0 0 30px rgba(var(--marker-rgb), 0.32);
+  pointer-events: none;
+}
+
+.memory-stack-marker {
+  width: 60px;
+  height: 60px;
+}
+
+.memory-stack-aura {
+  width: 54px;
+  height: 54px;
+  background:
+    radial-gradient(circle, rgba(var(--marker-rgb), 0.22) 0%, rgba(var(--marker-rgb), 0.09) 46%, transparent 76%);
+}
+
+.memory-stack-core {
+  width: 38px;
+  height: 38px;
+  overflow: visible;
+  font-size: 0.86rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+
+.memory-stack-core::before,
+.memory-stack-core::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  z-index: -1;
+  border: 1px solid rgba(var(--marker-rgb), 0.2);
+  border-radius: inherit;
+  background: linear-gradient(145deg, var(--marker-surface-top), var(--marker-surface-bottom));
+  box-shadow: 0 7px 18px rgba(var(--marker-rgb), 0.08);
+  pointer-events: none;
+}
+
+.memory-stack-core::before {
+  transform: translate(3px, 3px) scale(0.98);
+  opacity: 0.82;
+}
+
+.memory-stack-core::after {
+  transform: translate(6px, 6px) scale(0.96);
+  opacity: 0.44;
+}
+
+.memory-stack-rings {
+  position: absolute;
+  inset: 5px;
+  border: 1px dashed rgba(var(--marker-rgb), 0.26);
+  border-radius: inherit;
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.memory-stack-rings::after {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border-radius: inherit;
+  background: radial-gradient(circle, rgba(var(--marker-rgb), 0.18), transparent 62%);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.memory-stack-count {
+  position: relative;
+  z-index: 2;
+  color: var(--marker-text);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 7px rgba(255, 255, 255, 0.28);
+}
+
+.memory-stack-shine {
+  top: 8px;
+  left: 10px;
+  width: 13px;
+  height: 6px;
+}
+
+.memory-stack-marker:hover .memory-stack-core,
+.memory-stack-marker.is-expanded .memory-stack-core,
+.memory-stack-marker.is-selected .memory-stack-core {
+  transform: scale(1.06);
+  border-color: rgba(var(--marker-rgb), 0.78);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.68),
+    inset 0 -7px 14px var(--marker-lower-depth),
+    0 14px 34px var(--marker-drop-shadow),
+    0 0 30px rgba(var(--marker-rgb), 0.32);
+}
+
+.memory-stack-marker.is-expanded::after,
+.memory-stack-marker.is-selected::after {
+  content: "";
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--marker-rgb), 0.42);
+  box-shadow: 0 0 0 7px rgba(var(--marker-rgb), 0.1);
+  pointer-events: none;
+}
+
+.marker-mapbox-anchor.is-selected {
+  z-index: 24;
+}
+
+.mapboxgl-popup.memory-marker-tooltip {
+  z-index: 30;
+}
+
+.mapboxgl-popup.memory-marker-tooltip .mapboxgl-popup-content {
+  display: grid;
+  gap: 4px;
+  min-width: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--marker-tooltip-border);
+  border-radius: 14px;
+  background: var(--marker-tooltip-bg);
+  color: var(--text-primary);
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(16px);
+  animation: markerTooltipIn 150ms ease-out both;
+}
+
+.mapboxgl-popup.memory-marker-tooltip strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mapboxgl-popup.memory-marker-tooltip span {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.mapboxgl-popup.memory-marker-tooltip .mapboxgl-popup-tip {
+  border-top-color: var(--marker-tooltip-bg);
+  border-bottom-color: var(--marker-tooltip-bg);
+}
+
+@keyframes memoryAuraBreath {
+  0%,
+  100% {
+    opacity: 0.34;
+    transform: scale(0.86);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.14);
+  }
+}
+
+@keyframes memoryOrbitDrift {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes markerTooltipIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memory-marker-aura,
+  .memory-stack-aura,
+  .memory-marker-orbit::before,
+  .memory-stack-rings::before,
+  .mapboxgl-popup.memory-marker-tooltip .mapboxgl-popup-content {
+    animation: none !important;
+  }
+
+  .memory-marker-core,
+  .memory-stack-core,
+  .memory-marker-orbit {
+    transition: none !important;
+  }
 }

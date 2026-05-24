@@ -14,6 +14,7 @@ import {
 import { useEffect, useState } from 'react';
 import { api } from '../api/client.js';
 import { fadeUpMotion, listItemMotion, pageFadeUp } from '../constants/animations.js';
+import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
 const loadingMessages = [
   '正在讀取你的日記...',
@@ -261,9 +262,9 @@ function LifeMapDashboard({ insight, onRegenerate }) {
           {safeInsight.locationInsights.length > 0 ? (
             safeInsight.locationInsights.map((item, index) => (
               <motion.article className="life-map-location-card" key={`${item.place}-${index}`} {...listItemMotion(index)}>
-                <strong>{item.place || '未命名地點'}</strong>
-                <span>{item.dominantMood || '未分類心情'}</span>
-                <p>{item.insight || '這個地點還需要更多日記，才能看出更清楚的模式。'}</p>
+                <strong>{normalizeTaiwanPlaceName(item.place) || '未命名地點'}</strong>
+                <span>{normalizeTaiwanPlaceName(item.dominantMood) || '未分類心情'}</span>
+                <p>{normalizeTaiwanPlaceName(item.insight) || '這個地點還需要更多日記，才能看出更清楚的模式。'}</p>
               </motion.article>
             ))
           ) : (
@@ -298,13 +299,22 @@ function normalizeInsight(value) {
   const moodTrend = value.moodTrend && typeof value.moodTrend === 'object' ? value.moodTrend : {};
 
   return {
-    summary: typeof value.summary === 'string' ? value.summary : '',
+    summary: typeof value.summary === 'string' ? normalizeTaiwanPlaceName(value.summary) : '',
     moodTrend: {
-      description: typeof moodTrend.description === 'string' ? moodTrend.description : '',
-      dominantMood: typeof moodTrend.dominantMood === 'string' ? moodTrend.dominantMood : '',
+      description: typeof moodTrend.description === 'string' ? normalizeTaiwanPlaceName(moodTrend.description) : '',
+      dominantMood: typeof moodTrend.dominantMood === 'string' ? normalizeTaiwanPlaceName(moodTrend.dominantMood) : '',
       averageIntensity: Number.isFinite(Number(moodTrend.averageIntensity)) ? Number(moodTrend.averageIntensity) : 0
     },
-    locationInsights: Array.isArray(value.locationInsights) ? value.locationInsights.filter(Boolean) : [],
+    locationInsights: Array.isArray(value.locationInsights)
+      ? value.locationInsights
+          .filter(Boolean)
+          .map((item) => ({
+            ...item,
+            place: normalizeTaiwanPlaceName(item.place || ''),
+            insight: normalizeTaiwanPlaceName(item.insight || ''),
+            dominantMood: normalizeTaiwanPlaceName(item.dominantMood || '')
+          }))
+      : [],
     behaviorPatterns: toStringList(value.behaviorPatterns),
     suggestions: toStringList(value.suggestions)
   };
@@ -312,7 +322,9 @@ function normalizeInsight(value) {
 
 function toStringList(value) {
   if (!Array.isArray(value)) return [];
-  return value.filter((item) => typeof item === 'string' && item.trim());
+  return value
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map((item) => normalizeTaiwanPlaceName(item));
 }
 
 function formatIntensity(value) {

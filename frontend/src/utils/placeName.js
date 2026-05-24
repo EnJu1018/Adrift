@@ -1,3 +1,5 @@
+import { normalizeTaiwanPlaceName } from './locationFormatter.js';
+
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const placeCache = new Map();
 
@@ -37,7 +39,7 @@ export async function resolvePlaceName(lat, lng) {
       features.find((item) => item.place_type?.includes('locality')) ||
       features.find((item) => item.place_type?.includes('district')) ||
       features[0];
-    const placeName = feature?.text_zh_Hant || feature?.text_zh || feature?.text || formatCoordinates(lat, lng);
+    const placeName = normalizeTaiwanPlaceName(feature?.text_zh_Hant || feature?.text_zh || feature?.text || formatCoordinates(lat, lng));
 
     placeCache.set(cacheKey, placeName);
     return placeName;

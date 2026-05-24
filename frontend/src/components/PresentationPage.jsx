@@ -1019,9 +1019,7 @@ const VisualOrb = memo(function VisualOrb({ compact = false }) {
     <div className={`presentation-visual ${compact ? 'compact' : ''}`} aria-hidden="true">
       <span className="presentation-map-ring ring-a" />
       <span className="presentation-map-ring ring-b" />
-      <span className="presentation-orb">
-        <img src="/adrift-icon.png" alt="" aria-hidden="true" />
-      </span>
+      <img className="presentation-orb" src="/adrift-icon.png" alt="" aria-hidden="true" />
       <span className="presentation-path path-a" />
       <span className="presentation-path path-b" />
       <span className="presentation-path path-c" />
