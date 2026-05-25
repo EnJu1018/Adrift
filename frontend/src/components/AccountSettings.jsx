@@ -33,7 +33,7 @@ const emptyPasswords = {
 };
 
 const allowedAvatarTypes = ['image/jpeg', 'image/png', 'image/webp'];
-const maxAvatarBytes = 2 * 1024 * 1024;
+const maxAvatarBytes = 10 * 1024 * 1024;
 const avatarCropSize = 300;
 const avatarOutputSize = 512;
 
@@ -191,16 +191,16 @@ export default function AccountSettings({
   }
 
   async function validateAvatarFile(file) {
-    if (!file) return '請選擇頭貼圖片';
-    if (!allowedAvatarTypes.includes(file.type)) return '頭貼僅支援 JPG、PNG、WebP';
-    if (file.size > maxAvatarBytes) return '頭貼檔案不可超過 2MB';
+    if (!file) return { error: '請選擇頭貼圖片', dimensions: null };
+    if (!allowedAvatarTypes.includes(file.type)) return { error: '頭貼僅支援 JPG、PNG、WebP', dimensions: null };
+    if (file.size > maxAvatarBytes) return { error: '頭貼檔案不可超過 10MB', dimensions: null };
 
     const dimensions = await getImageDimensions(file);
     if (dimensions.width < 128 || dimensions.height < 128) {
-      return '圖片尺寸太小，請上傳至少 128x128 的圖片';
+      return { error: '圖片尺寸太小，請上傳至少 128x128 的圖片', dimensions };
     }
 
-    return '';
+    return { error: '', dimensions };
   }
 
   async function handleAvatarChange(event) {
@@ -209,10 +209,10 @@ export default function AccountSettings({
 
     if (!file) return;
 
-    const error = await validateAvatarFile(file);
-    if (error) {
+    const validation = await validateAvatarFile(file);
+    if (validation.error) {
       resetAvatarDraft();
-      setAvatarError(error);
+      setAvatarError(validation.error);
       event.target.value = '';
       return;
     }
@@ -224,7 +224,8 @@ export default function AccountSettings({
       url,
       meta: {
         name: file.name,
-        size: formatFileSize(file.size)
+        size: formatFileSize(file.size),
+        dimensions: validation.dimensions
       }
     });
     setAvatarZoom(1);
@@ -400,7 +401,12 @@ export default function AccountSettings({
         <header className="settings-page-header">
           <div>
             <p className="eyebrow">Account Settings</p>
-            <h1 className="settings-page-title">帳號設定</h1>
+            <h1 className="settings-page-title" aria-label="帳號設定">
+              <span aria-hidden="true">帳</span>
+              <span aria-hidden="true">號</span>
+              <span aria-hidden="true">設</span>
+              <span aria-hidden="true">定</span>
+            </h1>
             <p className="settings-page-subtitle">管理你的個人資料、頭貼與帳號安全</p>
           </div>
           <button className="chip-button" type="button" onClick={onBack}>
@@ -450,7 +456,7 @@ export default function AccountSettings({
                   <UserAvatar user={user} size="xxl" />
                   <div>
                     <strong>頭貼</strong>
-                    <span>讓好友更容易認出你。支援 JPG、PNG、WebP，最大 2MB。</span>
+                    <span>讓好友更容易認出你。支援 JPG、PNG、WebP，最大 10MB。</span>
                     {avatarError && <em className="field-error">{avatarError}</em>}
                   </div>
                 </div>
@@ -732,7 +738,8 @@ export default function AccountSettings({
                       alt=""
                       draggable="false"
                       style={{
-                        transform: `translate(-50%, -50%) translate(${avatarOffset.x}px, ${avatarOffset.y}px) scale(${avatarZoom})`
+                        ...getAvatarPreviewStyle(avatarDraft.meta?.dimensions),
+                        transform: `translate(calc(-50% + ${avatarOffset.x}px), calc(-50% + ${avatarOffset.y}px)) scale(${avatarZoom})`
                       }}
                     />
                   )}
@@ -901,7 +908,10 @@ function createCroppedAvatarBlob(imageUrl, offset, zoom) {
       throw new Error('無法建立頭貼裁切畫布');
     }
 
-    const baseScale = Math.max(avatarCropSize / image.naturalWidth, avatarCropSize / image.naturalHeight);
+    context.fillStyle = '#f8fcff';
+    context.fillRect(0, 0, avatarOutputSize, avatarOutputSize);
+
+    const baseScale = Math.min(avatarCropSize / image.naturalWidth, avatarCropSize / image.naturalHeight);
     const displayWidth = image.naturalWidth * baseScale * zoom;
     const displayHeight = image.naturalHeight * baseScale * zoom;
     const ratio = avatarOutputSize / avatarCropSize;
@@ -925,6 +935,22 @@ function createCroppedAvatarBlob(imageUrl, offset, zoom) {
       );
     });
   });
+}
+
+function getAvatarPreviewStyle(dimensions) {
+  if (!dimensions?.width || !dimensions?.height) {
+    return {
+      width: `${avatarCropSize}px`,
+      height: `${avatarCropSize}px`
+    };
+  }
+
+  const baseScale = Math.min(avatarCropSize / dimensions.width, avatarCropSize / dimensions.height);
+
+  return {
+    width: `${dimensions.width * baseScale}px`,
+    height: `${dimensions.height * baseScale}px`
+  };
 }
 
 function loadImage(src) {

@@ -39,7 +39,7 @@ const avatarStorage = multer.diskStorage({
 
 const avatarUpload = multer({
   storage: avatarStorage,
-  limits: { fileSize: 2 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
     if (!allowedAvatarMimeTypes.has(file.mimetype)) {
       return callback(new Error('頭貼僅支援 JPG、PNG、WebP'));

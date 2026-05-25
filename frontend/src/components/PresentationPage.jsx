@@ -126,9 +126,9 @@ const frontendTech = [
 
 const backendTech = [
   ['Node.js / Express', '提供 REST API 與核心商業邏輯。'],
-  ['MongoDB Atlas / Mongoose', '儲存使用者、日記、好友關係與互動。'],
+  ['MongoDB Atlas', '儲存使用者、日記、好友關係與互動。'],
   ['JWT / bcrypt', '負責登入驗證與密碼安全。'],
-  ['GeoJSON / 2dsphere', '支援地點查詢與附近公開日記。'],
+  ['GeoJSON', '支援地點查詢與附近公開日記。'],
   ['Gemini API', '產生 Adrift Intelligence 生活洞察。']
 ];
 
@@ -1071,6 +1071,15 @@ function TechMap({ items, icon }) {
 }
 
 function formatSlashTitle(title) {
+  if (title === 'Node.js / Express') {
+    return (
+      <>
+        Node.js /<br />
+        Express
+      </>
+    );
+  }
+
   return title.replaceAll(' / ', '\u00A0/\u00A0');
 }
 
