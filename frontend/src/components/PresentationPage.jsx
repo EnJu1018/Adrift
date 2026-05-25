@@ -98,7 +98,7 @@ const socialCards = [
 const authenticityCards = [
   ['1 小時內', '發布後短時間內可修正內容。', <CheckCircle2 size={22} />],
   ['1 公里內', '仍接近原本地點才可編輯。', <MapPin size={22} />],
-  ['不可改位置', '建立時間與座標保留為真實核心。', <ShieldCheck size={22} />],
+  ['不可更改位置與內容', '建立時間與座標保留為真實核心。', <ShieldCheck size={22} />],
   ['保留版本', 'editHistory 保存編輯前內容。', <Layers3 size={22} />]
 ];
 
@@ -370,21 +370,21 @@ const systemTreeModules = [
     ]
   },
   {
-    title: '管理員系統',
-    tone: 'violet',
-    items: [
-      { title: 'user / admin / owner' },
-      { title: 'Admin Dashboard' },
-      { title: '使用者 / 日記管理' }
-    ]
-  },
-  {
     title: '通知提示',
     tone: 'amber',
     items: [
       { title: '通知 dropdown' },
       { title: 'Toast / inline message' },
       { title: '即時狀態回饋' }
+    ]
+  },
+  {
+    title: '管理員系統',
+    tone: 'violet',
+    items: [
+      { title: 'user / admin / owner' },
+      { title: 'Admin Dashboard' },
+      { title: '使用者 / 日記管理' }
     ]
   }
 ];
@@ -548,11 +548,14 @@ export default function PresentationPage() {
         style={{ transform: `translate3d(0, -${currentSlide * 100}vh, 0)` }}
       >
       <section className="presentation-cover presentation-section" id="cover" data-slide-index="0">
+        <SlideBrand />
         <div className="presentation-section-inner presentation-cover-inner">
           <div className="presentation-cover-copy">
             <p className="presentation-kicker">資管三B D2 · 專題口試展示</p>
-            <h1 className="cover-title-en">Adrift</h1>
-            <h2 className="cover-title-zh">漂流足跡</h2>
+            <div className="cover-title-lockup">
+              <h1 className="cover-title-en">Adrift</h1>
+              <h2 className="cover-title-zh">漂流足跡</h2>
+            </div>
             <p className="presentation-tagline">A map-based social diary where emotions drift across the world.</p>
             <p className="presentation-lead">結合地圖、日記、情緒、社交與 Adrift Intelligence 的互動式生活記錄平台。</p>
             <p className="presentation-advisors">張怡君老師、張瑋珊老師 共同指導</p>
@@ -675,7 +678,7 @@ export default function PresentationPage() {
         <div className="ux-principle-board">
           <article className="ux-principle-hero">
             <span><MapPin size={26} /></span>
-            <h3>記憶像光點，漂浮在地圖上</h3>
+            <h3>記憶像光點，<br />漂浮在地圖上</h3>
             <p>Adrift 以地圖承載日記，用玻璃質感、柔和動畫與清楚提示，讓使用者專注於地點、情緒與回憶本身。</p>
           </article>
           <div className="ux-principle-grid">
@@ -790,6 +793,7 @@ export default function PresentationPage() {
       </SlideSection>
 
       <section className="presentation-thanks presentation-section" id="thank-you" data-slide-index="19">
+        <SlideBrand />
         <div className="presentation-section-inner presentation-thanks-inner">
           <p>Thank you for listening</p>
           <h2>Adrift 漂流足跡</h2>
@@ -805,6 +809,15 @@ export default function PresentationPage() {
         onGoToNext={goToNextSlide}
       />
     </motion.main>
+  );
+}
+
+function SlideBrand() {
+  return (
+    <div className="presentation-slide-brand" aria-hidden="true">
+      <img src="/adrift-icon.png" alt="" />
+      <span>Adrift</span>
+    </div>
   );
 }
 
@@ -886,6 +899,7 @@ function SlideSection({ id, eyebrow, title, subtitle, children }) {
       data-slide-index={slideIndex >= 0 ? slideIndex : undefined}
       {...pageFadeUp}
     >
+      <SlideBrand />
       <div className="presentation-section-inner">
         <div className="presentation-section-heading">
           <p>{eyebrow}</p>
@@ -1041,7 +1055,7 @@ function TechMap({ items, icon }) {
       <div className="tech-map-items">
         {items.map(([title, text], index) => (
           <motion.article className="tech-map-node" key={title} {...listItemMotion(index)}>
-            <strong>{title}</strong>
+            <strong className={title.includes('/') ? 'no-break' : undefined}>{title}</strong>
             <p>{text}</p>
           </motion.article>
         ))}

@@ -1,13 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
-  Camera,
   Check,
   Copy,
   Eye,
   EyeOff,
   Lock,
-  Mail,
   Shield,
   Trash2,
   Upload,
@@ -21,8 +19,7 @@ import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
 
 const sections = [
-  { id: 'profile', label: '個人資料', icon: UserRound },
-  { id: 'avatar', label: '頭貼', icon: Camera },
+  { id: 'profile', label: '個人檔案', icon: UserRound },
   { id: 'security', label: '帳號安全', icon: Lock },
   { id: 'danger', label: '危險區域', icon: AlertTriangle }
 ];
@@ -37,6 +34,8 @@ const emptyPasswords = {
 
 const allowedAvatarTypes = ['image/jpeg', 'image/png', 'image/webp'];
 const maxAvatarBytes = 2 * 1024 * 1024;
+const avatarCropSize = 300;
+const avatarOutputSize = 512;
 
 export default function AccountSettings({
   user,
@@ -49,14 +48,16 @@ export default function AccountSettings({
   onDeleteAccount
 }) {
   const [activeSection, setActiveSection] = useState('profile');
+  const [editingField, setEditingField] = useState('');
   const [name, setName] = useState(user?.name || '');
   const [emailForm, setEmailForm] = useState({ email: user?.email || '', password: '' });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [deleteForm, setDeleteForm] = useState({ password: '', confirmText: '' });
-  const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState('');
+  const [avatarDraft, setAvatarDraft] = useState({ file: null, url: '', meta: null });
   const [avatarError, setAvatarError] = useState('');
-  const [avatarMeta, setAvatarMeta] = useState(null);
+  const [avatarCropOpen, setAvatarCropOpen] = useState(false);
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarOffset, setAvatarOffset] = useState({ x: 0, y: 0 });
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [touched, setTouched] = useState({});
   const [submitted, setSubmitted] = useState({});
@@ -65,6 +66,7 @@ export default function AccountSettings({
   const [loadingAction, setLoadingAction] = useState('');
   const [visiblePasswords, setVisiblePasswords] = useState(emptyPasswords);
   const avatarInputRef = useRef(null);
+  const cropDragRef = useRef(null);
 
   const joinedAt = useMemo(() => {
     if (!user?.createdAt) return '尚未同步';
@@ -88,11 +90,9 @@ export default function AccountSettings({
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  useEffect(() => {
-    return () => {
-      if (avatarPreview) URL.revokeObjectURL(avatarPreview);
-    };
-  }, [avatarPreview]);
+  useEffect(() => () => {
+    if (avatarDraft.url) URL.revokeObjectURL(avatarDraft.url);
+  }, [avatarDraft.url]);
 
   function showToast(message, type = 'success') {
     setToast({ id: `${Date.now()}-${message}`, message, type });
@@ -130,6 +130,20 @@ export default function AccountSettings({
 
   function togglePassword(field) {
     setVisiblePasswords((current) => ({ ...current, [field]: !current[field] }));
+  }
+
+  function startEditing(field) {
+    setEditingField(field);
+    setSubmitted((current) => ({ ...current, [field]: false }));
+  }
+
+  function cancelEditing() {
+    setEditingField('');
+    setName(user?.name || '');
+    setEmailForm({ email: user?.email || '', password: '' });
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setErrors({});
+    setTouched({});
   }
 
   function validateName(value = name) {
@@ -197,29 +211,100 @@ export default function AccountSettings({
 
     const error = await validateAvatarFile(file);
     if (error) {
-      setAvatarFile(null);
-      setAvatarMeta(null);
+      resetAvatarDraft();
       setAvatarError(error);
       event.target.value = '';
       return;
     }
 
-    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
-    setAvatarMeta({
-      name: file.name,
-      size: formatFileSize(file.size)
+    resetAvatarDraft();
+    const url = URL.createObjectURL(file);
+    setAvatarDraft({
+      file,
+      url,
+      meta: {
+        name: file.name,
+        size: formatFileSize(file.size)
+      }
+    });
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+    setAvatarCropOpen(true);
+  }
+
+  function resetAvatarDraft() {
+    setAvatarDraft((current) => {
+      if (current.url) URL.revokeObjectURL(current.url);
+      return { file: null, url: '', meta: null };
+    });
+    setAvatarZoom(1);
+    setAvatarOffset({ x: 0, y: 0 });
+    if (avatarInputRef.current) avatarInputRef.current.value = '';
+  }
+
+  function closeAvatarCrop() {
+    setAvatarCropOpen(false);
+    resetAvatarDraft();
+  }
+
+  function beginCropDrag(event) {
+    event.preventDefault();
+    const point = getPointerPoint(event);
+    cropDragRef.current = {
+      startX: point.x,
+      startY: point.y,
+      originX: avatarOffset.x,
+      originY: avatarOffset.y
+    };
+    window.addEventListener('pointermove', handleCropDrag);
+    window.addEventListener('pointerup', endCropDrag, { once: true });
+  }
+
+  function handleCropDrag(event) {
+    const drag = cropDragRef.current;
+    if (!drag) return;
+    setAvatarOffset({
+      x: clamp(drag.originX + event.clientX - drag.startX, -avatarCropSize, avatarCropSize),
+      y: clamp(drag.originY + event.clientY - drag.startY, -avatarCropSize, avatarCropSize)
     });
   }
 
-  function clearAvatarDraft() {
-    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
-    setAvatarFile(null);
-    setAvatarPreview('');
-    setAvatarMeta(null);
-    setAvatarError('');
-    if (avatarInputRef.current) avatarInputRef.current.value = '';
+  function endCropDrag() {
+    cropDragRef.current = null;
+    window.removeEventListener('pointermove', handleCropDrag);
+  }
+
+  async function submitCroppedAvatar() {
+    if (!avatarDraft.file || !avatarDraft.url) return;
+
+    try {
+      setLoadingAction('avatar');
+      const blob = await createCroppedAvatarBlob(avatarDraft.url, avatarOffset, avatarZoom);
+      const croppedFile = new File([blob], `avatar-${Date.now()}.webp`, { type: 'image/webp' });
+      const formData = new FormData();
+      formData.append('avatar', croppedFile);
+      const payload = await onUpdateAvatar(formData);
+      setAvatarCropOpen(false);
+      resetAvatarDraft();
+      showToast(payload.message || '頭貼已更新');
+    } catch (error) {
+      setAvatarError(error.message || '頭貼更新失敗');
+    } finally {
+      setLoadingAction('');
+    }
+  }
+
+  async function removeAvatar() {
+    try {
+      setLoadingAction('remove-avatar');
+      const payload = await onDeleteAvatar();
+      resetAvatarDraft();
+      showToast(payload.message || '頭貼已移除');
+    } catch (error) {
+      setAvatarError(error.message || '移除頭貼失敗');
+    } finally {
+      setLoadingAction('');
+    }
   }
 
   async function submitName(event) {
@@ -230,6 +315,7 @@ export default function AccountSettings({
     try {
       setLoadingAction('name');
       const payload = await onUpdateName(name.trim());
+      setEditingField('');
       showToast(payload.message || '使用者名稱已更新');
     } catch (error) {
       showToast(error.message || '更新名稱失敗', 'error');
@@ -252,6 +338,7 @@ export default function AccountSettings({
       const nextEmail = emailForm.email.trim().toLowerCase();
       const payload = await onUpdateEmail({ email: nextEmail, password: emailForm.password });
       setEmailForm({ email: nextEmail, password: '' });
+      setEditingField('');
       showToast(payload.message || 'Email 已更新');
     } catch (error) {
       showToast(error.message || '更新 Email 失敗', 'error');
@@ -274,45 +361,10 @@ export default function AccountSettings({
       setLoadingAction('password');
       const payload = await onUpdatePassword(passwordForm);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setEditingField('');
       showToast(payload.message || '密碼已更新');
     } catch (error) {
       showToast(error.message || '更新密碼失敗', 'error');
-    } finally {
-      setLoadingAction('');
-    }
-  }
-
-  async function submitAvatar() {
-    if (!avatarFile) return;
-
-    const error = await validateAvatarFile(avatarFile);
-    if (error) {
-      setAvatarError(error);
-      return;
-    }
-
-    try {
-      setLoadingAction('avatar');
-      const formData = new FormData();
-      formData.append('avatar', avatarFile);
-      const payload = await onUpdateAvatar(formData);
-      clearAvatarDraft();
-      showToast(payload.message || '頭貼已更新');
-    } catch (uploadError) {
-      setAvatarError(uploadError.message || '頭貼更新失敗');
-    } finally {
-      setLoadingAction('');
-    }
-  }
-
-  async function removeAvatar() {
-    try {
-      setLoadingAction('remove-avatar');
-      const payload = await onDeleteAvatar();
-      clearAvatarDraft();
-      showToast(payload.message || '頭貼已移除');
-    } catch (error) {
-      setAvatarError(error.message || '移除頭貼失敗');
     } finally {
       setLoadingAction('');
     }
@@ -345,11 +397,11 @@ export default function AccountSettings({
       <ToastViewport toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="settings-page-content">
-        <header className="settings-page-hero">
+        <header className="settings-page-header">
           <div>
             <p className="eyebrow">Account Settings</p>
-            <h1>帳號設定</h1>
-            <span>管理你的個人資料、頭貼與帳號安全。</span>
+            <h1 className="settings-page-title">帳號設定</h1>
+            <p className="settings-page-subtitle">管理你的個人資料、頭貼與帳號安全</p>
           </div>
           <button className="chip-button" type="button" onClick={onBack}>
             返回地圖
@@ -359,7 +411,7 @@ export default function AccountSettings({
         <div className="settings-layout">
           <aside className="settings-sidebar glass">
             <div className="settings-profile-card">
-              <UserAvatar user={user} src={avatarPreview} size="xl" />
+              <UserAvatar user={user} size="xl" />
               <div>
                 <strong>{user?.name || '使用者'}</strong>
                 <span>@{user?.userCode || 'user'}</span>
@@ -389,104 +441,20 @@ export default function AccountSettings({
             <SettingsCard
               id="profile"
               icon={<UserRound size={19} />}
-              title="個人資料"
-              description="你的公開名稱、Email 與好友搜尋 ID。"
+              title="個人檔案"
+              description="你的公開名稱、頭貼與好友搜尋 ID。"
               visible={activeSection === 'profile'}
             >
-              <div className="settings-info-grid">
-                <InfoItem label="使用者名稱" value={user?.name || '尚未設定'} />
-                <InfoItem label="Email" value={user?.email || '尚未設定'} />
-                <InfoItem
-                  label="使用者 ID"
-                  value={`@${user?.userCode || '尚未設定'}`}
-                  action={
-                    <button className="copy-mini-button" type="button" onClick={copyUserCode} disabled={!user?.userCode}>
-                      <Copy size={13} />
-                      複製
-                    </button>
-                  }
-                />
-                <InfoItem label="角色" value={roleLabel} />
-                <InfoItem label="加入日期" value={joinedAt} />
-              </div>
-
-              <form className="settings-form wide" onSubmit={submitName} noValidate>
-                <label>
-                  使用者名稱
-                  <input
-                    value={name}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setName(value);
-                      if (!validateName(value)) updateError('name', '');
-                    }}
-                    onBlur={() => markBlur('name', validateName)}
-                    aria-invalid={shouldShow('name', 'name')}
-                    placeholder="你的顯示名稱"
-                  />
-                  {shouldShow('name', 'name') && <span className="field-error">{errors.name}</span>}
-                </label>
-                <button className="primary-button" disabled={!nameDirty || loadingAction === 'name'}>
-                  {loadingAction === 'name' && <span className="button-spinner dark" />}
-                  儲存名稱
-                </button>
-              </form>
-
-              <form className="settings-form wide" onSubmit={submitEmail} noValidate>
-                <label>
-                  Email
-                  <input
-                    type="email"
-                    value={emailForm.email}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setEmailForm((current) => ({ ...current, email: value }));
-                      if (!validateEmail(value)) updateError('email', '');
-                    }}
-                    onBlur={() => markBlur('email', validateEmail)}
-                    aria-invalid={shouldShow('email', 'email')}
-                    placeholder="newemail@gmail.com"
-                  />
-                  {shouldShow('email', 'email') && <span className="field-error">{errors.email}</span>}
-                </label>
-                <label>
-                  目前密碼
-                  <PasswordInput
-                    visible={visiblePasswords.emailPassword}
-                    onToggle={() => togglePassword('emailPassword')}
-                    value={emailForm.password}
-                    onChange={(event) => {
-                      setEmailForm((current) => ({ ...current, password: event.target.value }));
-                      if (event.target.value) updateError('emailPassword', '');
-                    }}
-                    onBlur={() => markBlur('emailPassword', () => validateRequiredPassword(emailForm.password))}
-                    placeholder="修改 Email 需輸入目前密碼"
-                    invalid={shouldShow('emailPassword', 'email')}
-                  />
-                  {shouldShow('emailPassword', 'email') && <span className="field-error">{errors.emailPassword}</span>}
-                </label>
-                <button className="primary-button" disabled={!emailDirty || !emailForm.password || loadingAction === 'email'}>
-                  {loadingAction === 'email' && <span className="button-spinner dark" />}
-                  更新 Email
-                </button>
-              </form>
-            </SettingsCard>
-
-            <SettingsCard
-              id="avatar"
-              icon={<Camera size={19} />}
-              title="用戶頭貼"
-              description="上傳一張清楚的個人頭貼，會同步顯示在 Navbar、好友與動態中。"
-              visible={activeSection === 'avatar'}
-            >
-              <div className="avatar-settings-card">
-                <div className="avatar-preview-wrap">
-                  <UserAvatar user={user} src={avatarPreview} size="xxl" />
-                  <span>圓形預覽</span>
+              <div className="settings-profile-summary">
+                <div className="settings-avatar-feature">
+                  <UserAvatar user={user} size="xxl" />
+                  <div>
+                    <strong>頭貼</strong>
+                    <span>讓好友更容易認出你。支援 JPG、PNG、WebP，最大 2MB。</span>
+                    {avatarError && <em className="field-error">{avatarError}</em>}
+                  </div>
                 </div>
-                <div className="avatar-upload-panel">
-                  <strong>支援 JPG、PNG、WebP，最大 2MB。</strong>
-                  <p>建議使用 512x512 圖片；最小尺寸為 128x128。</p>
+                <div className="settings-avatar-actions">
                   <input
                     ref={avatarInputRef}
                     className="visually-hidden"
@@ -494,41 +462,115 @@ export default function AccountSettings({
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handleAvatarChange}
                   />
-                  <div className="avatar-action-row">
-                    <button className="secondary-button" type="button" onClick={() => avatarInputRef.current?.click()}>
-                      <Upload size={16} />
-                      選擇圖片
+                  <button className="secondary-button" type="button" onClick={() => avatarInputRef.current?.click()}>
+                    <Upload size={16} />
+                    上傳新頭貼
+                  </button>
+                  {user?.avatar && (
+                    <button
+                      className="ghost-button"
+                      type="button"
+                      onClick={removeAvatar}
+                      disabled={loadingAction === 'remove-avatar'}
+                    >
+                      {loadingAction === 'remove-avatar' ? <span className="button-spinner" /> : <X size={16} />}
+                      移除頭貼
                     </button>
-                    {user?.avatar && (
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        onClick={removeAvatar}
-                        disabled={loadingAction === 'remove-avatar'}
-                      >
-                        {loadingAction === 'remove-avatar' ? <span className="button-spinner" /> : <X size={16} />}
-                        移除頭貼
-                      </button>
-                    )}
-                  </div>
-                  {avatarMeta && (
-                    <div className="avatar-file-meta">
-                      <Check size={15} />
-                      <span>{avatarMeta.name}</span>
-                      <small>{avatarMeta.size}</small>
-                    </div>
                   )}
-                  {avatarError && <span className="field-error">{avatarError}</span>}
-                  <div className="avatar-save-row">
-                    <button className="primary-button" type="button" onClick={submitAvatar} disabled={!avatarFile || loadingAction === 'avatar'}>
-                      {loadingAction === 'avatar' && <span className="button-spinner dark" />}
-                      儲存頭貼
-                    </button>
-                    <button className="ghost-button" type="button" onClick={clearAvatarDraft} disabled={!avatarFile}>
-                      取消選取
-                    </button>
-                  </div>
                 </div>
+              </div>
+
+              <div className="settings-row-list">
+                <SettingsRow
+                  label="使用者名稱"
+                  value={user?.name || '尚未設定'}
+                  actionLabel="編輯"
+                  onAction={() => startEditing('name')}
+                  isEditing={editingField === 'name'}
+                >
+                  <form className="settings-inline-edit" onSubmit={submitName} noValidate>
+                    <label>
+                      <span className="visually-hidden">使用者名稱</span>
+                      <input
+                        value={name}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setName(value);
+                          if (!validateName(value)) updateError('name', '');
+                        }}
+                        onBlur={() => markBlur('name', validateName)}
+                        aria-invalid={shouldShow('name', 'name')}
+                        placeholder="你的顯示名稱"
+                      />
+                      {shouldShow('name', 'name') && <span className="field-error">{errors.name}</span>}
+                    </label>
+                    <InlineActions
+                      loading={loadingAction === 'name'}
+                      disabled={!nameDirty || loadingAction === 'name'}
+                      onCancel={cancelEditing}
+                    />
+                  </form>
+                </SettingsRow>
+
+                <SettingsRow
+                  label="Email"
+                  value={user?.email || '尚未設定'}
+                  actionLabel="編輯"
+                  onAction={() => startEditing('email')}
+                  isEditing={editingField === 'email'}
+                >
+                  <form className="settings-inline-edit email-edit" onSubmit={submitEmail} noValidate>
+                    <label>
+                      <span>Email</span>
+                      <input
+                        type="email"
+                        value={emailForm.email}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setEmailForm((current) => ({ ...current, email: value }));
+                          if (!validateEmail(value)) updateError('email', '');
+                        }}
+                        onBlur={() => markBlur('email', validateEmail)}
+                        aria-invalid={shouldShow('email', 'email')}
+                        placeholder="newemail@gmail.com"
+                      />
+                      {shouldShow('email', 'email') && <span className="field-error">{errors.email}</span>}
+                    </label>
+                    <label>
+                      <span>目前密碼</span>
+                      <PasswordInput
+                        visible={visiblePasswords.emailPassword}
+                        onToggle={() => togglePassword('emailPassword')}
+                        value={emailForm.password}
+                        onChange={(event) => {
+                          setEmailForm((current) => ({ ...current, password: event.target.value }));
+                          if (event.target.value) updateError('emailPassword', '');
+                        }}
+                        onBlur={() => markBlur('emailPassword', () => validateRequiredPassword(emailForm.password))}
+                        placeholder="修改 Email 需輸入目前密碼"
+                        invalid={shouldShow('emailPassword', 'email')}
+                      />
+                      {shouldShow('emailPassword', 'email') && <span className="field-error">{errors.emailPassword}</span>}
+                    </label>
+                    <InlineActions
+                      loading={loadingAction === 'email'}
+                      disabled={!emailDirty || !emailForm.password || loadingAction === 'email'}
+                      onCancel={cancelEditing}
+                      saveLabel="更新"
+                    />
+                  </form>
+                </SettingsRow>
+
+                <SettingsRow
+                  label="使用者 ID"
+                  value={`@${user?.userCode || '尚未設定'}`}
+                  actionLabel="複製"
+                  actionIcon={<Copy size={14} />}
+                  onAction={copyUserCode}
+                  actionDisabled={!user?.userCode}
+                />
+                <SettingsRow label="角色" value={roleLabel} />
+                <SettingsRow label="加入日期" value={joinedAt} />
               </div>
             </SettingsCard>
 
@@ -536,66 +578,78 @@ export default function AccountSettings({
               id="security"
               icon={<Shield size={19} />}
               title="帳號安全"
-              description="定期更新密碼，保護你的日記與好友連結。"
+              description="密碼不會直接顯示，點擊編輯後才開啟修改表單。"
               visible={activeSection === 'security'}
             >
-              <form className="settings-form security-form" onSubmit={submitPassword} noValidate>
-                <label>
-                  目前密碼
-                  <PasswordInput
-                    visible={visiblePasswords.currentPassword}
-                    onToggle={() => togglePassword('currentPassword')}
-                    value={passwordForm.currentPassword}
-                    onChange={(event) => {
-                      setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }));
-                      if (event.target.value) updateError('currentPassword', '');
-                    }}
-                    onBlur={() => markBlur('currentPassword', () => validateRequiredPassword(passwordForm.currentPassword))}
-                    placeholder="目前密碼"
-                    invalid={shouldShow('currentPassword', 'password')}
-                  />
-                  {shouldShow('currentPassword', 'password') && <span className="field-error">{errors.currentPassword}</span>}
-                </label>
-                <label>
-                  新密碼
-                  <PasswordInput
-                    visible={visiblePasswords.newPassword}
-                    onToggle={() => togglePassword('newPassword')}
-                    value={passwordForm.newPassword}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setPasswordForm((current) => ({ ...current, newPassword: value }));
-                      if (!validateNewPassword(value)) updateError('newPassword', '');
-                      if (!validateConfirmPassword(passwordForm.confirmPassword, value)) updateError('confirmPassword', '');
-                    }}
-                    onBlur={() => markBlur('newPassword', validateNewPassword)}
-                    placeholder="至少 6 個字元"
-                    invalid={shouldShow('newPassword', 'password')}
-                  />
-                  {shouldShow('newPassword', 'password') && <span className="field-error">{errors.newPassword}</span>}
-                </label>
-                <label>
-                  確認新密碼
-                  <PasswordInput
-                    visible={visiblePasswords.confirmPassword}
-                    onToggle={() => togglePassword('confirmPassword')}
-                    value={passwordForm.confirmPassword}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setPasswordForm((current) => ({ ...current, confirmPassword: value }));
-                      if (!validateConfirmPassword(value)) updateError('confirmPassword', '');
-                    }}
-                    onBlur={() => markBlur('confirmPassword', validateConfirmPassword)}
-                    placeholder="再次輸入新密碼"
-                    invalid={shouldShow('confirmPassword', 'password')}
-                  />
-                  {shouldShow('confirmPassword', 'password') && <span className="field-error">{errors.confirmPassword}</span>}
-                </label>
-                <button className="primary-button" disabled={loadingAction === 'password'}>
-                  {loadingAction === 'password' && <span className="button-spinner dark" />}
-                  更新密碼
-                </button>
-              </form>
+              <div className="settings-row-list">
+                <SettingsRow
+                  label="修改密碼"
+                  value="建議定期更新密碼，保護你的日記與好友連結。"
+                  actionLabel="編輯"
+                  onAction={() => startEditing('password')}
+                  isEditing={editingField === 'password'}
+                >
+                  <form className="settings-inline-edit password-edit" onSubmit={submitPassword} noValidate>
+                    <label>
+                      <span>目前密碼</span>
+                      <PasswordInput
+                        visible={visiblePasswords.currentPassword}
+                        onToggle={() => togglePassword('currentPassword')}
+                        value={passwordForm.currentPassword}
+                        onChange={(event) => {
+                          setPasswordForm((current) => ({ ...current, currentPassword: event.target.value }));
+                          if (event.target.value) updateError('currentPassword', '');
+                        }}
+                        onBlur={() => markBlur('currentPassword', () => validateRequiredPassword(passwordForm.currentPassword))}
+                        placeholder="目前密碼"
+                        invalid={shouldShow('currentPassword', 'password')}
+                      />
+                      {shouldShow('currentPassword', 'password') && <span className="field-error">{errors.currentPassword}</span>}
+                    </label>
+                    <label>
+                      <span>新密碼</span>
+                      <PasswordInput
+                        visible={visiblePasswords.newPassword}
+                        onToggle={() => togglePassword('newPassword')}
+                        value={passwordForm.newPassword}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPasswordForm((current) => ({ ...current, newPassword: value }));
+                          if (!validateNewPassword(value)) updateError('newPassword', '');
+                          if (!validateConfirmPassword(passwordForm.confirmPassword, value)) updateError('confirmPassword', '');
+                        }}
+                        onBlur={() => markBlur('newPassword', validateNewPassword)}
+                        placeholder="至少 6 個字元"
+                        invalid={shouldShow('newPassword', 'password')}
+                      />
+                      {shouldShow('newPassword', 'password') && <span className="field-error">{errors.newPassword}</span>}
+                    </label>
+                    <label>
+                      <span>確認新密碼</span>
+                      <PasswordInput
+                        visible={visiblePasswords.confirmPassword}
+                        onToggle={() => togglePassword('confirmPassword')}
+                        value={passwordForm.confirmPassword}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setPasswordForm((current) => ({ ...current, confirmPassword: value }));
+                          if (!validateConfirmPassword(value)) updateError('confirmPassword', '');
+                        }}
+                        onBlur={() => markBlur('confirmPassword', validateConfirmPassword)}
+                        placeholder="再次輸入新密碼"
+                        invalid={shouldShow('confirmPassword', 'password')}
+                      />
+                      {shouldShow('confirmPassword', 'password') && <span className="field-error">{errors.confirmPassword}</span>}
+                    </label>
+                    <InlineActions
+                      loading={loadingAction === 'password'}
+                      disabled={loadingAction === 'password'}
+                      onCancel={cancelEditing}
+                      saveLabel="更新密碼"
+                    />
+                  </form>
+                </SettingsRow>
+              </div>
             </SettingsCard>
 
             <SettingsCard
@@ -606,7 +660,11 @@ export default function AccountSettings({
               visible={activeSection === 'danger'}
               danger
             >
-              <form className="settings-form danger-form" onSubmit={submitDelete} noValidate>
+              <form className="settings-danger-panel" onSubmit={submitDelete} noValidate>
+                <div>
+                  <strong>刪除帳號</strong>
+                  <span>這是不可逆操作，請確認後再進行。</span>
+                </div>
                 <label>
                   目前密碼
                   <PasswordInput
@@ -647,6 +705,77 @@ export default function AccountSettings({
           </main>
         </div>
       </div>
+
+      <AnimatePresence>
+        {avatarCropOpen && (
+          <motion.div className="modal-backdrop" {...modalBackdropMotion}>
+            <motion.div className="avatar-crop-modal" {...modalPopMotion}>
+              <header>
+                <div>
+                  <h3>調整頭貼</h3>
+                  <p>拖曳圖片調整位置，使用滑桿調整縮放。</p>
+                </div>
+                <button className="icon-button" type="button" onClick={closeAvatarCrop} aria-label="關閉頭貼調整">
+                  <X size={18} />
+                </button>
+              </header>
+
+              <div className="avatar-crop-stage">
+                <div
+                  className="avatar-crop-frame"
+                  onPointerDown={beginCropDrag}
+                  role="presentation"
+                >
+                  {avatarDraft.url && (
+                    <img
+                      src={avatarDraft.url}
+                      alt=""
+                      draggable="false"
+                      style={{
+                        transform: `translate(-50%, -50%) translate(${avatarOffset.x}px, ${avatarOffset.y}px) scale(${avatarZoom})`
+                      }}
+                    />
+                  )}
+                  <span className="avatar-crop-mask" />
+                </div>
+                {avatarDraft.meta && (
+                  <div className="avatar-file-meta">
+                    <Check size={15} />
+                    <span>{avatarDraft.meta.name}</span>
+                    <small>{avatarDraft.meta.size}</small>
+                  </div>
+                )}
+              </div>
+
+              <label className="avatar-zoom-control">
+                <span>縮放</span>
+                <input
+                  className="mood-intensity-slider"
+                  type="range"
+                  min="1"
+                  max="3"
+                  step="0.01"
+                  value={avatarZoom}
+                  onChange={(event) => setAvatarZoom(Number(event.target.value))}
+                  style={{ '--slider-progress': `${((avatarZoom - 1) / 2) * 100}%` }}
+                />
+              </label>
+
+              {avatarError && <span className="field-error">{avatarError}</span>}
+
+              <div className="modal-actions">
+                <button className="secondary-button" type="button" onClick={closeAvatarCrop}>
+                  取消
+                </button>
+                <button className="primary-button" type="button" onClick={submitCroppedAvatar} disabled={loadingAction === 'avatar'}>
+                  {loadingAction === 'avatar' && <span className="button-spinner dark" />}
+                  儲存頭貼
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {deleteConfirmOpen && (
@@ -695,12 +824,33 @@ function SettingsCard({ id, icon, title, description, visible, danger = false, c
   );
 }
 
-function InfoItem({ label, value, action }) {
+function SettingsRow({ label, value, actionLabel, actionIcon, onAction, actionDisabled, isEditing, children }) {
   return (
-    <div className="settings-info-item">
-      <span>{label}</span>
-      <strong title={value}>{value}</strong>
-      {action}
+    <div className={`settings-row ${isEditing ? 'is-editing' : ''}`}>
+      <span className="settings-row-label">{label}</span>
+      <div className="settings-row-value">
+        {isEditing ? children : <strong title={typeof value === 'string' ? value : undefined}>{value}</strong>}
+      </div>
+      {!isEditing && actionLabel && (
+        <button className="settings-row-action" type="button" onClick={onAction} disabled={actionDisabled}>
+          {actionIcon}
+          {actionLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function InlineActions({ loading, disabled, onCancel, saveLabel = '儲存' }) {
+  return (
+    <div className="settings-inline-actions">
+      <button className="ghost-button" type="button" onClick={onCancel}>
+        取消
+      </button>
+      <button className="primary-button" type="submit" disabled={disabled}>
+        {loading && <span className="button-spinner dark" />}
+        {saveLabel}
+      </button>
     </div>
   );
 }
@@ -738,6 +888,60 @@ function getImageDimensions(file) {
     };
     image.src = url;
   }).catch(() => ({ width: 0, height: 0 }));
+}
+
+function createCroppedAvatarBlob(imageUrl, offset, zoom) {
+  return loadImage(imageUrl).then((image) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = avatarOutputSize;
+    canvas.height = avatarOutputSize;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('無法建立頭貼裁切畫布');
+    }
+
+    const baseScale = Math.max(avatarCropSize / image.naturalWidth, avatarCropSize / image.naturalHeight);
+    const displayWidth = image.naturalWidth * baseScale * zoom;
+    const displayHeight = image.naturalHeight * baseScale * zoom;
+    const ratio = avatarOutputSize / avatarCropSize;
+    const drawX = (avatarCropSize / 2 + offset.x - displayWidth / 2) * ratio;
+    const drawY = (avatarCropSize / 2 + offset.y - displayHeight / 2) * ratio;
+    const drawWidth = displayWidth * ratio;
+    const drawHeight = displayHeight * ratio;
+
+    context.fillStyle = '#ffffff';
+    context.fillRect(0, 0, avatarOutputSize, avatarOutputSize);
+    context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) resolve(blob);
+          else reject(new Error('頭貼裁切失敗'));
+        },
+        'image/webp',
+        0.9
+      );
+    });
+  });
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('無法讀取頭貼圖片'));
+    image.src = src;
+  });
+}
+
+function getPointerPoint(event) {
+  return { x: event.clientX, y: event.clientY };
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
 }
 
 function formatFileSize(bytes) {
