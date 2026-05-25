@@ -679,7 +679,10 @@ export default function PresentationPage() {
           <article className="ux-principle-hero">
             <span><MapPin size={26} /></span>
             <h3>記憶像光點，<br />漂浮在地圖上</h3>
-            <p>Adrift 以地圖承載日記，用玻璃質感、柔和動畫與清楚提示，讓使用者專注於地點、情緒與回憶本身。</p>
+            <p>
+              Adrift 以地圖承載日記，用玻璃質感、柔和動畫與清楚提示，<br />
+              讓使用者專注於地點、<span className="no-break">情緒與回憶本身。</span>
+            </p>
           </article>
           <div className="ux-principle-grid">
             {uxPrinciples.map(([title, text, icon], index) => (
@@ -1024,8 +1027,11 @@ function PresentationSystemTree({ rootTitle, modules, compact = false, compactCo
             <div className="system-module-items">
               {module.items.map((item) => (
                 <div className="system-feature-chip" key={item.title}>
-                  <strong>{item.title}</strong>
-                  {item.leaves?.length > 0 && <span>{item.leaves.join(' · ')}</span>}
+                  <span className="system-feature-dot" aria-hidden="true" />
+                  <div className="system-feature-copy">
+                    <strong>{item.title}</strong>
+                    {item.leaves?.length > 0 && <span>{item.leaves.join(' · ')}</span>}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1055,13 +1061,17 @@ function TechMap({ items, icon }) {
       <div className="tech-map-items">
         {items.map(([title, text], index) => (
           <motion.article className="tech-map-node" key={title} {...listItemMotion(index)}>
-            <strong className={title.includes('/') ? 'no-break' : undefined}>{title}</strong>
+            <strong className="tech-map-title">{formatSlashTitle(title)}</strong>
             <p>{text}</p>
           </motion.article>
         ))}
       </div>
     </div>
   );
+}
+
+function formatSlashTitle(title) {
+  return title.replaceAll(' / ', '\u00A0/\u00A0');
 }
 
 const VisualOrb = memo(function VisualOrb({ compact = false }) {

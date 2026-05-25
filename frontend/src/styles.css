@@ -15199,9 +15199,9 @@ input.mood-intensity-slider {
   z-index: 8;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   color: var(--text-primary);
-  font-size: 0.95rem;
+  font-size: 1.03rem;
   font-weight: 900;
   letter-spacing: 0.01em;
   pointer-events: none;
@@ -15209,8 +15209,8 @@ input.mood-intensity-slider {
 
 .presentation-slide-brand img {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 38px;
+  height: 38px;
   object-fit: contain;
   filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.16));
 }
@@ -15263,6 +15263,21 @@ input.mood-intensity-slider {
 .presentation-member-grid {
   gap: 14px 16px;
   max-width: 740px;
+}
+
+.presentation-advisors,
+.presentation-member-grid {
+  width: min(740px, 100%);
+}
+
+.presentation-advisors {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 26px;
+  padding: 0 24px;
+  font-size: clamp(1.2rem, 1.22vw, 1.42rem);
 }
 
 .presentation-member-grid span {
@@ -15327,13 +15342,16 @@ input.mood-intensity-slider {
   align-self: start;
 }
 
-#architecture .module-node,
-#architecture .system-feature-chip strong {
+#architecture .module-node {
   font-weight: 950;
 }
 
 #architecture .system-feature-chip {
   align-content: start;
+}
+
+#architecture .system-feature-chip strong {
+  font-weight: 720;
 }
 
 #frontend-tech .tech-map-node,
@@ -15347,8 +15365,9 @@ input.mood-intensity-slider {
 }
 
 #frontend-tech .tech-map-node strong,
-#backend-tech .tech-map-node strong {
-  white-space: nowrap;
+#backend-tech .tech-map-node strong,
+.tech-map-title {
+  white-space: normal;
 }
 
 #frontend-tech .tech-map-node p,
@@ -15397,6 +15416,81 @@ input.mood-intensity-slider {
   #backend-tech .tech-map-node strong,
   .presentation-page .no-break {
     white-space: normal;
+  }
+}
+
+/* Presentation final detail pass: larger brand mark, cleaner architecture bullets, and safer line breaks. */
+.presentation-slide-brand {
+  gap: 11px;
+  font-size: 1.08rem;
+}
+
+.presentation-slide-brand img {
+  width: 42px;
+  height: 42px;
+}
+
+.presentation-system-tree .system-feature-chip {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: 9px;
+}
+
+.presentation-system-tree .system-feature-dot {
+  display: block !important;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.47em;
+  border-radius: 999px;
+  background: var(--module-accent, rgba(121, 241, 220, 0.68));
+  box-shadow: 0 0 12px var(--module-accent, rgba(121, 241, 220, 0.28));
+  flex-shrink: 0;
+}
+
+.presentation-system-tree .system-feature-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.presentation-system-tree .system-feature-copy > strong {
+  font-weight: 700;
+}
+
+.presentation-system-tree.compact-chart .system-feature-copy > span {
+  display: none;
+}
+
+#architecture .module-node {
+  font-weight: 950;
+}
+
+#architecture .system-feature-copy > strong {
+  font-weight: 680;
+}
+
+.tech-map-title {
+  white-space: normal !important;
+  overflow-wrap: normal;
+  word-break: keep-all;
+}
+
+#ux .ux-principle-hero p {
+  max-width: 690px;
+}
+
+#ux .ux-principle-hero p .no-break {
+  white-space: nowrap;
+}
+
+@media (max-width: 980px) {
+  .presentation-slide-brand {
+    font-size: 0.9rem;
+  }
+
+  .presentation-slide-brand img {
+    width: 30px;
+    height: 30px;
   }
 }
 
