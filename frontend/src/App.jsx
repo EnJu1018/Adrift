@@ -34,9 +34,9 @@ function getInitialTheme() {
   try {
     const savedTheme = localStorage.getItem(THEME_KEY);
     if (savedTheme === 'lightened') return 'bright';
-    return themes.includes(savedTheme) ? savedTheme : 'dark';
+    return themes.includes(savedTheme) ? savedTheme : 'bright';
   } catch {
-    return 'dark';
+    return 'bright';
   }
 }
 
@@ -123,7 +123,7 @@ export default function App() {
   const isSettingsPage = currentPath === '/settings/account';
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
-  const isPresentationPage = currentPath === '/presentation';
+  const isPresentationPage = currentPath === '/presentation' || currentPath === '/presentation/';
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {

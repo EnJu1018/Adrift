@@ -413,7 +413,35 @@ const teamRows = [
   ['張惠芯', '圖形繪製、文書資料處理、協助手機版程式製作'],
   ['洪藝文', '圖形繪製、文書資料處理、協助手機版程式製作'],
   ['王浩宇', '圖形繪製、手機版程式製作'],
-  ['陳恩儒', '電腦版程式製作；網站版補充：前端、後端 API、MongoDB、Mapbox、好友系統、Admin / Owner、Adrift Intelligence']
+  ['陳恩儒', '電腦版程式製作；網站版整合開發與部署']
+];
+
+const governanceRoles = [
+  {
+    role: 'User',
+    title: '一般使用者',
+    text: '記錄地圖日記、管理好友、使用 Adrift Intelligence。',
+    icon: <Users size={24} />
+  },
+  {
+    role: 'Admin',
+    title: '平台管理員',
+    text: '檢視使用者與日記資料，協助維護內容安全。',
+    icon: <ShieldCheck size={24} />
+  },
+  {
+    role: 'Owner',
+    title: '最高權限',
+    text: '管理角色、移除使用者，負責平台治理與安全邊界。',
+    icon: <Lock size={24} />
+  }
+];
+
+const governancePrinciples = [
+  '角色分層',
+  '權限最小化',
+  '內容治理',
+  '安全維護'
 ];
 
 export default function PresentationPage() {
@@ -752,11 +780,26 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection id="admin-role" eyebrow="Governance" title="管理員與權限設計" subtitle="除了使用者功能，Adrift 也設計了平台治理與角色權限。">
-        <div className="presentation-card-grid three spacious">
-          <FeatureCard title="User" text="寫日記、加好友、使用 Adrift Intelligence。" icon={<Users size={22} />} index={0} large />
-          <FeatureCard title="Admin" text="管理使用者與日記，刪除違規內容。" icon={<ShieldCheck size={22} />} index={1} large />
-          <FeatureCard title="Owner" text="最高權限，可設定角色並維護平台安全。" icon={<Lock size={22} />} index={2} large />
+      <SlideSection id="admin-role" eyebrow="Governance" title="管理員與權限設計" subtitle="以 user、admin、owner 三層角色，區分一般使用、平台管理與最高維護權限。">
+        <div className="governance-layout">
+          <div className="governance-role-row">
+            {governanceRoles.map((item, index) => (
+              <motion.article key={item.role} className="governance-role-card" {...listItemMotion(index)}>
+                <div className="governance-role-icon">{item.icon}</div>
+                <span>{item.role}</span>
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </motion.article>
+            ))}
+          </div>
+
+          <div className="governance-principle-strip" aria-label="權限設計原則">
+            {governancePrinciples.map((item, index) => (
+              <motion.span key={item} {...listItemMotion(index + 3)}>
+                {String(index + 1).padStart(2, '0')} · {item}
+              </motion.span>
+            ))}
+          </div>
         </div>
       </SlideSection>
 
@@ -776,7 +819,7 @@ export default function PresentationPage() {
         <p className="future-copy">未來 Adrift 將持續強化定位式日記的真實性、好友互動與 Adrift Intelligence 洞察能力，讓使用者能更自然地回顧生活中的地點、情緒與記憶。</p>
       </SlideSection>
 
-      <SlideSection id="team" eyebrow="Team" title="分工表" subtitle="以 PDF 分工為主，補充目前網站版開發內容，呈現專題合作成果。">
+      <SlideSection id="team" eyebrow="Team" title="分工表" subtitle="以下為本專題主要分工與網站實作補充。">
         <div className="team-table">
           {teamRows.map(([name, work], index) => (
             <motion.div key={name} className="team-row" {...listItemMotion(index)}>
@@ -791,7 +834,7 @@ export default function PresentationPage() {
         <div className="demo-panel">
           <div>
             <h3>https://adrifttw.com</h3>
-            <p>實際展示地圖日記、好友社交、附近動態、Adrift Intelligence 與 Admin / Owner 管理功能。</p>
+            <p>實際展示地圖日記、好友社交、附近動態、Adrift Intelligence。</p>
           </div>
           <a className="presentation-cta" href="https://adrifttw.com" target="_blank" rel="noreferrer">
             前往 Adrift

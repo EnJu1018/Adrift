@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#020617" />
+    <meta name="theme-color" content="#f8fcff" />
     <meta name="description" content="Adrift 漂流足跡，一個結合地圖、日記、情緒、社交與 Adrift Intelligence 的互動式生活記錄平台。" />
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -15,9 +15,9 @@
       (function () {
         try {
           var savedTheme = localStorage.getItem('adrift-theme');
-          document.documentElement.dataset.theme = savedTheme === 'bright' || savedTheme === 'lightened' ? 'bright' : 'dark';
+          document.documentElement.dataset.theme = savedTheme === 'dark' ? 'dark' : 'bright';
         } catch (error) {
-          document.documentElement.dataset.theme = 'dark';
+          document.documentElement.dataset.theme = 'bright';
         }
       })();
     </script>

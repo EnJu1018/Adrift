@@ -6541,39 +6541,41 @@ select option {
 .presentation-member-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  max-width: 620px;
-  margin-top: 28px;
+  gap: 12px 14px;
+  max-width: 680px;
+  margin-top: 30px;
 }
 
 .presentation-member-grid span {
   display: flex;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 46px;
-  padding: 0 16px;
+  gap: 16px;
+  min-height: 54px;
+  padding: 0 20px;
   align-items: center;
   border: 1px solid rgba(140, 220, 255, 0.14);
   border-radius: 999px;
   color: #eafdff;
   background: rgba(2, 13, 24, 0.36);
-  font-size: clamp(0.92rem, 0.92vw, 1.05rem);
+  font-size: clamp(1.08rem, 1.06vw, 1.22rem);
+  font-weight: 780;
 }
 
 .presentation-member-grid strong {
   color: #8eb8ca;
-  font-size: 0.86rem;
+  font-size: clamp(0.98rem, 0.98vw, 1.12rem);
+  font-weight: 850;
 }
 
 .presentation-advisors {
-  width: min(100%, 620px);
-  margin: 22px 0 0;
-  padding: 9px 16px;
+  width: min(100%, 680px);
+  margin: 24px 0 0;
+  padding: 12px 22px;
   border: 1px solid rgba(140, 220, 255, 0.14);
   border-radius: 999px;
   color: #cdebf6;
   background: rgba(2, 13, 24, 0.28);
-  font-size: clamp(0.95rem, 1vw, 1.12rem);
+  font-size: clamp(1.18rem, 1.28vw, 1.46rem);
   font-weight: 850;
   letter-spacing: 0;
   text-align: center;
@@ -13745,6 +13747,14 @@ input.mood-intensity-slider {
   text-align: center;
 }
 
+:root[data-theme="bright"] .future-copy {
+  color: #2f465c;
+  -webkit-text-fill-color: #2f465c;
+  border-color: rgba(15, 127, 156, 0.16);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16px 36px rgba(14, 116, 144, 0.08);
+}
+
 :root[data-theme="bright"] .presentation-page {
   background:
     radial-gradient(circle at 14% 16%, rgba(56, 189, 248, 0.16), transparent 31%),
@@ -13795,10 +13805,150 @@ input.mood-intensity-slider {
 }
 
 :root[data-theme="bright"] .presentation-page::after {
+  display: none;
+}
+
+.governance-layout {
+  display: grid;
+  gap: clamp(26px, 3.2vw, 42px);
+}
+
+.governance-role-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(22px, 3vw, 34px);
+  align-items: stretch;
+}
+
+.governance-role-card {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-height: 310px;
+  padding: clamp(26px, 3vw, 38px);
+  overflow: hidden;
+  border: 1px solid rgba(140, 220, 255, 0.16);
+  border-radius: 30px;
   background:
-    linear-gradient(115deg, transparent 0 46%, rgba(14, 116, 144, 0.055) 46.2% 46.45%, transparent 46.7%),
-    linear-gradient(68deg, transparent 0 58%, rgba(45, 212, 191, 0.04) 58.2% 58.45%, transparent 58.7%);
-  opacity: 0.62;
+    radial-gradient(circle at 20% 18%, rgba(121, 241, 220, 0.16), transparent 34%),
+    linear-gradient(145deg, rgba(8, 18, 32, 0.7), rgba(4, 14, 26, 0.48));
+  box-shadow: 0 24px 68px rgba(0, 0, 0, 0.26);
+}
+
+.governance-role-card::after {
+  content: "";
+  position: absolute;
+  inset: auto 22px 22px 22px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(121, 241, 220, 0.48), transparent);
+  pointer-events: none;
+}
+
+.governance-role-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  color: var(--accent);
+}
+
+.governance-role-card > span {
+  width: max-content;
+  padding: 7px 12px;
+  border: 1px solid rgba(121, 241, 220, 0.18);
+  border-radius: 999px;
+  color: rgba(214, 250, 255, 0.92);
+  background: rgba(121, 241, 220, 0.1);
+  font-size: clamp(0.94rem, 1vw, 1.08rem);
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.governance-role-card h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: clamp(1.55rem, 2vw, 2.2rem);
+  line-height: 1.15;
+}
+
+.governance-role-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(1.05rem, 1.16vw, 1.3rem);
+  line-height: 1.65;
+}
+
+.governance-principle-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.governance-principle-strip span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 68px;
+  padding: 14px 18px;
+  border: 1px solid rgba(140, 220, 255, 0.14);
+  border-radius: 18px;
+  color: rgba(214, 250, 255, 0.9);
+  background: rgba(8, 18, 32, 0.42);
+  font-size: clamp(1rem, 1.08vw, 1.22rem);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+:root[data-theme="bright"] .governance-role-card {
+  border-color: rgba(15, 127, 156, 0.17);
+  background:
+    radial-gradient(circle at 20% 18%, rgba(56, 189, 248, 0.14), transparent 36%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(244, 251, 255, 0.92));
+  box-shadow: 0 22px 52px rgba(14, 116, 144, 0.1);
+}
+
+:root[data-theme="bright"] .governance-role-card::after {
+  background: linear-gradient(90deg, transparent, rgba(15, 127, 156, 0.32), transparent);
+}
+
+:root[data-theme="bright"] .governance-role-card > span {
+  color: #0b6f89;
+  -webkit-text-fill-color: #0b6f89;
+  border-color: rgba(15, 127, 156, 0.2);
+  background: rgba(15, 127, 156, 0.09);
+}
+
+:root[data-theme="bright"] .governance-role-card h3 {
+  color: #102033;
+  -webkit-text-fill-color: #102033;
+}
+
+:root[data-theme="bright"] .governance-role-card p {
+  color: #2f465c;
+  -webkit-text-fill-color: #2f465c;
+}
+
+:root[data-theme="bright"] .governance-principle-strip span {
+  color: #102033;
+  -webkit-text-fill-color: #102033;
+  border-color: rgba(15, 127, 156, 0.16);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 14px 34px rgba(14, 116, 144, 0.08);
+}
+
+@media (max-width: 980px) {
+  .governance-role-row,
+  .governance-principle-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .governance-role-card {
+    min-height: 0;
+  }
 }
 
 .motivation-layout {
@@ -14252,5 +14402,199 @@ input.mood-intensity-slider {
   .goal-card-orbit {
     width: 104px;
     height: 104px;
+  }
+}
+
+/* Presentation readability pass: larger projection-friendly type without turning slides into posters. */
+.presentation-section {
+  padding-block: clamp(64px, 6.6vh, 82px) clamp(92px, 9vh, 118px);
+}
+
+.presentation-section-inner {
+  width: min(1740px, 100%);
+  gap: clamp(26px, 3.2vh, 40px);
+}
+
+.presentation-feature-card,
+.presentation-info-card,
+.presentation-statement-card,
+.presentation-warning-card,
+.compare-card,
+.future-roadmap-card,
+.governance-role-card,
+.team-row,
+.demo-panel {
+  padding: clamp(26px, 2.7vw, 38px);
+}
+
+.presentation-feature-card strong,
+.presentation-feature-card h3,
+.presentation-info-card h3,
+.presentation-statement-card strong,
+.compare-card h3,
+.future-roadmap-card h3,
+.governance-role-card h3,
+.ux-principle-card strong,
+.tech-map-node strong,
+.tech-map-core strong {
+  font-size: clamp(1.55rem, 1.85vw, 2.25rem);
+  line-height: 1.18;
+}
+
+.presentation-feature-card p,
+.presentation-info-card p,
+.presentation-statement-card p,
+.presentation-warning-card span,
+.presentation-card p,
+.presentation-card li,
+.compare-card p,
+.future-roadmap-card p,
+.future-copy,
+.governance-role-card p,
+.ux-principle-card p,
+.tech-map-node p,
+.demo-panel p {
+  font-size: clamp(1.18rem, 1.28vw, 1.48rem);
+  line-height: 1.58;
+}
+
+.presentation-goal-card strong {
+  font-size: clamp(2.55rem, 3.5vw, 3.75rem);
+}
+
+.presentation-goal-card p {
+  max-width: 390px;
+  font-size: clamp(1.22rem, 1.36vw, 1.6rem);
+  line-height: 1.52;
+}
+
+.presentation-feature-card > span,
+.presentation-info-card > span,
+.presentation-statement-card > span,
+.compare-card > span,
+.future-roadmap-icon {
+  width: 48px;
+  height: 48px;
+  flex-basis: 48px;
+}
+
+.presentation-feature-card > span svg,
+.presentation-info-card > span svg,
+.presentation-statement-card > span svg,
+.compare-card > span svg,
+.future-roadmap-icon svg {
+  width: 27px;
+  height: 27px;
+}
+
+.motivation-point strong {
+  font-size: clamp(1.52rem, 1.8vw, 2.18rem);
+}
+
+.motivation-point p {
+  font-size: clamp(1.18rem, 1.28vw, 1.5rem);
+  line-height: 1.58;
+}
+
+.branch-node,
+.module-node,
+.root-node {
+  font-size: clamp(1.22rem, 1.34vw, 1.62rem);
+}
+
+.action-node,
+.system-action-node {
+  min-height: 48px;
+  padding: 10px 13px;
+  font-size: clamp(1.08rem, 1.12vw, 1.3rem);
+  line-height: 1.26;
+}
+
+.flow-leaf,
+.system-leaves span {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: clamp(1rem, 1.02vw, 1.16rem);
+}
+
+.system-feature-chip {
+  min-height: 56px;
+  padding: 11px 13px;
+}
+
+.system-feature-chip strong {
+  font-size: clamp(1.08rem, 1.14vw, 1.34rem);
+}
+
+.system-feature-chip span {
+  font-size: clamp(0.98rem, 1.02vw, 1.16rem);
+}
+
+.compact-chart .branch-node,
+.compact-chart .module-node {
+  min-height: 42px;
+  font-size: clamp(1.04rem, 1.06vw, 1.22rem);
+}
+
+.compact-chart .action-node,
+.compact-chart .system-action-node {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: clamp(0.96rem, 0.98vw, 1.12rem);
+}
+
+.compact-chart .flow-leaf,
+.compact-chart .system-leaves span,
+.compact-chart .system-feature-chip span {
+  font-size: clamp(0.84rem, 0.86vw, 0.98rem);
+}
+
+.horizontal-flow-copy h3 {
+  font-size: clamp(1.52rem, 1.82vw, 2.22rem);
+}
+
+.horizontal-flow-copy p,
+.horizontal-flow-step li {
+  font-size: clamp(1.12rem, 1.18vw, 1.36rem);
+}
+
+.team-row {
+  grid-template-columns: minmax(160px, 0.28fr) minmax(0, 1fr);
+  min-height: 78px;
+}
+
+.team-row strong {
+  font-size: clamp(1.34rem, 1.5vw, 1.72rem);
+}
+
+.team-row span {
+  font-size: clamp(1.18rem, 1.25vw, 1.42rem);
+  line-height: 1.5;
+}
+
+.governance-principle-strip span {
+  min-height: 76px;
+  font-size: clamp(1.14rem, 1.18vw, 1.36rem);
+}
+
+.future-roadmap-card {
+  min-height: 278px;
+}
+
+.future-roadmap-phase {
+  font-size: clamp(1.02rem, 1.06vw, 1.18rem);
+}
+
+@media (max-width: 780px) {
+  .presentation-feature-card p,
+  .presentation-info-card p,
+  .presentation-statement-card p,
+  .presentation-card p,
+  .presentation-card li,
+  .compare-card p,
+  .future-roadmap-card p,
+  .governance-role-card p,
+  .team-row span {
+    font-size: 1.04rem;
   }
 }
