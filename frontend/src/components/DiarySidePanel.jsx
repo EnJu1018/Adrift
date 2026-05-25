@@ -7,6 +7,7 @@ import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constant
 import { getDistanceInMeters } from '../utils/distance.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
+import UserAvatar from './UserAvatar.jsx';
 
 const visibilityIcons = {
   private: Lock,
@@ -119,7 +120,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
               <div className="diary-author-block">
                 <p className="eyebrow diary-detail-eyebrow">Selected diary</p>
                 <div className="popup-author diary-popup-author-inline">
-                  <span className="avatar-orb small">{(author.name || 'A').slice(0, 1).toUpperCase()}</span>
+                  <UserAvatar user={author} size="sm" />
                   <div>
                     <h2>{author.name || 'Unknown'}</h2>
                     <small>@{author.userCode || 'unknown'}</small>

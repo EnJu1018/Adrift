@@ -25,7 +25,7 @@ export function errorHandler(error, _req, res, _next) {
   if (error.code === 'LIMIT_FILE_SIZE') {
     return res.status(400).json({
       success: false,
-      message: '圖片大小不可超過 5MB'
+      message: error.field === 'avatar' ? '頭貼檔案不可超過 2MB' : '圖片大小不可超過 5MB'
     });
   }
 

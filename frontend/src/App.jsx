@@ -15,6 +15,7 @@ import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
 import PresentationPage from './components/PresentationPage.jsx';
 import ToastViewport from './components/ToastViewport.jsx';
+import UserAvatar from './components/UserAvatar.jsx';
 import { pageFadeUp } from './constants/animations.js';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
@@ -120,7 +121,7 @@ export default function App() {
   const authMode = currentPath === '/register' ? 'register' : 'login';
   const isFriendsPage = currentPath === '/friends';
   const isFeedPage = currentPath === '/feed';
-  const isSettingsPage = currentPath === '/settings/account';
+  const isSettingsPage = currentPath === '/settings/account' || currentPath === '/settings';
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
   const isPresentationPage = currentPath === '/presentation' || currentPath === '/presentation/';
@@ -876,6 +877,18 @@ export default function App() {
     return api.updatePassword(form);
   }
 
+  async function updateAvatar(formData) {
+    const payload = await api.updateAvatar(formData);
+    syncUser(payload.data?.user || { ...user, avatar: payload.data?.avatar || '' });
+    return payload;
+  }
+
+  async function deleteAvatar() {
+    const payload = await api.deleteAvatar();
+    syncUser(payload.data?.user || { ...user, avatar: '' });
+    return payload;
+  }
+
   async function deleteAccount(form) {
     const payload = await api.deleteAccount(form);
     logout(payload.message || '帳號已刪除');
@@ -897,7 +910,7 @@ export default function App() {
       <Particles lowPerformance={performanceMode.lowPerformance} reducedMotion={performanceMode.reducedMotion} />
 
       <motion.div
-        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPresentationPage ? 'guest' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''}`}
+        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPresentationPage ? 'guest' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''}`}
         {...pageFadeUp}
       >
         {isPresentationPage ? (
@@ -999,15 +1012,18 @@ export default function App() {
                     aria-label="使用者選單"
                     aria-expanded={userMenuOpen}
                   >
-                    <span className="avatar-orb small">{(user.name || 'A').slice(0, 1).toUpperCase()}</span>
+                    <UserAvatar user={user} size="sm" />
                     <small>{user.name || '使用者'}</small>
                   </button>
                   {userMenuOpen && (
                     <div className="nav-dropdown user-dropdown glass">
                       <div className="nav-dropdown-header">
-                        <div className="nav-user-summary">
-                          <strong>{user.name || 'Account'}</strong>
-                          {user.role && <span className={`nav-role-badge ${user.role}`}>{user.role}</span>}
+                        <div className="nav-dropdown-avatar-row">
+                          <UserAvatar user={user} size="md" />
+                          <div>
+                            <strong>{user.name || 'Account'}</strong>
+                            {user.role && <span className={`nav-role-badge ${user.role}`}>{user.role}</span>}
+                          </div>
                         </div>
                         <div className="nav-user-code-row">
                           <span>@{user.userCode || 'user'}</span>
@@ -1067,7 +1083,19 @@ export default function App() {
           )}
         </header>
 
-        {user && isFriendsPage ? (
+        {user && isSettingsPage ? (
+          <AccountSettings
+            key="account-settings"
+            user={user}
+            onBack={() => navigate('/')}
+            onUpdateName={updateName}
+            onUpdateEmail={updateEmail}
+            onUpdatePassword={updatePassword}
+            onUpdateAvatar={updateAvatar}
+            onDeleteAvatar={deleteAvatar}
+            onDeleteAccount={deleteAccount}
+          />
+        ) : user && isFriendsPage ? (
           <FriendsPage
             key="friends-page"
             user={user}
@@ -1146,19 +1174,7 @@ export default function App() {
         </section>
 
         <AnimatePresence mode="wait">
-          {user && isSettingsPage ? (
-            <AccountSettings
-              key="account-settings"
-              user={user}
-              friends={friends}
-              diaries={diaries}
-              onBack={() => navigate('/')}
-              onUpdateName={updateName}
-              onUpdateEmail={updateEmail}
-              onUpdatePassword={updatePassword}
-              onDeleteAccount={deleteAccount}
-            />
-          ) : user ? (
+          {user ? (
             <MemoryPanel
               key="memory-panel"
               user={user}

@@ -7,6 +7,7 @@ import { dropdownMotion, fadeUpMotion, modalBackdropMotion, modalPopMotion, page
 import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
+import UserAvatar from './UserAvatar.jsx';
 import Select from './ui/Select.jsx';
 
 const tabs = [
@@ -510,7 +511,10 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoad
 
         return (
           <div className="admin-table-row" key={item._id}>
-            <span title={item.name}>{item.name}</span>
+            <span className="admin-user-cell" title={item.name}>
+              <UserAvatar user={item} size="sm" />
+              <span>{item.name}</span>
+            </span>
             <span title={item.userCode}>@{item.userCode}</span>
             <span title={item.email}>{item.email}</span>
             <RoleControl

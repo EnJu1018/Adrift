@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { fadeUpMotion } from '../constants/animations.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
+import UserAvatar from './UserAvatar.jsx';
 
 const feedFilters = [
   { value: 'all', label: '全部' },
@@ -65,7 +66,7 @@ export default function FeedPage({ diaries = [], user, onOpenDiary }) {
               transition={{ ...fadeUpMotion.transition, delay: Math.min(index * 0.03, 0.18) }}
             >
               <div className="feed-card-header">
-                <span className="avatar-orb small">{getAuthorName(diary, user).slice(0, 1).toUpperCase()}</span>
+                <UserAvatar user={getAuthor(diary, user)} size="sm" />
                 <div>
                   <strong>@{getAuthorCode(diary, user)}</strong>
                   <span>{formatDiaryTime(diary.createdAt, timeNow)}</span>
@@ -113,6 +114,10 @@ function getAuthorName(diary, currentUser) {
 
 function getAuthorCode(diary, currentUser) {
   return diary.author?.userCode || diary.user?.userCode || currentUser?.userCode || 'unknown';
+}
+
+function getAuthor(diary, currentUser) {
+  return diary.author || diary.user || currentUser || null;
 }
 
 function summarizeDiary(value = '') {

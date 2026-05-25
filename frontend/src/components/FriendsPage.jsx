@@ -21,6 +21,7 @@ import { fadeUpMotion, listItemMotion, modalBackdropMotion, modalPopMotion, page
 import { USER_CODE_PATTERN } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
+import UserAvatar from './UserAvatar.jsx';
 
 export default function FriendsPage({
   user,
@@ -400,7 +401,7 @@ export default function FriendsPage({
     <motion.div className="modal-backdrop" {...modalBackdropMotion}>
       <motion.article className="friend-profile-modal danger glass" {...modalPopMotion}>
         <header className="friend-profile-header">
-          <div className="avatar-orb small">{getInitial(friendToDelete.name)}</div>
+          <UserAvatar user={friendToDelete} size="sm" />
           <div>
             <p className="eyebrow">刪除好友</p>
             <h3>刪除好友？</h3>
@@ -956,7 +957,7 @@ function FriendActivityPanel({ activity, onOpenDiary }) {
                 onClick={() => onOpenDiary?.(diary)}
                 {...listItemMotion(index)}
               >
-                <span className="avatar-orb small">{getInitial(author?.name)}</span>
+                <UserAvatar user={author} size="sm" />
                 <span>
                   <strong>@{author?.userCode || 'unknown'}</strong>
                   {getActivityText(diary)}
@@ -1024,7 +1025,7 @@ function FriendsPreview({ friends, onSelectFriend, onShowAll }) {
 function FriendIdentity({ user, meta, compact = false }) {
   return (
     <div className={`friend-identity ${compact ? 'compact' : ''}`}>
-      <span className="avatar-orb small">{getInitial(user?.name)}</span>
+      <UserAvatar user={user} size="sm" />
       <div>
         <strong>{user?.name || '未知使用者'}</strong>
         <span>@{user?.userCode || 'unknown'}</span>

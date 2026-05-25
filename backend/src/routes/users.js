@@ -1,5 +1,9 @@
 import bcrypt from 'bcryptjs';
 import express from 'express';
+import fs from 'node:fs/promises';
+import multer from 'multer';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -7,6 +11,43 @@ import { EMAIL_PATTERN } from '../constants/app.js';
 
 const router = express.Router();
 const publicUserFields = '_id name avatar userCode';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const avatarUploadDir = path.join(__dirname, '..', 'uploads', 'avatars');
+const allowedAvatarMimeTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+
+const avatarStorage = multer.diskStorage({
+  destination: async (_req, _file, callback) => {
+    try {
+      await fs.mkdir(avatarUploadDir, { recursive: true });
+      callback(null, avatarUploadDir);
+    } catch (error) {
+      callback(error);
+    }
+  },
+  filename: (req, file, callback) => {
+    const extensionByMime = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp'
+    };
+    const ext = extensionByMime[file.mimetype] || path.extname(file.originalname).toLowerCase();
+    const safeUserId = req.user?._id?.toString?.() || 'user';
+    callback(null, `${safeUserId}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  }
+});
+
+const avatarUpload = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, callback) => {
+    if (!allowedAvatarMimeTypes.has(file.mimetype)) {
+      return callback(new Error('頭貼僅支援 JPG、PNG、WebP'));
+    }
+
+    callback(null, true);
+  }
+});
 
 function getFriendshipStatus(currentUser, targetUser) {
   const currentId = currentUser._id.toString();
@@ -40,6 +81,21 @@ function serializeUser(user) {
     avatar: user.avatar || '',
     createdAt: user.createdAt
   };
+}
+
+async function deleteLocalAvatar(avatarPath = '') {
+  if (!avatarPath.startsWith('/uploads/avatars/')) return;
+
+  const filename = path.basename(avatarPath);
+  const fullPath = path.join(avatarUploadDir, filename);
+
+  try {
+    await fs.unlink(fullPath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn('Failed to remove old avatar:', error.message);
+    }
+  }
 }
 
 router.get('/me', requireAuth, async (req, res) => {
@@ -186,6 +242,60 @@ router.patch('/me/password', requireAuth, async (req, res, next) => {
       success: true,
       message: '密碼已更新',
       data: {}
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/me/avatar', requireAuth, avatarUpload.single('avatar'), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: '請選擇頭貼圖片'
+      });
+    }
+
+    const user = await User.findById(req.user._id);
+    const oldAvatar = user.avatar || '';
+    user.avatar = `/uploads/avatars/${req.file.filename}`;
+    await user.save();
+
+    await deleteLocalAvatar(oldAvatar);
+
+    res.json({
+      success: true,
+      message: '頭貼已更新',
+      data: {
+        avatar: user.avatar,
+        user: serializeUser(user)
+      }
+    });
+  } catch (error) {
+    if (req.file?.filename) {
+      await deleteLocalAvatar(`/uploads/avatars/${req.file.filename}`);
+    }
+    next(error);
+  }
+});
+
+router.delete('/me/avatar', requireAuth, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const oldAvatar = user.avatar || '';
+
+    user.avatar = '';
+    await user.save();
+    await deleteLocalAvatar(oldAvatar);
+
+    res.json({
+      success: true,
+      message: '頭貼已移除',
+      data: {
+        avatar: '',
+        user: serializeUser(user)
+      }
     });
   } catch (error) {
     next(error);

@@ -61,7 +61,7 @@ export function clearStoredAuth() {
 
 export function getImageUrl(path) {
   if (!path) return '';
-  if (path.startsWith('http')) return path;
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
   return `${API_URL}${path}`;
 }
 
@@ -265,6 +265,15 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload)
     });
+  },
+  updateAvatar(formData) {
+    return request('/users/me/avatar', {
+      method: 'PATCH',
+      body: formData
+    });
+  },
+  deleteAvatar() {
+    return request('/users/me/avatar', { method: 'DELETE' });
   },
   deleteAccount(payload) {
     return request('/users/me', {
