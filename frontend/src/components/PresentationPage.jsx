@@ -447,10 +447,9 @@ const governancePrinciples = [
 export default function PresentationPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const pageRef = useRef(null);
-  const slideRefs = useRef([]);
   const currentSlideRef = useRef(currentSlide);
-  const isProgrammaticScrollRef = useRef(false);
-  const scrollReleaseTimerRef = useRef(null);
+  const wheelLockRef = useRef(false);
+  const touchStartYRef = useRef(null);
   const activeSlide = slides[currentSlide] ?? slides[0];
   const activeGroup = activeSlide.group;
 
@@ -458,135 +457,11 @@ export default function PresentationPage() {
     currentSlideRef.current = currentSlide;
   }, [currentSlide]);
 
-  const setSlideRef = useCallback((id) => (node) => {
-    const index = slides.findIndex((slide) => slide.id === id);
-    if (index < 0) return;
-    slideRefs.current[index] = node;
-  }, []);
-
-  const getScrollContainer = useCallback(() => {
-    const root = pageRef.current;
-    if (!root) return window;
-
-    const overflowY = window.getComputedStyle(root).overflowY;
-    const hasOwnScroll = overflowY !== 'visible' && overflowY !== 'clip' && root.scrollHeight > root.clientHeight + 4;
-    return hasOwnScroll ? root : window;
-  }, []);
-
-  const getSlideIndexFromScroll = useCallback(() => {
-    const root = pageRef.current;
-    if (!root) return currentSlideRef.current;
-    const scrollContainer = getScrollContainer();
-
-    if (scrollContainer !== window) {
-      const maxScrollTop = root.scrollHeight - root.clientHeight;
-      if (root.scrollTop >= maxScrollTop - 4) return slides.length - 1;
-    }
-
-    if (scrollContainer === window) {
-      const documentHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      );
-      if (window.scrollY + window.innerHeight >= documentHeight - 4) return slides.length - 1;
-    }
-
-    let closestIndex = 0;
-    let closestDistance = Number.POSITIVE_INFINITY;
-    const containerTop = scrollContainer === window ? 0 : root.getBoundingClientRect().top;
-
-    slides.forEach((slide, index) => {
-      const target = slideRefs.current[index] ?? document.getElementById(slide.id);
-      if (!target) return;
-
-      const distance = Math.abs(target.getBoundingClientRect().top - containerTop);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestIndex = index;
-      }
-    });
-
-    return closestIndex;
-  }, [getScrollContainer]);
-
-  useEffect(() => {
-    const root = pageRef.current;
-    if (!root) return undefined;
-
-    let animationFrame = 0;
-
-    function syncCurrentSlide() {
-      animationFrame = 0;
-      if (isProgrammaticScrollRef.current) return;
-      const nextIndex = getSlideIndexFromScroll();
-      if (nextIndex !== currentSlideRef.current) {
-        currentSlideRef.current = nextIndex;
-        setCurrentSlide(nextIndex);
-      }
-    }
-
-    function handleScroll() {
-      if (animationFrame) return;
-      animationFrame = window.requestAnimationFrame(syncCurrentSlide);
-    }
-
-    const scrollTarget = getScrollContainer();
-
-    scrollTarget.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', syncCurrentSlide);
-    syncCurrentSlide();
-
-    return () => {
-      scrollTarget.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', syncCurrentSlide);
-      if (animationFrame) window.cancelAnimationFrame(animationFrame);
-    };
-  }, [getScrollContainer, getSlideIndexFromScroll]);
-
-  useEffect(() => () => {
-    if (scrollReleaseTimerRef.current) window.clearTimeout(scrollReleaseTimerRef.current);
-  }, []);
-
   const goToSlide = useCallback((index) => {
     const safeIndex = Math.max(0, Math.min(index, slides.length - 1));
-    const slide = slides[safeIndex];
-    const target = slideRefs.current[safeIndex] ?? (slide?.id ? document.getElementById(slide.id) : null);
-
-    if (!target) {
-      console.warn('Presentation slide not found:', { safeIndex, slide });
-      return;
-    }
-
-    if (scrollReleaseTimerRef.current) window.clearTimeout(scrollReleaseTimerRef.current);
-    isProgrammaticScrollRef.current = true;
     currentSlideRef.current = safeIndex;
     setCurrentSlide(safeIndex);
-
-    const root = pageRef.current;
-    const scrollContainer = getScrollContainer();
-
-    if (root && scrollContainer !== window) {
-      const maxScrollTop = root.scrollHeight - root.clientHeight;
-      const targetTop = safeIndex === slides.length - 1
-        ? maxScrollTop
-        : Math.min(target.offsetTop, maxScrollTop);
-      root.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
-    } else {
-      const documentHeight = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      );
-      const maxScrollTop = Math.max(0, documentHeight - window.innerHeight);
-      const targetTop = safeIndex === slides.length - 1
-        ? maxScrollTop
-        : Math.min(target.getBoundingClientRect().top + window.scrollY, maxScrollTop);
-      window.scrollTo({ top: Math.max(0, targetTop), behavior: 'smooth' });
-    }
-
-    scrollReleaseTimerRef.current = window.setTimeout(() => {
-      isProgrammaticScrollRef.current = false;
-    }, 700);
-  }, [getScrollContainer]);
+  }, []);
 
   const goToPreviousSlide = useCallback(() => {
     goToSlide(currentSlideRef.current - 1);
@@ -599,6 +474,29 @@ export default function PresentationPage() {
   const goToGroup = useCallback((groupLabel) => {
     const groupIndex = slides.findIndex((slide) => slide.group === groupLabel);
     if (groupIndex >= 0) goToSlide(groupIndex);
+  }, [goToSlide]);
+
+  const handleWheel = useCallback((event) => {
+    if (Math.abs(event.deltaY) < 36 || wheelLockRef.current) return;
+    event.preventDefault();
+    wheelLockRef.current = true;
+    goToSlide(currentSlideRef.current + (event.deltaY > 0 ? 1 : -1));
+    window.setTimeout(() => {
+      wheelLockRef.current = false;
+    }, 460);
+  }, [goToSlide]);
+
+  const handleTouchStart = useCallback((event) => {
+    touchStartYRef.current = event.touches?.[0]?.clientY ?? null;
+  }, []);
+
+  const handleTouchEnd = useCallback((event) => {
+    if (touchStartYRef.current == null) return;
+    const endY = event.changedTouches?.[0]?.clientY ?? touchStartYRef.current;
+    const deltaY = touchStartYRef.current - endY;
+    touchStartYRef.current = null;
+    if (Math.abs(deltaY) < 52) return;
+    goToSlide(currentSlideRef.current + (deltaY > 0 ? 1 : -1));
   }, [goToSlide]);
 
   useEffect(() => {
@@ -629,21 +527,27 @@ export default function PresentationPage() {
       }
     }
 
-    window.addEventListener('keydown', handleKeys);
-    return () => window.removeEventListener('keydown', handleKeys);
+    document.addEventListener('keydown', handleKeys, true);
+    return () => document.removeEventListener('keydown', handleKeys, true);
   }, [goToNextSlide, goToPreviousSlide, goToSlide]);
 
   return (
-    <motion.main className="presentation-page" ref={pageRef} {...pageFadeUp}>
+    <motion.main
+      className="presentation-page"
+      ref={pageRef}
+      onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      {...pageFadeUp}
+    >
       <PresentationAtmosphere />
       <PresentationNav activeGroup={activeGroup} onSelect={goToGroup} />
 
-      <section
-        ref={setSlideRef('cover')}
-        className="presentation-cover presentation-section"
-        id="cover"
-        data-slide-index="0"
+      <div
+        className="presentation-slide-track"
+        style={{ transform: `translate3d(0, -${currentSlide * 100}vh, 0)` }}
       >
+      <section className="presentation-cover presentation-section" id="cover" data-slide-index="0">
         <div className="presentation-section-inner presentation-cover-inner">
           <div className="presentation-cover-copy">
             <p className="presentation-kicker">資管三B D2 · 專題口試展示</p>
@@ -662,7 +566,7 @@ export default function PresentationPage() {
         </div>
       </section>
 
-      <SlideSection slideRef={setSlideRef('motivation')} id="motivation" eyebrow="Motivation" title="為什麼需要 Adrift？" subtitle="日記不該只是一段文字，它也應該記得當時的地點、心情與生活情境。">
+      <SlideSection id="motivation" eyebrow="Motivation" title="為什麼需要 Adrift？" subtitle="日記不該只是一段文字，它也應該記得當時的地點、心情與生活情境。">
         <div className="presentation-split motivation-layout">
           <article className="presentation-statement-card">
             <strong>讓記憶回到現場</strong>
@@ -682,7 +586,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('problem')} id="problem" eyebrow="Problem Analysis" title="現有日記工具的不足" subtitle="文字能記錄事件，但常常缺少能喚回記憶的脈絡。">
+      <SlideSection id="problem" eyebrow="Problem Analysis" title="現有日記工具的不足" subtitle="文字能記錄事件，但常常缺少能喚回記憶的脈絡。">
         <div className="presentation-card-grid three spacious problem-analysis-grid">
           {problemCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} large />
@@ -690,7 +594,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('goal')} id="goal" eyebrow="Project Goal" title="讓每段記憶回到它發生的地方" subtitle="Adrift 的核心目標，是把地點、心情與分享範圍一起放回日記。">
+      <SlideSection id="goal" eyebrow="Project Goal" title="讓每段記憶回到它發生的地方" subtitle="Adrift 的核心目標，是把地點、心情與分享範圍一起放回日記。">
         <div className="presentation-goal-grid">
           {goalCards.map(([title, text, icon], index) => (
             <GoalCard key={title} title={title} text={text} icon={icon} index={index} />
@@ -698,7 +602,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('overview')} id="overview" eyebrow="System Overview" title="系統總覽" subtitle="帳號、地圖日記、好友關係與 Adrift Intelligence，組成完整的定位式日記平台。">
+      <SlideSection id="overview" eyebrow="System Overview" title="系統總覽" subtitle="帳號、地圖日記、好友關係與 Adrift Intelligence，組成完整的定位式日記平台。">
         <div className="presentation-card-grid four spacious">
           {overviewCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
@@ -706,7 +610,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('map-diary')} id="map-diary" eyebrow="Core Feature 01" title="地圖日記" subtitle="以地圖作為主介面，讓使用者在真實地點留下日記、照片與心情。">
+      <SlideSection id="map-diary" eyebrow="Core Feature 01" title="地圖日記" subtitle="以地圖作為主介面，讓使用者在真實地點留下日記、照片與心情。">
         <div className="presentation-feature-layout">
           <VisualOrb compact />
           <div className="presentation-card-grid two">
@@ -717,7 +621,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('friends')} id="friends" eyebrow="Core Feature 02" title="好友社交" subtitle="好友功能不是曝光導向，而是讓使用者選擇能一起分享記憶的人。">
+      <SlideSection id="friends" eyebrow="Core Feature 02" title="好友社交" subtitle="好友功能不是曝光導向，而是讓使用者選擇能一起分享記憶的人。">
         <div className="presentation-card-grid four spacious">
           {socialCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
@@ -725,7 +629,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('authenticity')} id="authenticity" eyebrow="Core Feature 03" title="真實性限制" subtitle="Adrift 不是任意修改的日記系統，而是保留當下、當地、當時心情。">
+      <SlideSection id="authenticity" eyebrow="Core Feature 03" title="真實性限制" subtitle="Adrift 不是任意修改的日記系統，而是保留當下、當地、當時心情。">
         <div className="presentation-card-grid four spacious">
           {authenticityCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
@@ -737,7 +641,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('life-map-ai')} id="life-map-ai" eyebrow="Core Feature 04" title="Adrift Intelligence" subtitle="Adrift Intelligence 只協助整理自己的日記與生活軌跡，不做醫療或心理診斷。">
+      <SlideSection id="life-map-ai" eyebrow="Core Feature 04" title="Adrift Intelligence" subtitle="Adrift Intelligence 只協助整理自己的日記與生活軌跡，不做醫療或心理診斷。">
         <div className="ai-dashboard-preview airy">
           <div className="ai-summary-card">
             <Brain size={28} />
@@ -751,23 +655,23 @@ export default function PresentationPage() {
         <p className="presentation-footnote">Adrift Intelligence 僅供自我回顧參考，並非醫療或心理診斷。</p>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('user-flow')} id="user-flow" eyebrow="User Flow" title="使用者流程" subtitle="從帳號、地圖日記、好友互動到 Adrift Intelligence，整理 Adrift 使用者的完整操作路徑。">
+      <SlideSection id="user-flow" eyebrow="User Flow" title="使用者流程" subtitle="從帳號、地圖日記、好友互動到 Adrift Intelligence，整理 Adrift 使用者的完整操作路徑。">
         <HorizontalUserFlow steps={userFlowBranches} />
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('architecture')} id="architecture" eyebrow="Architecture" title="系統架構" subtitle="以八個主要模組呈現 Adrift 的使用者功能、互動能力、Adrift Intelligence 與管理機制。">
+      <SlideSection id="architecture" eyebrow="Architecture" title="系統架構" subtitle="以八個主要模組呈現 Adrift 的使用者功能、互動能力、Adrift Intelligence 與管理機制。">
         <PresentationSystemTree rootTitle="Adrift 漂流足跡" modules={systemTreeModules} compact compactColumns={4} />
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('frontend-tech')} id="frontend-tech" eyebrow="Frontend Technology" title="技術架構 - 前端" subtitle="前端負責地圖互動、狀態即時更新、動畫與正式產品級 UI。">
+      <SlideSection id="frontend-tech" eyebrow="Frontend Technology" title="技術架構 - 前端" subtitle="前端負責地圖互動、狀態即時更新、動畫與正式產品級 UI。">
         <TechMap items={frontendTech} icon={<Code2 size={24} />} />
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('backend-tech')} id="backend-tech" eyebrow="Backend Technology" title="技術架構 - 後端" subtitle="後端負責驗證、日記真實性規則、好友權限、地理查詢與 Adrift Intelligence 串接。">
+      <SlideSection id="backend-tech" eyebrow="Backend Technology" title="技術架構 - 後端" subtitle="後端負責驗證、日記真實性規則、好友權限、地理查詢與 Adrift Intelligence 串接。">
         <TechMap items={backendTech} icon={<Server size={24} />} />
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('ux')} id="ux" eyebrow="Design System" title="UI / UX 設計理念" subtitle="以地圖為主舞台，把日記、好友與智慧洞察整理成一致的產品體驗。">
+      <SlideSection id="ux" eyebrow="Design System" title="UI / UX 設計理念" subtitle="以地圖為主舞台，把日記、好友與智慧洞察整理成一致的產品體驗。">
         <div className="ux-principle-board">
           <article className="ux-principle-hero">
             <span><MapPin size={26} /></span>
@@ -788,7 +692,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('difference')} id="difference" eyebrow="Positioning" title="Adrift 與一般日記 App 的差異" subtitle="不是單純文字紀錄，也不是公開曝光社群，而是以真實地點承載情緒與故事。">
+      <SlideSection id="difference" eyebrow="Positioning" title="Adrift 與一般日記 App 的差異" subtitle="不是單純文字紀錄，也不是公開曝光社群，而是以真實地點承載情緒與故事。">
         <div className="comparison-grid">
           <CompareCard title="傳統日記 App" text="以文字紀錄為主，地點通常只是附加資訊。" />
           <CompareCard title="Instagram 類社群" text="偏向公開曝光與照片分享，社交壓力較高。" />
@@ -797,7 +701,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('admin-role')} id="admin-role" eyebrow="Governance" title="管理員與權限設計" subtitle="以 user、admin、owner 三層角色，區分一般使用、平台管理與最高維護權限。">
+      <SlideSection id="admin-role" eyebrow="Governance" title="管理員與權限設計" subtitle="以 user、admin、owner 三層角色，區分一般使用、平台管理與最高維護權限。">
         <div className="governance-layout">
           <div className="governance-role-row">
             {governanceRoles.map((item, index) => (
@@ -820,7 +724,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('future')} id="future" eyebrow="Roadmap" title="未來展望" subtitle="持續強化真實性、好友互動、手機版體驗，讓 Adrift 更接近正式產品。">
+      <SlideSection id="future" eyebrow="Roadmap" title="未來展望" subtitle="持續強化真實性、好友互動、手機版體驗，讓 Adrift 更接近正式產品。">
         <div className="future-roadmap" aria-label="Adrift 未來規劃">
           {futureRoadmap.map((item, index) => (
             <motion.article key={item.phase} className="future-roadmap-card" {...listItemMotion(index)}>
@@ -836,7 +740,7 @@ export default function PresentationPage() {
         <p className="future-copy">未來 Adrift 將持續強化定位式日記的真實性、好友互動與 Adrift Intelligence 洞察能力，讓使用者能更自然地回顧生活中的地點、情緒與記憶。</p>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('team')} id="team" eyebrow="Team" title="分工表" subtitle="以下為本專題主要分工與網站實作補充。">
+      <SlideSection id="team" eyebrow="Team" title="分工表" subtitle="以下為本專題主要分工與網站實作補充。">
         <div className="team-table">
           {teamRows.map(([name, work], index) => (
             <motion.div key={name} className="team-row" {...listItemMotion(index)}>
@@ -847,7 +751,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection slideRef={setSlideRef('demo')} id="demo" eyebrow="Demo" title="Demo Website" subtitle="直接進入線上版本，展示地圖日記、好友社交、Adrift Intelligence 與管理功能。">
+      <SlideSection id="demo" eyebrow="Demo" title="Demo Website" subtitle="直接進入線上版本，展示地圖日記、好友社交、Adrift Intelligence 與管理功能。">
         <div className="demo-panel">
           <div>
             <h3>https://adrifttw.com</h3>
@@ -885,12 +789,7 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <section
-        ref={setSlideRef('thank-you')}
-        className="presentation-thanks presentation-section"
-        id="thank-you"
-        data-slide-index="19"
-      >
+      <section className="presentation-thanks presentation-section" id="thank-you" data-slide-index="19">
         <div className="presentation-section-inner presentation-thanks-inner">
           <p>Thank you for listening</p>
           <h2>Adrift 漂流足跡</h2>
@@ -898,6 +797,7 @@ export default function PresentationPage() {
           <small>資管三B D2 · adrifttw.com</small>
         </div>
       </section>
+      </div>
 
       <PresentationControls
         activeIndex={currentSlide}
@@ -940,7 +840,7 @@ function PresentationControls({ activeIndex, onGoToPrevious, onGoToNext }) {
       </div>
       <div className="presentation-control-actions">
         <button
-          className="presentation-control-button"
+          className="presentation-control-button presentation-prev"
           type="button"
           onClick={onGoToPrevious}
           disabled={isFirst}
@@ -949,7 +849,7 @@ function PresentationControls({ activeIndex, onGoToPrevious, onGoToNext }) {
           上一頁
         </button>
         <button
-          className="presentation-control-button primary"
+          className="presentation-control-button presentation-next primary"
           type="button"
           onClick={onGoToNext}
           disabled={isLast}
@@ -976,12 +876,11 @@ function GoalCard({ icon, title, text, index = 0 }) {
   );
 }
 
-function SlideSection({ id, eyebrow, title, subtitle, children, slideRef }) {
+function SlideSection({ id, eyebrow, title, subtitle, children }) {
   const slideIndex = slides.findIndex((slide) => slide.id === id);
 
   return (
     <motion.section
-      ref={slideRef}
       className="presentation-section"
       id={id}
       data-slide-index={slideIndex >= 0 ? slideIndex : undefined}

@@ -6487,7 +6487,7 @@ select option {
   overflow-y: auto;
   overflow-x: hidden;
   scroll-behavior: smooth;
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: none;
   scrollbar-gutter: stable;
   padding: 0;
   background:
@@ -15161,5 +15161,32 @@ input.mood-intensity-slider {
   .governance-role-card p,
   .team-row span {
     font-size: 1.04rem;
+  }
+}
+
+/* Presentation navigation stability: slides are controlled by React state, not browser scroll snap. */
+.presentation-page {
+  height: 100vh !important;
+  overflow: hidden !important;
+  scroll-snap-type: none !important;
+}
+
+.presentation-slide-track {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.presentation-slide-track > .presentation-section {
+  height: 100vh;
+  min-height: 100vh;
+  scroll-snap-align: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .presentation-slide-track {
+    transition: none;
   }
 }
