@@ -556,7 +556,9 @@ export default function PresentationPage() {
               <h1 className="cover-title-en">Adrift</h1>
               <h2 className="cover-title-zh">漂流足跡</h2>
             </div>
-            <p className="presentation-tagline">A map-based social diary where emotions drift across the world.</p>
+            <p className="presentation-tagline cover-tagline-single-line">
+              A map-based social diary where emotions drift across the world.
+            </p>
             <p className="presentation-lead">結合地圖、日記、情緒、社交與 Adrift Intelligence 的互動式生活記錄平台。</p>
             <p className="presentation-advisors">張怡君老師、張瑋珊老師 共同指導</p>
             <div className="presentation-member-grid">

@@ -15527,6 +15527,12 @@ input.mood-intensity-slider {
   font-size: clamp(1.06rem, 1.08vw, 1.24rem);
 }
 
+.cover-tagline-single-line {
+  max-width: none;
+  white-space: nowrap;
+  font-size: clamp(1.12rem, 1.72vw, 1.72rem);
+}
+
 #goal .presentation-section-inner {
   align-content: center;
   grid-template-rows: auto auto;
@@ -15647,6 +15653,10 @@ input.mood-intensity-slider {
 
   .cover-title-zh {
     letter-spacing: 0.02em;
+  }
+
+  .cover-tagline-single-line {
+    white-space: normal;
   }
 
   #frontend-tech .tech-map-node strong,
