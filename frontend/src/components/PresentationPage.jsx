@@ -615,7 +615,7 @@ export default function PresentationPage() {
 
       <SlideSection id="map-diary" eyebrow="Core Feature 01" title="地圖日記" subtitle="以地圖作為主介面，讓使用者在真實地點留下日記、照片與心情。">
         <div className="presentation-feature-layout">
-          <VisualOrb compact />
+          <PresentationMapVisual />
           <div className="presentation-card-grid two">
             {mapDiaryCards.map(([title, text, icon], index) => (
               <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
@@ -1105,6 +1105,63 @@ const VisualOrb = memo(function VisualOrb({ compact = false }) {
       {dots.map(([className, label]) => (
         <span className={`presentation-dot ${className}`} key={className}><i>{label}</i></span>
       ))}
+    </div>
+  );
+});
+
+const PresentationMapVisual = memo(function PresentationMapVisual() {
+  const nodes = [
+    { className: 'node-a', x: 132, y: 144, label: 'home' },
+    { className: 'node-b', x: 286, y: 112, label: 'calm' },
+    { className: 'node-c', x: 382, y: 244, label: 'memory' },
+    { className: 'node-d', x: 226, y: 342, label: 'friends' },
+    { className: 'node-e', x: 84, y: 286, label: 'public' }
+  ];
+
+  return (
+    <div className="presentation-map-visual" aria-hidden="true">
+      <span className="presentation-map-visual-glow glow-one" />
+      <span className="presentation-map-visual-glow glow-two" />
+      <svg className="presentation-map-visual-svg" viewBox="0 0 480 420" role="img">
+        <defs>
+          <linearGradient id="presentationMemoryPath" x1="64" y1="120" x2="410" y2="322" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="var(--presentation-map-line-strong)" stopOpacity="0.2" />
+            <stop offset="0.45" stopColor="var(--presentation-map-line-strong)" stopOpacity="0.86" />
+            <stop offset="1" stopColor="var(--presentation-map-node)" stopOpacity="0.36" />
+          </linearGradient>
+          <filter id="presentationNodeGlow" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <path className="map-contour-line contour-one" d="M34 150C74 92 132 58 206 67C278 76 308 130 374 134C420 137 442 112 462 84" />
+        <path className="map-contour-line contour-two" d="M18 265C78 230 110 174 180 182C251 190 278 266 350 264C404 262 430 221 466 204" />
+        <path className="map-contour-line contour-three" d="M54 350C118 318 154 282 218 292C284 302 310 372 384 360C424 354 446 332 472 318" />
+        <path className="map-road-line road-one" d="M78 88C102 126 122 170 118 226C114 282 84 318 74 382" />
+        <path className="map-road-line road-two" d="M210 42C205 98 218 143 254 186C291 231 344 257 408 312" />
+        <path className="map-road-line road-three" d="M28 208C88 202 154 214 214 248C270 280 326 296 450 286" />
+
+        <path className="memory-drift-path path-shadow" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
+        <path className="memory-drift-path" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
+
+        {nodes.map((node, index) => (
+          <g
+            key={node.className}
+            className={`map-memory-node ${node.className}`}
+            style={{ '--node-delay': `${index * 0.38}s` }}
+            transform={`translate(${node.x} ${node.y})`}
+          >
+            <circle className="map-memory-node-halo" r="24" filter="url(#presentationNodeGlow)" />
+            <circle className="map-memory-node-ring" r="12" />
+            <circle className="map-memory-node-core" r="5.5" />
+            <text x="16" y="-13">{node.label}</text>
+          </g>
+        ))}
+      </svg>
     </div>
   );
 });
