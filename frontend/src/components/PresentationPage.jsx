@@ -1147,8 +1147,33 @@ const PresentationMapVisual = memo(function PresentationMapVisual() {
         <path className="map-road-line road-two" d="M210 42C205 98 218 143 254 186C291 231 344 257 408 312" />
         <path className="map-road-line road-three" d="M28 208C88 202 154 214 214 248C270 280 326 296 450 286" />
 
-        <path className="memory-drift-path path-shadow" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
+        <path id="presentationMemoryDriftPathMain" className="memory-drift-path path-shadow" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
         <path className="memory-drift-path" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
+        <path id="presentationMemoryDriftPathAlt" className="memory-drift-path secondary" d="M84 286C144 248 180 204 132 144C204 132 250 162 286 112C314 178 344 218 382 244C320 250 264 276 226 342" />
+
+        <g className="drifting-memory-dot dot-one">
+          <circle className="drifting-memory-dot-halo" r="13" />
+          <circle className="drifting-memory-dot-core" r="4.8" />
+          <animateMotion dur="22s" begin="0s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#presentationMemoryDriftPathMain" />
+          </animateMotion>
+        </g>
+
+        <g className="drifting-memory-dot dot-two">
+          <circle className="drifting-memory-dot-halo" r="10" />
+          <circle className="drifting-memory-dot-core" r="3.9" />
+          <animateMotion dur="28s" begin="-8s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#presentationMemoryDriftPathAlt" />
+          </animateMotion>
+        </g>
+
+        <g className="drifting-memory-dot dot-three">
+          <circle className="drifting-memory-dot-halo" r="9" />
+          <circle className="drifting-memory-dot-core" r="3.4" />
+          <animateMotion dur="32s" begin="-16s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#presentationMemoryDriftPathMain" />
+          </animateMotion>
+        </g>
 
         {nodes.map((node, index) => (
           <g

@@ -6918,6 +6918,7 @@ select option {
   --presentation-map-line-soft: rgba(125, 211, 252, 0.1);
   --presentation-map-line-strong: rgba(94, 234, 212, 0.46);
   --presentation-map-node: rgba(45, 212, 191, 0.9);
+  --presentation-map-node-glow: rgba(45, 212, 191, 0.42);
   position: relative;
   width: 100%;
   min-height: min(500px, 58vh);
@@ -6935,7 +6936,7 @@ select option {
     0 28px 70px rgba(0, 0, 0, 0.22);
   isolation: isolate;
   contain: layout paint;
-  animation: presentationMapVisualFloat 7s ease-in-out infinite;
+  animation: presentationMapVisualFloat 12s ease-in-out infinite;
 }
 
 .presentation-map-visual::before,
@@ -7032,7 +7033,14 @@ select option {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 10 13;
-  animation: presentationMemoryPathDrift 5.6s linear infinite;
+  animation: presentationMemoryPathDrift 12s linear infinite;
+}
+
+.memory-drift-path.secondary {
+  stroke-width: 1.5;
+  opacity: 0.46;
+  stroke-dasharray: 6 16;
+  animation-duration: 14s;
 }
 
 .memory-drift-path.path-shadow {
@@ -7052,7 +7060,7 @@ select option {
   fill: var(--presentation-map-node);
   opacity: 0.14;
   transform-origin: center;
-  animation: presentationMapNodeBreath 3.3s ease-in-out infinite;
+  animation: presentationMapNodeBreath 5.8s ease-in-out infinite;
   animation-delay: var(--node-delay);
 }
 
@@ -7075,6 +7083,33 @@ select option {
   letter-spacing: 0.04em;
   opacity: 0.72;
   text-transform: uppercase;
+}
+
+.drifting-memory-dot {
+  pointer-events: none;
+  opacity: 0.86;
+}
+
+.drifting-memory-dot-halo {
+  fill: var(--presentation-map-node);
+  opacity: 0.18;
+  transform-origin: center;
+  animation: presentationDriftingDotBreath 5.2s ease-in-out infinite;
+}
+
+.drifting-memory-dot-core {
+  fill: var(--presentation-map-node);
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 9px var(--presentation-map-node-glow, rgba(45, 212, 191, 0.42)));
+}
+
+.drifting-memory-dot.dot-two {
+  opacity: 0.7;
+}
+
+.drifting-memory-dot.dot-three {
+  opacity: 0.58;
 }
 
 .presentation-section-heading {
@@ -10622,6 +10657,18 @@ select option {
   }
 }
 
+@keyframes presentationDriftingDotBreath {
+  0%,
+  100% {
+    opacity: 0.12;
+    transform: scale(0.76);
+  }
+  50% {
+    opacity: 0.32;
+    transform: scale(1.16);
+  }
+}
+
 @keyframes presentationStars {
   from {
     background-position: 0 0, 0 0, 0 0;
@@ -12126,6 +12173,7 @@ select option {
   --presentation-map-line-soft: rgba(14, 116, 144, 0.13);
   --presentation-map-line-strong: rgba(14, 116, 144, 0.5);
   --presentation-map-node: rgba(14, 116, 144, 0.92);
+  --presentation-map-node-glow: rgba(14, 116, 144, 0.24);
   border-color: rgba(14, 116, 144, 0.15);
   background:
     radial-gradient(circle at 24% 20%, rgba(56, 189, 248, 0.18), transparent 32%),
@@ -16143,7 +16191,12 @@ input.mood-intensity-slider {
   .presentation-map-visual,
   .map-contour-line,
   .memory-drift-path,
-  .map-memory-node-halo {
+  .map-memory-node-halo,
+  .drifting-memory-dot-halo {
     animation: none !important;
+  }
+
+  .drifting-memory-dot {
+    opacity: 0;
   }
 }
