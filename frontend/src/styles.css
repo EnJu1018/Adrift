@@ -16200,3 +16200,94 @@ input.mood-intensity-slider {
     opacity: 0;
   }
 }
+
+.app-layout.presentation-download-mode {
+  min-height: 100vh;
+}
+
+.presentation-download-page {
+  width: 100%;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--page-bg);
+  color: var(--text-primary);
+}
+
+.presentation-download-card {
+  width: min(520px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 34px;
+  border: 1px solid var(--card-border);
+  border-radius: 28px;
+  background: var(--card-bg-strong, var(--surface-strong));
+  box-shadow: var(--shadow-medium);
+  text-align: center;
+}
+
+.presentation-download-card img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
+
+.presentation-download-card h1 {
+  margin: 0;
+  color: var(--text-heading, var(--text-primary));
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  line-height: 1.1;
+}
+
+.presentation-download-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+@media print {
+  @page {
+    size: 16in 9in;
+    margin: 0;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: auto;
+    overflow: visible !important;
+  }
+
+  .presentation-page {
+    height: auto !important;
+    overflow: visible !important;
+    background: var(--presentation-bg, var(--page-bg)) !important;
+  }
+
+  .presentation-slide-track {
+    height: auto !important;
+    overflow: visible !important;
+    scroll-snap-type: none !important;
+  }
+
+  .presentation-section {
+    width: 100% !important;
+    min-height: 100vh !important;
+    height: 100vh !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .presentation-section:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .presentation-nav,
+  .presentation-controls {
+    display: none !important;
+  }
+}

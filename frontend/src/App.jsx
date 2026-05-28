@@ -29,6 +29,7 @@ const exploreRadiusOptions = [
 ];
 
 const THEME_KEY = 'adrift-theme';
+const PRESENTATION_PDF_PATH = '/Adrift-presentation.pdf';
 const themes = ['dark', 'bright'];
 
 function getInitialTheme() {
@@ -125,6 +126,8 @@ export default function App() {
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
   const isPresentationPage = currentPath === '/p' || currentPath === '/p/';
+  const isPresentationDownloadPage = currentPath === '/pd' || currentPath === '/pd/';
+  const isPublicStandalonePage = isPresentationPage || isPresentationDownloadPage;
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {
@@ -343,7 +346,7 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!user && !isAuthPage && !isPresentationPage) {
+    if (!user && !isAuthPage && !isPublicStandalonePage) {
       navigate('/login');
       return;
     }
@@ -351,7 +354,7 @@ export default function App() {
     if (user && isAuthPage) {
       navigate('/');
     }
-  }, [isAuthPage, isPresentationPage, navigate, user]);
+  }, [isAuthPage, isPublicStandalonePage, navigate, user]);
 
   useEffect(() => {
     if (!user) {
@@ -910,10 +913,12 @@ export default function App() {
       <Particles lowPerformance={performanceMode.lowPerformance} reducedMotion={performanceMode.reducedMotion} />
 
       <motion.div
-        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPresentationPage ? 'guest' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''}`}
+        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
         {...pageFadeUp}
       >
-        {isPresentationPage ? (
+        {isPresentationDownloadPage ? (
+          <PresentationPdfDownload />
+        ) : isPresentationPage ? (
           <PresentationPage />
         ) : user && isAdminPage ? (
           isAdmin ? (
@@ -1241,6 +1246,31 @@ export default function App() {
       </AnimatePresence>
       <ToastViewport toast={actionToast} className="avoid-sidebar" onDismiss={() => setActionToast(null)} />
     </main>
+  );
+}
+
+function PresentationPdfDownload() {
+  useEffect(() => {
+    const link = document.createElement('a');
+    link.href = PRESENTATION_PDF_PATH;
+    link.download = 'Adrift-presentation.pdf';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }, []);
+
+  return (
+    <section className="presentation-download-page">
+      <div className="presentation-download-card">
+        <img src="/adrift-icon.png" alt="" aria-hidden="true" />
+        <p className="eyebrow">Presentation PDF</p>
+        <h1>正在下載簡報 PDF</h1>
+        <p>如果瀏覽器沒有自動開始下載，請點擊下方按鈕。</p>
+        <a className="primary-button" href={PRESENTATION_PDF_PATH} download="Adrift-presentation.pdf">
+          下載簡報 PDF
+        </a>
+      </div>
+    </section>
   );
 }
 
