@@ -124,7 +124,7 @@ export default function App() {
   const isSettingsPage = currentPath === '/settings/account' || currentPath === '/settings';
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
-  const isPresentationPage = currentPath === '/presentation' || currentPath === '/presentation/';
+  const isPresentationPage = currentPath === '/p' || currentPath === '/p/';
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {
