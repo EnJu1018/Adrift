@@ -1,24 +1,27 @@
 # Dependencies
 node_modules/
-frontend/node_modules/
-backend/node_modules/
+apps/*/node_modules/
+packages/*/node_modules/
 
 # Environment variables and secrets
 .env
 .env.*
-!.env.example
-frontend/.env
-frontend/.env
-!frontend/.env
-backend/.env
-backend/.env.*
-!backend/.env.example
+.env.local
+.env.*.local
+apps/*/.env
+apps/*/.env.*
+apps/*/.env.local
+apps/*/.env.*.local
+!apps/*/.env.example
+!**/.env.example
 
 # Build output
 dist/
-frontend/dist/
-backend/dist/
 build/
+apps/*/dist/
+apps/*/build/
+coverage/
+.nyc_output/
 
 # Runtime files
 *.log
@@ -30,8 +33,14 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Uploaded files
-backend/src/uploads/*
-!backend/src/uploads/.gitkeep
+apps/api/src/uploads/*
+!apps/api/src/uploads/.gitkeep
+
+# iOS / Xcode generated state
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
 
 # OS / editor
 .DS_Store
@@ -39,12 +48,8 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Tests / coverage
-coverage/
-.nyc_output/
-
 # Temporary files
 tmp/
 temp/
 *.tmp
-/frontend/.env
+_archive_review/
