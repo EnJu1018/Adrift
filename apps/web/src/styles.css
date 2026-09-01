@@ -15867,6 +15867,7 @@ input.mood-intensity-slider {
   background: var(--surface-soft);
   color: var(--text-secondary);
   text-decoration: none;
+  font-size: 0.94rem;
   font-weight: 800;
   transition: transform 160ms ease, color 160ms ease, background 160ms ease, border-color 160ms ease;
 }
@@ -15884,23 +15885,23 @@ input.mood-intensity-slider {
   position: relative;
   z-index: 1;
   display: grid;
-  gap: clamp(48px, 7vw, 92px);
+  gap: clamp(38px, 5vw, 72px);
   width: min(1440px, calc(100% - clamp(32px, 7vw, 112px)));
   margin: 0 auto;
-  padding: clamp(34px, 6vw, 84px) 0 clamp(64px, 8vw, 112px);
+  padding: clamp(28px, 4.8vw, 68px) 0 clamp(48px, 7vw, 92px);
 }
 
 .landing-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.04fr) minmax(360px, 0.86fr);
   align-items: center;
-  gap: clamp(42px, 6vw, 82px);
-  min-height: min(760px, calc(100vh - 112px));
+  gap: clamp(34px, 5vw, 68px);
+  min-height: min(680px, calc(100vh - 112px));
 }
 
 .landing-hero-copy {
   display: grid;
-  gap: 20px;
+  gap: 16px;
 }
 
 .landing-hero h1,
@@ -15908,20 +15909,20 @@ input.mood-intensity-slider {
   max-width: 900px;
   margin: 0;
   color: var(--text-heading);
-  font-size: clamp(3.2rem, 6.4vw, 6.9rem);
-  line-height: 0.98;
+  font-size: clamp(2.55rem, 4.15vw, 4.25rem);
+  line-height: 1.04;
   letter-spacing: 0;
 }
 
 .landing-hero-copy > p:not(.eyebrow),
 .landing-difference > div > p,
 .landing-callout-card > p,
-.public-info-main > p {
+.public-info-main > p:not(.eyebrow) {
   max-width: 760px;
   margin: 0;
   color: var(--text-secondary);
-  font-size: clamp(1.08rem, 1.5vw, 1.34rem);
-  line-height: 1.75;
+  font-size: clamp(1rem, 1.15vw, 1.18rem);
+  line-height: 1.68;
 }
 
 .landing-actions,
@@ -15935,14 +15936,15 @@ input.mood-intensity-slider {
 
 .landing-actions .primary-button,
 .public-info-actions .primary-button {
-  min-height: 50px;
-  padding-inline: 24px;
+  min-height: 46px;
+  padding-inline: 21px;
   border-radius: 999px;
+  font-size: 0.96rem;
 }
 
 .landing-map-visual {
   position: relative;
-  min-height: 460px;
+  min-height: 420px;
   border: 1px solid var(--card-border);
   border-radius: 36px;
   background:
@@ -15956,7 +15958,7 @@ input.mood-intensity-slider {
 .landing-map-visual svg {
   width: 100%;
   height: 100%;
-  min-height: 460px;
+  min-height: 420px;
 }
 
 .landing-contour-line {
@@ -16007,7 +16009,7 @@ input.mood-intensity-slider {
 .landing-section,
 .landing-difference,
 .public-info-main {
-  padding: clamp(28px, 4vw, 54px);
+  padding: clamp(24px, 3.3vw, 44px);
 }
 
 .landing-section-heading,
@@ -16028,7 +16030,7 @@ input.mood-intensity-slider {
 
 .landing-section h2,
 .landing-difference h2 {
-  font-size: clamp(2rem, 3.2vw, 3.6rem);
+  font-size: clamp(1.75rem, 2.6vw, 2.75rem);
 }
 
 .landing-feature-grid,
@@ -16036,8 +16038,8 @@ input.mood-intensity-slider {
 .public-info-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 24px;
+  gap: 16px;
+  margin-top: 20px;
 }
 
 .landing-feature-card,
@@ -16045,9 +16047,9 @@ input.mood-intensity-slider {
 .landing-callout-card {
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 10px;
   min-height: 100%;
-  padding: 22px;
+  padding: 20px;
   border: 1px solid var(--border-soft);
   border-radius: 24px;
   background: var(--surface-soft);
@@ -16066,15 +16068,15 @@ input.mood-intensity-slider {
 .landing-compare-grid strong {
   margin: 0;
   color: var(--text-heading);
-  font-size: 1.18rem;
-  line-height: 1.22;
+  font-size: clamp(1.05rem, 1.15vw, 1.24rem);
+  line-height: 1.28;
 }
 
 .landing-feature-card p,
 .landing-compare-grid span {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.98rem;
+  font-size: clamp(0.92rem, 0.96vw, 1rem);
   line-height: 1.65;
 }
 
@@ -16088,16 +16090,16 @@ input.mood-intensity-slider {
 .landing-two-column {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  padding: 18px;
+  gap: 16px;
+  padding: 16px;
 }
 
 .landing-callout-card {
-  padding: clamp(24px, 3vw, 36px);
+  padding: clamp(22px, 2.5vw, 32px);
 }
 
 .landing-callout-card h2 {
-  font-size: clamp(1.55rem, 2.3vw, 2.6rem);
+  font-size: clamp(1.42rem, 1.9vw, 2.15rem);
 }
 
 .landing-privacy-list {
@@ -16121,11 +16123,12 @@ input.mood-intensity-slider {
 
 .public-info-main {
   width: min(1080px, calc(100% - clamp(32px, 7vw, 112px)));
-  margin: clamp(36px, 6vw, 92px) auto;
+  margin: clamp(30px, 5vw, 72px) auto;
 }
 
 .public-info-main h1 {
-  font-size: clamp(2.8rem, 5.4vw, 5.5rem);
+  font-size: clamp(2.15rem, 3.35vw, 3.25rem);
+  line-height: 1.08;
 }
 
 @keyframes landingPathFlow {
@@ -16343,7 +16346,7 @@ input.mood-intensity-slider {
 
   .landing-hero h1,
   .public-info-main h1 {
-    font-size: clamp(2.3rem, 13vw, 3.8rem);
+    font-size: clamp(2.05rem, 10.5vw, 3rem);
   }
 
   .landing-section,
