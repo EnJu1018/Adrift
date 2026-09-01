@@ -33,6 +33,95 @@ const exploreRadiusOptions = [
 const THEME_KEY = 'adrift-theme';
 const PRESENTATION_PDF_PATH = '/Adrift-presentation.pdf';
 const themes = ['dark', 'bright'];
+const PUBLIC_SEO = {
+  '/': {
+    title: 'Adrift 漂流足跡｜地圖日記與城市記憶平台',
+    description: 'Adrift 漂流足跡是一個結合地圖、日記、心情與好友社交的城市記憶平台。你可以在真實地點留下生活片段，回顧自己的情緒足跡，也探索別人的公開記憶。',
+    url: 'https://adrifttw.com/',
+    schemaType: 'WebApplication'
+  },
+  '/about': {
+    title: '什麼是 Adrift 漂流足跡？｜地圖日記、情緒足跡與城市記憶',
+    description: '了解 Adrift 漂流足跡如何把地點、日記、情緒與好友關係結合，讓使用者在地圖上留下生活片段，建立自己的城市記憶地圖。',
+    url: 'https://adrifttw.com/about',
+    schemaType: 'AboutPage'
+  },
+  '/privacy': {
+    title: 'Adrift 隱私設計｜日記可見性、地點資料與智慧洞察',
+    description: '了解 Adrift 漂流足跡如何處理日記可見性、地點資料與 Adrift Intelligence，讓使用者控制私人、好友與公開記憶。',
+    url: 'https://adrifttw.com/privacy',
+    schemaType: 'WebPage'
+  }
+};
+
+function upsertMeta({ selector, attribute, value, content }) {
+  let element = document.head.querySelector(selector);
+  if (!element) {
+    element = document.createElement('meta');
+    const [name, attrValue] = attribute;
+    element.setAttribute(name, attrValue);
+    document.head.appendChild(element);
+  }
+
+  element.setAttribute('content', content || value);
+}
+
+function updatePublicSeo(pathname) {
+  const normalizedPath = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
+  const seo = PUBLIC_SEO[normalizedPath];
+  if (!seo) return;
+
+  const image = 'https://adrifttw.com/icon-512.png';
+
+  document.title = seo.title;
+  upsertMeta({ selector: 'meta[name="description"]', attribute: ['name', 'description'], content: seo.description });
+  upsertMeta({ selector: 'meta[property="og:title"]', attribute: ['property', 'og:title'], content: seo.title });
+  upsertMeta({ selector: 'meta[property="og:description"]', attribute: ['property', 'og:description'], content: seo.description });
+  upsertMeta({ selector: 'meta[property="og:url"]', attribute: ['property', 'og:url'], content: seo.url });
+  upsertMeta({ selector: 'meta[property="og:type"]', attribute: ['property', 'og:type'], content: 'website' });
+  upsertMeta({ selector: 'meta[property="og:image"]', attribute: ['property', 'og:image'], content: image });
+  upsertMeta({ selector: 'meta[name="twitter:card"]', attribute: ['name', 'twitter:card'], content: 'summary_large_image' });
+  upsertMeta({ selector: 'meta[name="twitter:title"]', attribute: ['name', 'twitter:title'], content: seo.title });
+  upsertMeta({ selector: 'meta[name="twitter:description"]', attribute: ['name', 'twitter:description'], content: seo.description });
+  upsertMeta({ selector: 'meta[name="twitter:image"]', attribute: ['name', 'twitter:image'], content: image });
+
+  let canonical = document.head.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute('href', seo.url);
+
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': seo.schemaType,
+    name: seo.title,
+    alternateName: ['Adrift', '漂流足跡'],
+    url: seo.url,
+    description: seo.description,
+    inLanguage: 'zh-TW'
+  };
+
+  if (seo.schemaType === 'WebApplication') {
+    schema.applicationCategory = 'LifestyleApplication';
+    schema.operatingSystem = 'Web';
+    schema.offers = {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'TWD'
+    };
+  }
+
+  let schemaElement = document.getElementById('adrift-route-schema');
+  if (!schemaElement) {
+    schemaElement = document.createElement('script');
+    schemaElement.type = 'application/ld+json';
+    schemaElement.id = 'adrift-route-schema';
+    document.head.appendChild(schemaElement);
+  }
+  schemaElement.textContent = JSON.stringify(schema);
+}
 
 function getInitialTheme() {
   try {
@@ -145,6 +234,10 @@ export default function App() {
       // localStorage can be unavailable in private browsing; the in-memory theme still applies.
     }
   }, [theme]);
+
+  useEffect(() => {
+    updatePublicSeo(currentPath);
+  }, [currentPath]);
 
   const navigate = useCallback((path) => {
     if (window.location.pathname !== path) {

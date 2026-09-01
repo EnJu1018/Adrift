@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Brain, Compass, LockKeyhole, MapPinned, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, Brain, Compass, LockKeyhole, MapPinned, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { pageFadeUp } from '../constants/animations.js';
 
 const productHighlights = [
@@ -152,6 +152,20 @@ export default function LandingPage({ onNavigate }) {
               ))}
             </div>
           </article>
+        </section>
+
+        <section className="landing-about-teaser">
+          <div>
+            <p className="eyebrow">First Visit</p>
+            <h2>第一次來到 Adrift？</h2>
+            <p>
+              用 2 分鐘了解漂流足跡如何把地點、日記、情緒與好友關係串在一起，讓城市成為能被回顧的生活記憶。
+            </p>
+          </div>
+          <button className="landing-about-link" type="button" onClick={() => onNavigate('/about')}>
+            了解 Adrift 是什麼
+            <ArrowRight size={17} />
+          </button>
         </section>
       </main>
     </motion.section>
