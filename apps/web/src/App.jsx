@@ -9,11 +9,13 @@ import DiaryModal from './components/DiaryModal.jsx';
 import DiarySidePanel from './components/DiarySidePanel.jsx';
 import FeedPage from './components/FeedPage.jsx';
 import FriendsPage from './components/FriendsPage.jsx';
+import LandingPage from './components/LandingPage.jsx';
 import LifeMapAI from './components/LifeMapAI.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import Particles from './components/Particles.jsx';
 import PresentationPage from './components/PresentationPage.jsx';
+import PublicInfoPage from './components/PublicInfoPage.jsx';
 import ToastViewport from './components/ToastViewport.jsx';
 import UserAvatar from './components/UserAvatar.jsx';
 import { pageFadeUp } from './constants/animations.js';
@@ -127,7 +129,11 @@ export default function App() {
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
   const isPresentationPage = currentPath === '/p' || currentPath === '/p/';
   const isPresentationDownloadPage = currentPath === '/pd' || currentPath === '/pd/';
-  const isPublicStandalonePage = isPresentationPage || isPresentationDownloadPage;
+  const isLandingPage = !user && currentPath === '/';
+  const isAboutPage = currentPath === '/about' || currentPath === '/about/';
+  const isPrivacyPage = currentPath === '/privacy' || currentPath === '/privacy/';
+  const isPublicInfoPage = isAboutPage || isPrivacyPage;
+  const isPublicStandalonePage = isPresentationPage || isPresentationDownloadPage || isLandingPage || isPublicInfoPage;
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {
@@ -913,13 +919,17 @@ export default function App() {
       <Particles lowPerformance={performanceMode.lowPerformance} reducedMotion={performanceMode.reducedMotion} />
 
       <motion.div
-        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
+        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isLandingPage ? 'landing-mode' : ''} ${isPublicInfoPage ? 'public-info-mode' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
         {...pageFadeUp}
       >
         {isPresentationDownloadPage ? (
           <PresentationPdfDownload />
         ) : isPresentationPage ? (
           <PresentationPage />
+        ) : isLandingPage ? (
+          <LandingPage onNavigate={navigate} />
+        ) : isPublicInfoPage ? (
+          <PublicInfoPage type={isPrivacyPage ? 'privacy' : 'about'} onNavigate={navigate} />
         ) : user && isAdminPage ? (
           isAdmin ? (
             <AdminDashboard user={user} theme={theme} onThemeChange={setTheme} onBack={() => navigate('/')} onLogout={() => logout()} />

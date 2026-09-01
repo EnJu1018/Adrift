@@ -27,8 +27,8 @@ export default function AuthPanel({
   const pageCopy = isRegister
     ? {
         eyebrow: 'Adrift',
-        title: 'Begin your drift with the first page.',
-        body: '開啟第一篇日記，成為漂流的起點。',
+        title: '把第一篇日記留在地圖上。',
+        body: '記錄地點、心情與故事，讓生活軌跡慢慢成為自己的記憶地圖。',
         cardTitle: '建立帳號',
         cardSubtitle: '開始記錄你的地圖日記',
         submit: '註冊帳號',
@@ -39,8 +39,8 @@ export default function AuthPanel({
       }
     : {
         eyebrow: 'Adrift',
-        title: 'A quiet place for memories left along the way.',
-        body: '一個在旅途中留下回憶的安靜角落。',
+        title: '在地圖上留下生活片段，重新遇見城市記憶。',
+        body: '回到你的地圖日記，看看某個地點曾經承載過哪些心情與故事。',
         cardTitle: '歡迎回來',
         cardSubtitle: '登入你的 Adrift 帳號',
         submit: '登入',
@@ -298,7 +298,7 @@ function AuthBrand({ copy, isRegister }) {
 
       <div className="auth-brand-note glass">
         <MapPinned size={18} />
-        <span>Memory, mood, place, and people. All in one quiet map.</span>
+        <span>地點、心情、故事與好友記憶，都回到同一張生活地圖。</span>
       </div>
 
     </motion.section>

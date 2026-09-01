@@ -326,6 +326,14 @@ export default function DiaryModal({
           )}
         </div>
 
+        <div className="visibility-privacy-note">
+          <strong>你的足跡，由你決定誰能看見。</strong>
+          <p>
+            公開：其他使用者可以在地圖上看到這篇日記。好友：只有好友可以看到。私人：只有你自己可以看到。
+          </p>
+          <span>更多位置隱私控制即將推出。</span>
+        </div>
+
         {isEditMode ? (
           <div className="edit-authenticity-box">
             <p>

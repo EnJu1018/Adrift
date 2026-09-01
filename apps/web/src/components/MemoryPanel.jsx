@@ -30,6 +30,8 @@ const VISIBILITY_FILTER_OPTIONS = [
   { value: 'private', label: '私人' }
 ];
 
+const ONBOARDING_KEY = 'adrift-map-onboarding-seen';
+
 export default function MemoryPanel({
   user,
   diaries,
@@ -78,6 +80,13 @@ export default function MemoryPanel({
   const [recommendationsError, setRecommendationsError] = useState('');
   const [recommendationStatus, setRecommendationStatus] = useState({});
   const [inviteTab, setInviteTab] = useState('received');
+  const [showOnboarding, setShowOnboarding] = useState(() => {
+    try {
+      return localStorage.getItem(ONBOARDING_KEY) !== 'true';
+    } catch {
+      return true;
+    }
+  });
 
   useEffect(() => {
     if (!message) return undefined;
@@ -158,6 +167,15 @@ export default function MemoryPanel({
   function showMessage(nextMessage, type = 'success') {
     setMessage(nextMessage);
     setMessageType(type);
+  }
+
+  function dismissOnboarding() {
+    setShowOnboarding(false);
+    try {
+      localStorage.setItem(ONBOARDING_KEY, 'true');
+    } catch {
+      // Keep the card dismissed for this session even if localStorage is unavailable.
+    }
   }
 
   function updateSearchResultStatus(userId, status) {
@@ -565,6 +583,26 @@ export default function MemoryPanel({
                   <span>目前地圖日記</span>
                 </div>
 
+                {showOnboarding && (
+                  <article className="map-onboarding-card">
+                    <button type="button" className="map-onboarding-close" onClick={dismissOnboarding} aria-label="關閉新手提示">
+                      <X size={14} />
+                    </button>
+                    <p className="eyebrow">Single-player first</p>
+                    <h3>先把這裡變成自己的記憶地圖</h3>
+                    <ol>
+                      <li>選一個真實地點</li>
+                      <li>寫下今天的生活片段</li>
+                      <li>選擇心情與可見範圍</li>
+                      <li>之後用地圖回顧自己的軌跡</li>
+                    </ol>
+                    <button type="button" className="map-onboarding-action" onClick={onNewDiary} disabled={createDiaryDisabled}>
+                      <Plus size={15} />
+                      留下第一篇日記
+                    </button>
+                  </article>
+                )}
+
                 <div className="diary-list-scroll-area">
                   {listedDiaries.length > 0 ? (
                     <div className="memory-list">
@@ -599,8 +637,13 @@ export default function MemoryPanel({
                     </div>
                   ) : (
                     <div className="empty-memory">
-                      <Sparkles size={18} />
-                      <p>{getVisibilityEmptyMessage(mapMode === 'explore' ? 'public' : visibilityFilter)}</p>
+                      <Sparkles size={22} />
+                      <strong>{getVisibilityEmptyTitle(mapMode === 'explore' ? 'explore' : visibilityFilter)}</strong>
+                      <p>{getVisibilityEmptyMessage(mapMode === 'explore' ? 'explore' : visibilityFilter)}</p>
+                      <button type="button" onClick={onNewDiary} disabled={createDiaryDisabled}>
+                        <Plus size={15} />
+                        在這裡留下記憶
+                      </button>
                     </div>
                   )}
                 </div>
@@ -996,12 +1039,25 @@ function getRecommendationTags(recommendation) {
   return tags;
 }
 
+function getVisibilityEmptyTitle(filter) {
+  const messages = {
+    private: '還沒有私人足跡',
+    friends: '好友記憶還在等待出現',
+    public: '還沒有公開記憶',
+    explore: '附近還很安靜',
+    all: '這裡還沒有漂流記憶'
+  };
+
+  return messages[filter] || messages.all;
+}
+
 function getVisibilityEmptyMessage(filter) {
   const messages = {
-    private: '沒有私人日記',
-    friends: '沒有好友日記',
-    public: '沒有公開日記',
-    all: '還沒有日記'
+    private: '先留下只屬於自己的日記，未來回到這裡時，你會再次遇見今天的自己。',
+    friends: '等你和好友留下更多地圖日記，這裡會逐漸長出彼此的城市記憶。',
+    public: '你可以選擇公開一篇日記，讓城市裡的其他人遇見你的故事。',
+    explore: '你可以先把這裡變成自己的記憶地圖。公開、好友或私人，都由你決定。',
+    all: '先留下你的第一個足跡吧。等未來回到這裡，你會再次遇見今天的自己。'
   };
 
   return messages[filter] || messages.all;
