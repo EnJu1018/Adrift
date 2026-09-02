@@ -7104,7 +7104,6 @@ select option {
     0 28px 70px rgba(0, 0, 0, 0.22);
   isolation: isolate;
   contain: layout paint;
-  animation: presentationMapVisualFloat var(--motion-float) var(--ease-in-out) infinite;
 }
 
 .presentation-map-visual::before,
@@ -7174,17 +7173,6 @@ select option {
   stroke: var(--presentation-map-line);
   stroke-width: 1.6;
   stroke-linecap: round;
-  stroke-dasharray: 620;
-  stroke-dashoffset: 620;
-  animation: presentationMapLineDraw var(--motion-line-draw) var(--ease-out) forwards;
-}
-
-.map-contour-line.contour-two {
-  animation-delay: 0.12s;
-}
-
-.map-contour-line.contour-three {
-  animation-delay: 0.24s;
 }
 
 .map-road-line {
@@ -7201,14 +7189,12 @@ select option {
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 10 13;
-  animation: presentationMemoryPathDrift var(--motion-path) var(--ease-linear) infinite;
 }
 
 .memory-drift-path.secondary {
   stroke-width: 1.5;
   opacity: 0.46;
   stroke-dasharray: 6 16;
-  animation-duration: var(--motion-path-slow);
 }
 
 .memory-drift-path.path-shadow {
@@ -7228,8 +7214,7 @@ select option {
   fill: var(--presentation-map-node);
   opacity: 0.14;
   transform-origin: center;
-  animation: presentationMapNodeBreath var(--motion-breathe-slow) var(--ease-in-out) infinite;
-  animation-delay: var(--node-delay);
+  transform-box: fill-box;
 }
 
 .map-memory-node-ring {
@@ -7255,14 +7240,16 @@ select option {
 
 .drifting-memory-dot {
   pointer-events: none;
-  opacity: 0.86;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .drifting-memory-dot-halo {
   fill: var(--presentation-map-node);
   opacity: 0.18;
   transform-origin: center;
-  animation: presentationDriftingDotBreath var(--motion-breathe-slow) var(--ease-in-out) infinite;
+  transform-box: fill-box;
 }
 
 .drifting-memory-dot-core {
@@ -7270,14 +7257,8 @@ select option {
   stroke: rgba(255, 255, 255, 0.7);
   stroke-width: 1.2;
   filter: drop-shadow(0 0 9px var(--presentation-map-node-glow, rgba(45, 212, 191, 0.42)));
-}
-
-.drifting-memory-dot.dot-two {
-  opacity: 0.7;
-}
-
-.drifting-memory-dot.dot-three {
-  opacity: 0.58;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .presentation-section-heading {
@@ -10777,52 +10758,6 @@ select option {
   }
   50% {
     transform: translateY(-10px);
-  }
-}
-
-@keyframes presentationMapVisualFloat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-@keyframes presentationMapLineDraw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes presentationMemoryPathDrift {
-  to {
-    stroke-dashoffset: -92;
-  }
-}
-
-@keyframes presentationMapNodeBreath {
-  0%,
-  100% {
-    opacity: 0.12;
-    transform: scale(0.78);
-  }
-  50% {
-    opacity: 0.34;
-    transform: scale(1.12);
-  }
-}
-
-@keyframes presentationDriftingDotBreath {
-  0%,
-  100% {
-    opacity: 0.12;
-    transform: scale(0.76);
-  }
-  50% {
-    opacity: 0.32;
-    transform: scale(1.16);
   }
 }
 
