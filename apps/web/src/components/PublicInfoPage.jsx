@@ -28,6 +28,12 @@ const scenarios = [
   '用一個月的日記回顧生活節奏與情緒變化。'
 ];
 
+const audiences = [
+  ['生活記錄者', '想把每天去過的地方、當下心情與生活片段整理成可回顧的地圖。'],
+  ['學生與通勤族', '在校園、通勤路線與熟悉街區留下自己的節奏，而不是只有零散照片。'],
+  ['旅行與城市探索者', '把旅途中真正有感覺的地點留下來，之後能沿著地圖重新回到那段記憶。']
+];
+
 const comparisons = [
   ['Google Maps', '擅長導航、找地點與收藏店家，但不會記得你在那裡的心情。', <Compass size={22} />],
   ['Instagram', '擅長照片、限動與即時社群互動，但記憶容易被演算法往下推走。', <HeartHandshake size={22} />],
@@ -109,6 +115,24 @@ function AboutContent({ onNavigate }) {
 
       <section className="public-info-section public-info-scenarios">
         <div className="public-info-section-heading">
+          <p className="eyebrow">Who It Is For</p>
+          <h2>Adrift 適合想把地點變成記憶的人。</h2>
+          <p>
+            它不是要求你即時曝光的社群平台，而是讓生活軌跡、情緒與好友記憶慢慢累積成自己的城市記憶系統。
+          </p>
+        </div>
+        <div className="public-info-audience-list">
+          {audiences.map(([title, text]) => (
+            <article key={title}>
+              <strong>{title}</strong>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="public-info-section public-info-scenarios">
+        <div className="public-info-section-heading">
           <p className="eyebrow">Use Cases</p>
           <h2>實際使用情境</h2>
           <p>Adrift 適合想記錄生活、旅行、通勤、校園與城市回憶的人，也適合想用地圖回顧情緒節奏的使用者。</p>
@@ -126,7 +150,7 @@ function AboutContent({ onNavigate }) {
       <section className="public-info-section">
         <div className="public-info-section-heading">
           <p className="eyebrow">Difference</p>
-          <h2>Google Maps 記得路線，IG 記得照片。Adrift 記得你在某個地方的心情與故事。</h2>
+          <h2>Google Maps 記得路線，Instagram 記得照片。Adrift 記得你在某個地方的心情與故事。</h2>
           <p>
             Adrift 不是另一個普通地圖或社群網站。它的核心，是把「地點 × 記憶 × 情緒 × 人際關係」放在一起，讓每個地方成為可以回看的生活節點。
           </p>

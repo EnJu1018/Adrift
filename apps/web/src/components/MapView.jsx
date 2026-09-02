@@ -493,10 +493,14 @@ export default function MapView({
     }
 
     updateHtmlMarkerMode();
+    map.on('zoom', updateHtmlMarkerMode);
     map.on('zoomend', updateHtmlMarkerMode);
+    map.on('styledata', updateHtmlMarkerMode);
 
     return () => {
+      map.off('zoom', updateHtmlMarkerMode);
       map.off('zoomend', updateHtmlMarkerMode);
+      map.off('styledata', updateHtmlMarkerMode);
     };
   }, [mapReady]);
 
@@ -1173,7 +1177,7 @@ function buildDiaryFeatures(diaries, selectedId, hoveredId, theme = 'dark') {
 }
 
 function buildDiaryGroupMeta(diaries) {
-  const sortedDiaries = sortDiariesForStack(diaries);
+  const sortedDiaries = sortDiariesForGrouping(diaries);
   const groupedItems = [];
 
   sortedDiaries.forEach((diary) => {
@@ -1238,15 +1242,33 @@ function getCoordinateGroupKey({ lng, lat }) {
 function getDiaryCoordinates(diary) {
   const coordinates = diary?.location?.coordinates || diary?.geo?.coordinates || diary?.coordinates;
   if (Array.isArray(coordinates) && coordinates.length >= 2) {
-    const lng = Number(coordinates[0]);
-    const lat = Number(coordinates[1]);
-    if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
+    const pair = normalizeLngLatPair(coordinates[0], coordinates[1]);
+    if (pair) return pair;
   }
 
-  const lng = Number(diary?.location?.lng ?? diary?.location?.longitude ?? diary?.lng ?? diary?.longitude);
-  const lat = Number(diary?.location?.lat ?? diary?.location?.latitude ?? diary?.lat ?? diary?.latitude);
-  if (Number.isFinite(lng) && Number.isFinite(lat)) return [lng, lat];
+  const pair = normalizeLngLatPair(
+    diary?.location?.lng ?? diary?.location?.longitude ?? diary?.lng ?? diary?.longitude,
+    diary?.location?.lat ?? diary?.location?.latitude ?? diary?.lat ?? diary?.latitude
+  );
+  if (pair) return pair;
+
   return null;
+}
+
+function normalizeLngLatPair(firstValue, secondValue) {
+  const first = Number(firstValue);
+  const second = Number(secondValue);
+
+  if (!Number.isFinite(first) || !Number.isFinite(second)) return null;
+
+  const firstLooksLikeTaiwanLat = first >= 20 && first <= 27;
+  const secondLooksLikeTaiwanLng = second >= 118 && second <= 123;
+
+  if (firstLooksLikeTaiwanLat && secondLooksLikeTaiwanLng) {
+    return [second, first];
+  }
+
+  return [first, second];
 }
 
 function getDiaryLngLat(diary) {
@@ -1281,6 +1303,16 @@ function sortDiariesForStack(diaries = []) {
   });
 }
 
+function sortDiariesForGrouping(diaries = []) {
+  return [...diaries].sort((left, right) => {
+    const leftTime = new Date(left?.createdAt || 0).getTime();
+    const rightTime = new Date(right?.createdAt || 0).getTime();
+
+    if (leftTime !== rightTime) return leftTime - rightTime;
+    return (left?._id || '').localeCompare(right?._id || '');
+  });
+}
+
 function getSpiderfyRadius(count) {
   if (count <= 2) return 42;
   if (count <= 5) return 50;
@@ -1306,6 +1338,10 @@ function getDiaryTitle(diary) {
 function setMapboxMarkerVisualVisibility(map, visible) {
   const visibility = visible ? 'visible' : 'none';
   const visualLayerIds = [
+    'diary-cluster-glow',
+    'diary-clusters',
+    'diary-cluster-count',
+    'diary-approximate-areas',
     'diary-marker-glow',
     'diary-marker-hitbox',
     'diary-marker-shell',

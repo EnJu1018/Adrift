@@ -37,12 +37,12 @@ const themes = ['dark', 'bright'];
 const PUBLIC_SEO = {
   '/': {
     title: 'Adrift 漂流足跡｜地圖日記與城市記憶平台',
-    description: 'Adrift 漂流足跡是一個結合地圖、日記、情緒足跡、好友記憶與 Adrift Intelligence 的城市記憶平台。你可以在地圖上留下生活片段，重新遇見自己與朋友的回憶。',
+    description: 'Adrift 漂流足跡是一個結合地圖、日記、心情與好友社交的城市記憶平台。你可以在真實地點留下生活片段，回顧自己的情緒足跡，也探索別人的公開記憶。',
     url: 'https://adrifttw.com/',
     schemaType: 'WebApplication'
   },
   '/about': {
-    title: '什麼是 Adrift 漂流足跡？｜地圖日記、情緒足跡與城市記憶',
+    title: '什麼是 Adrift 漂流足跡？｜地圖日記與城市記憶平台',
     description: '了解 Adrift 漂流足跡如何把地點、日記、情緒與好友關係結合，讓使用者在真實地點留下生活片段，建立自己的城市記憶系統。',
     url: 'https://adrifttw.com/about',
     schemaType: 'AboutPage'
@@ -126,6 +126,7 @@ function updatePublicSeo(pathname) {
     schema.applicationCategory = 'LifestyleApplication';
     schema.operatingSystem = 'Web';
     schema.description = 'Adrift 漂流足跡是一個以地圖為核心的生活記錄與城市記憶平台。使用者可以在去過的地點留下日記、照片與情緒，並與好友建立共同的城市記憶。';
+    schema.keywords = '地圖日記, 城市記憶, 情緒足跡, 好友記憶, Adrift Intelligence, Google Maps, Instagram, 日記 App';
     schema.offers = {
       '@type': 'Offer',
       price: '0',

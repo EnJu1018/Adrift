@@ -4,7 +4,7 @@ export const USER_CODE_PATTERN = /^[a-zA-Z0-9_-]{4,20}$/;
 export const ROLE_OPTIONS = ['user', 'admin', 'owner'];
 export const ROLE_FILTER_OPTIONS = ['all', ...ROLE_OPTIONS];
 
-export const VISIBILITY_OPTIONS = ['private', 'friends', 'public'];
+export const VISIBILITY_OPTIONS = ['public', 'friends', 'private'];
 export const VISIBILITY_FILTER_OPTIONS = ['all', 'public', 'friends', 'private'];
 
 export const MOOD_OPTIONS = [

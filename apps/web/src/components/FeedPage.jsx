@@ -99,8 +99,8 @@ export default function FeedPage({ diaries = [], user, onOpenDiary }) {
         ) : (
           <div className="feed-empty">
             <Radio size={20} />
-            <h3>目前還沒有動態</h3>
-            <p>新增日記或加入好友後，就能看到新的動態。</p>
+            <h3>附近還很安靜</h3>
+            <p>先把這裡變成你的記憶地圖。新增日記或加入好友後，公開與好友記憶會慢慢出現在這裡。</p>
           </div>
         )}
       </div>

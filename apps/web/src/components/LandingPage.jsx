@@ -6,19 +6,19 @@ const productHighlights = [
   {
     icon: <MapPinned size={24} />,
     title: '地圖日記',
-    text: '把生活片段留在真實地點。',
+    text: '把生活片段留在真實地點，之後用地圖重新回顧。',
     href: '/features/map-diary'
   },
   {
     icon: <Sparkles size={24} />,
     title: '情緒足跡',
-    text: '記錄每個地點當下的心情與強度。',
+    text: '記錄每個地點當下的心情與強度，看見生活節奏。',
     href: '/features/emotion'
   },
   {
     icon: <Users size={24} />,
-    title: '好友共同記憶',
-    text: '和朋友在同一座城市留下彼此的故事。',
+    title: '好友記憶',
+    text: '和朋友留下彼此能重新遇見的城市故事。',
     href: '/features/memories'
   }
 ];
@@ -50,10 +50,13 @@ export default function LandingPage({ onNavigate }) {
             <p className="eyebrow">Adrift 漂流足跡</p>
             <h1>把生活，留在發生的地方。</h1>
             <p>
-              在地圖上留下日記、情緒與共同回憶。有一天再次經過，你會遇見當時的自己。
+              在地圖上留下生活片段，重新遇見你與別人的城市記憶。
             </p>
             <p className="landing-definition-text">
-              Adrift 漂流足跡是一個地圖日記與城市記憶平台。你可以在去過的地點留下生活片段，記錄當下心情，並和好友累積屬於彼此的城市記憶。
+              記錄地點、心情與故事，讓生活軌跡不只是打卡，而是可以被回顧的記憶地圖。
+            </p>
+            <p className="landing-seo-definition">
+              Adrift 漂流足跡是一個以地圖為核心的生活記錄與城市記憶平台。使用者可以在去過的地點留下日記、照片與情緒，並與好友建立共同的城市記憶。
             </p>
             <div className="landing-actions">
               <button className="primary-button" type="button" onClick={() => onNavigate('/register')}>
@@ -97,7 +100,7 @@ export default function LandingPage({ onNavigate }) {
             <p className="eyebrow">How It Works</p>
             <h2>一段記憶，不只是一則貼文。</h2>
             <p>
-              今天你去了民生社區的一間咖啡店，和朋友聊了很久，也把當下的心情留在地圖上。一年後再次經過這裡，Adrift 會把這段記憶重新帶回來。
+              今天你去了民生社區的一間咖啡店，和朋友聊了很久，也把當下的心情留在地圖上。一年後再次經過這裡，Adrift 會把這段記憶重新帶回來，而不是讓它沉到動態牆深處。
             </p>
           </div>
           <article className="landing-story-card" aria-label="Adrift 使用情境範例">
@@ -143,7 +146,7 @@ export default function LandingPage({ onNavigate }) {
             <p className="eyebrow">Positioning</p>
             <h2>不是打卡，也不只是地圖。</h2>
             <p>
-              Google Maps 記得路線，IG 記得照片。Adrift 記得你在某個地方的心情與故事。
+              Google Maps 記得路線，Instagram 記得照片，一般日記 App 記得文字。Adrift 記得你在某個地方的心情與故事。
             </p>
           </div>
           <div className="landing-compare-grid">

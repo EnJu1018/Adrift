@@ -14,7 +14,7 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
           initial={{ opacity: 0, scale: 0.75 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.35, ease: 'easeOut' }}
-          title={currentLocation.accuracyType === 'approximate' ? '目前為大略位置' : '目前位置'}
+          aria-label={currentLocation.accuracyType === 'approximate' ? '目前為大略位置' : '目前位置'}
         >
           <span />
         </motion.div>
@@ -43,8 +43,7 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
             initial={{ opacity: 0, scale: 0, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: index * 0.08, type: 'spring', stiffness: 420, damping: 16 }}
-            aria-label="Open diary"
-            title={approximate ? '此日記使用大略位置' : '開啟日記'}
+            aria-label={approximate ? '此日記使用大略位置' : '開啟日記'}
           >
             {approximate && <i className="marker-radius" />}
             <span>{markerStyle.icon}</span>

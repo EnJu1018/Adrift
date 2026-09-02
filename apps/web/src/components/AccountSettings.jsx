@@ -401,12 +401,7 @@ export default function AccountSettings({
         <header className="settings-page-header">
           <div>
             <p className="eyebrow">Account Settings</p>
-            <h1 className="settings-page-title" aria-label="帳號設定">
-              <span aria-hidden="true">帳</span>
-              <span aria-hidden="true">號</span>
-              <span aria-hidden="true">設</span>
-              <span aria-hidden="true">定</span>
-            </h1>
+            <h1 className="settings-page-title">帳號設定</h1>
             <p className="settings-page-subtitle">管理你的個人資料、頭貼與帳號安全</p>
           </div>
           <button className="chip-button" type="button" onClick={onBack}>
@@ -745,6 +740,12 @@ export default function AccountSettings({
                   )}
                   <span className="avatar-crop-mask" />
                 </div>
+                {avatarDraft.url && (
+                  <div className="avatar-original-preview" aria-hidden="true">
+                    <img src={avatarDraft.url} alt="" draggable="false" />
+                    <span>原圖預覽</span>
+                  </div>
+                )}
                 {avatarDraft.meta && (
                   <div className="avatar-file-meta">
                     <Check size={15} />
