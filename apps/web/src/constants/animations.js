@@ -108,6 +108,13 @@ export const fadeUpMotion = {
   transition: listItemTransition
 };
 
+export const revealOnViewMotion = {
+  initial: { opacity: 0, y: motionTokens.distance.medium },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.18 },
+  transition: listItemTransition
+};
+
 export function listItemMotion(index = 0, lowPerformance = false) {
   return {
     initial: { opacity: 0, y: motionTokens.distance.small },
@@ -116,6 +123,16 @@ export function listItemMotion(index = 0, lowPerformance = false) {
     transition: {
       ...listItemTransition,
       delay: lowPerformance ? 0 : Math.min(index, 12) * motionTokens.duration.stagger
+    }
+  };
+}
+
+export function staggeredRevealMotion(index = 0, lowPerformance = false) {
+  return {
+    ...revealOnViewMotion,
+    transition: {
+      ...listItemTransition,
+      delay: lowPerformance ? 0 : Math.min(index, 6) * motionTokens.duration.stagger
     }
   };
 }

@@ -1483,7 +1483,7 @@ function updateMemoryStackElement(element, {
             class="memory-stack-expanded-item ${diary?._id === selectedId ? 'is-selected' : ''}"
             type="button"
             data-diary-id="${escapeHtml(diary?._id || '')}"
-            style="--expanded-x: ${x}px; --expanded-y: ${y}px; --marker-rgb: ${escapeHtml(rgb)}; --marker-color: ${escapeHtml(diaryPalette.markerColor)}"
+            style="--expanded-x: ${x}px; --expanded-y: ${y}px; --stack-item-delay: ${Math.min(index, 6) * motionMs.stagger}ms; --marker-rgb: ${escapeHtml(rgb)}; --marker-color: ${escapeHtml(diaryPalette.markerColor)}"
             aria-label="查看日記：${escapeHtml(getDiaryTitle(diary))}"
           >
             <span class="memory-expanded-aura" aria-hidden="true"></span>

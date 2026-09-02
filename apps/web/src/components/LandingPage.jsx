@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, Brain, Clock3, Coffee, Compass, LockKeyhole, MapPinned, Route, ShieldCheck, Sparkles, Users } from 'lucide-react';
-import { pageFadeUp } from '../constants/animations.js';
+import { pageFadeUp, revealOnViewMotion, staggeredRevealMotion } from '../constants/animations.js';
 
 const productHighlights = [
   {
@@ -95,7 +95,7 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </section>
 
-        <section className="landing-memory-story">
+        <motion.section className="landing-memory-story" {...revealOnViewMotion}>
           <div className="landing-story-copy">
             <p className="eyebrow">How It Works</p>
             <h2>一段記憶，不只是一則貼文。</h2>
@@ -113,16 +113,16 @@ export default function LandingPage({ onNavigate }) {
               <p>和某個朋友聊天 · 今天心情很好 · 一年後再次經過時重新遇見</p>
             </div>
           </article>
-        </section>
+        </motion.section>
 
-        <section id="how-it-works" className="landing-section">
+        <motion.section id="how-it-works" className="landing-section" {...revealOnViewMotion}>
           <div className="landing-section-heading">
             <p className="eyebrow">City Memory System</p>
             <h2>你的城市，慢慢變成一本日記。</h2>
           </div>
           <div className="landing-feature-grid">
-            {productHighlights.map((item) => (
-              <article className="landing-feature-card" key={item.title}>
+            {productHighlights.map((item, index) => (
+              <motion.article className="landing-feature-card" key={item.title} {...staggeredRevealMotion(index)}>
                 {item.icon}
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
@@ -136,12 +136,12 @@ export default function LandingPage({ onNavigate }) {
                   了解更多
                   <ArrowRight size={15} />
                 </a>
-              </article>
+              </motion.article>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        <section className="landing-difference">
+        <motion.section className="landing-difference" {...revealOnViewMotion}>
           <div>
             <p className="eyebrow">Positioning</p>
             <h2>不是打卡，也不只是地圖。</h2>
@@ -166,36 +166,36 @@ export default function LandingPage({ onNavigate }) {
               <span>把日記放回真實地點，讓城市成為可以回看的記憶節點。</span>
             </article>
           </div>
-        </section>
+        </motion.section>
 
-        <section className="landing-two-column">
-          <article className="landing-callout-card">
+        <motion.section className="landing-two-column" {...revealOnViewMotion}>
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(0)}>
             <Clock3 size={24} />
             <h2>三個月前，你也來過這裡。</h2>
             <p>
               Adrift 最重要的不是即時曝光，而是當你再次經過某個地方，過去留下的記憶會重新出現。久了以後，這張地圖會變成你的生活。
             </p>
-          </article>
+          </motion.article>
 
-          <article className="landing-callout-card">
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(1)}>
             <Brain size={24} />
             <h2>Adrift Intelligence 會替你整理散落的片段。</h2>
             <p>
               當日記慢慢累積，它會根據你的地點、情緒與文字，整理生活回顧、情緒趨勢與地點洞察。
             </p>
-          </article>
-        </section>
+          </motion.article>
+        </motion.section>
 
-        <section className="landing-two-column">
-          <article className="landing-callout-card">
+        <motion.section className="landing-two-column" {...revealOnViewMotion}>
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(0)}>
             <Route size={24} />
             <h2>一個人使用，也會慢慢長出價值。</h2>
             <p>
               你可以先把 Adrift 當成自己的記憶地圖。即使只有自己可見，也能在未來回顧生活軌跡、情緒變化與重要地點。
             </p>
-          </article>
+          </motion.article>
 
-          <article className="landing-callout-card">
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(1)}>
             <ShieldCheck size={24} />
             <h2>你的足跡，由你決定誰能看見。</h2>
             <p>Adrift 讓你記錄地點，但不要求你暴露即時位置。</p>
@@ -208,10 +208,10 @@ export default function LandingPage({ onNavigate }) {
                 </span>
               ))}
             </div>
-          </article>
-        </section>
+          </motion.article>
+        </motion.section>
 
-        <section className="landing-about-teaser">
+        <motion.section className="landing-about-teaser" {...revealOnViewMotion}>
           <div>
             <p className="eyebrow">First Visit</p>
             <h2>第一次來到 Adrift？</h2>
@@ -223,7 +223,7 @@ export default function LandingPage({ onNavigate }) {
             了解 Adrift 是什麼
             <ArrowRight size={17} />
           </button>
-        </section>
+        </motion.section>
       </main>
     </motion.section>
   );
