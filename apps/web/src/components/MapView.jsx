@@ -2,7 +2,7 @@ import mapboxgl from 'mapbox-gl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Compass, Minus, Navigation, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fadeUpMotion, motionMs, motionTokens, pageTransition, toastMotion } from '../constants/animations.js';
+import { dropdownMotion, fadeUpMotion, motionMs, motionTokens, pageTransition, toastMotion } from '../constants/animations.js';
 import { getMoodMarkerStyle } from '../constants/moodStyles.js';
 import FallbackMap from './FallbackMap.jsx';
 
@@ -1003,10 +1003,7 @@ export default function MapView({
                 className="compass"
                 onClick={resetBearing}
                 aria-label="回到北方在上"
-                initial={{ opacity: 0, scale: 0.96, y: -3 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -3 }}
-                transition={pageTransition}
+                {...dropdownMotion(false)}
               >
                 <Compass size={17} style={{ transform: `rotate(${-mapBearing}deg)` }} />
               </motion.button>
@@ -1019,10 +1016,7 @@ export default function MapView({
                 className="map-control-text"
                 onClick={resetPitch}
                 aria-label="返回 2D 地圖"
-                initial={{ opacity: 0, scale: 0.96, y: -3 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.96, y: -3 }}
-                transition={pageTransition}
+                {...dropdownMotion(false)}
               >
                 2D
               </motion.button>

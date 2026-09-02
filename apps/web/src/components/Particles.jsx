@@ -26,14 +26,7 @@ export default function Particles({ lowPerformance = false, reducedMotion = fals
       canvas.style.width = `${window.innerWidth}px`;
       canvas.style.height = `${window.innerHeight}px`;
       context.setTransform(ratio, 0, 0, ratio, 0, 0);
-      particles = Array.from({ length: targetCount }, () => ({
-        x: Math.random() * window.innerWidth,
-        y: Math.random() * window.innerHeight,
-        radius: Math.random() * (lowPerformance ? 1.2 : 1.6) + 0.35,
-        speed: Math.random() * (lowPerformance ? 0.12 : 0.2) + 0.04,
-        drift: Math.random() * 0.12 - 0.06,
-        alpha: Math.random() * 0.28 + 0.1
-      }));
+      particles = Array.from({ length: targetCount }, (_, index) => createParticle(index, lowPerformance));
     }
 
     function draw() {
@@ -49,8 +42,9 @@ export default function Particles({ lowPerformance = false, reducedMotion = fals
         particle.x += particle.drift;
 
         if (particle.y < -8) {
+          particle.cycles += 1;
           particle.y = window.innerHeight + 8;
-          particle.x = Math.random() * window.innerWidth;
+          particle.x = seededUnit(particle.seed + particle.cycles * 17) * window.innerWidth;
         }
 
         context.beginPath();
@@ -81,4 +75,24 @@ export default function Particles({ lowPerformance = false, reducedMotion = fals
   if (reducedMotion) return null;
 
   return <canvas ref={canvasRef} className="particles" aria-hidden="true" />;
+}
+
+function createParticle(index, lowPerformance) {
+  const seed = index + 1;
+
+  return {
+    seed,
+    cycles: 0,
+    x: seededUnit(seed * 3) * window.innerWidth,
+    y: seededUnit(seed * 5) * window.innerHeight,
+    radius: seededUnit(seed * 7) * (lowPerformance ? 1.2 : 1.6) + 0.35,
+    speed: seededUnit(seed * 11) * (lowPerformance ? 0.12 : 0.2) + 0.04,
+    drift: seededUnit(seed * 13) * 0.12 - 0.06,
+    alpha: seededUnit(seed * 19) * 0.28 + 0.1
+  };
+}
+
+function seededUnit(value) {
+  const signal = Math.sin(value * 12.9898) * 43758.5453;
+  return signal - Math.floor(signal);
 }

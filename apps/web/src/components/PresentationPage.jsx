@@ -19,7 +19,7 @@ import {
   Users
 } from 'lucide-react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { listItemMotion, pageFadeUp } from '../constants/animations.js';
+import { listItemMotion, pageTransition } from '../constants/animations.js';
 
 const slides = [
   { id: 'cover', label: '封面', group: '封面' },
@@ -538,7 +538,9 @@ export default function PresentationPage() {
       onWheel={handleWheel}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      {...pageFadeUp}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={pageTransition}
     >
       <PresentationAtmosphere />
       <PresentationNav activeGroup={activeGroup} onSelect={goToGroup} />

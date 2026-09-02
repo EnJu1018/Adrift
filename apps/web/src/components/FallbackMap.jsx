@@ -12,7 +12,7 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
         <motion.div
           className={`current-location-fallback ${currentLocation.accuracyType === 'approximate' ? 'approximate' : ''}`}
           style={{ left: `${currentPoint.x}%`, top: `${currentPoint.y}%` }}
-          initial={{ opacity: 0, scale: 0.75 }}
+          initial={{ opacity: 0, scale: motionTokens.scale.large }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: motionTokens.duration.fast, ease: motionTokens.ease.smoothOut }}
           aria-label={currentLocation.accuracyType === 'approximate' ? '目前為大略位置' : '目前位置'}
@@ -41,8 +41,8 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
               '--marker-core': markerStyle.core
             }}
             onClick={() => onSelect(diary)}
-            initial={{ opacity: 0, scale: motionTokens.scale.large, y: motionTokens.distance.base }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            initial={{ opacity: 0, scale: motionTokens.scale.large }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{
               duration: motionTokens.duration.fast,
               ease: motionTokens.ease.smoothOut,
