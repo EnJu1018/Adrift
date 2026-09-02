@@ -48,6 +48,16 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Local development tooling
+.agents/
+.codex/
+.skills/
+.ai/
+.prompts/
+.cursor/
+.copilot/
+*.prompt.md
+
 # Temporary files
 tmp/
 temp/

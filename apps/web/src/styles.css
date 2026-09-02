@@ -60,7 +60,7 @@
   --icon-md: 20px;
   --icon-lg: 28px;
   --icon-xl: 42px;
-  /* transitions.dev motion scale */
+  /* Shared motion scale */
   --duration-stagger: 40ms;
   --duration-micro: 80ms;
   --duration-quick: 150ms;
@@ -111,7 +111,7 @@
   text-rendering: optimizeLegibility;
 }
 
-/* Motion foundation for phased transitions.dev rollout.
+/* Motion foundation for shared UI transitions.
    These utility classes are opt-in; page-specific phases can compose them safely. */
 .fade-in,
 .motion-fade-in {
@@ -12699,7 +12699,7 @@ select option {
   box-shadow: none !important;
 }
 
-/* Diary form and notification polish: public-by-default flow, readable prompts, and theme-aware mood controls. */
+/* Diary form and notification polish: public-by-default flow, readable helper text, and theme-aware mood controls. */
 :root[data-theme="dark"] {
   --toast-text: #eafdff;
   --toast-muted: rgba(234, 253, 255, 0.78);
