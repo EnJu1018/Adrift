@@ -22,6 +22,7 @@ export const motionTokens = {
     verySlow: motionMs.verySlow / 1000
   },
   distance: {
+    nudge: 1,
     micro: 4,
     small: 6,
     base: 8,

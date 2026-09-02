@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Heart, MessageCircle, Radio, Users, Waves } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { fadeUpMotion } from '../constants/animations.js';
+import { fadeUpMotion, listItemMotion } from '../constants/animations.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
 import UserAvatar from './UserAvatar.jsx';
@@ -62,8 +62,7 @@ export default function FeedPage({ diaries = [], user, onOpenDiary }) {
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') onOpenDiary?.(diary);
               }}
-              {...fadeUpMotion}
-              transition={{ ...fadeUpMotion.transition, delay: Math.min(index * 0.03, 0.18) }}
+              {...listItemMotion(index)}
             >
               <div className="feed-card-header">
                 <UserAvatar user={getAuthor(diary, user)} size="sm" />

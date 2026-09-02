@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Check, Copy, LogOut, Settings, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { modalPopMotion } from '../constants/animations.js';
+import { fadeUpMotion, modalPopMotion, motionTokens } from '../constants/animations.js';
 
 export default function ProfileDock({ user, diaries, friends, forceOpen, onOpen, onClose, onSettings, onLogout }) {
   const [open, setOpen] = useState(Boolean(forceOpen));
@@ -86,9 +86,7 @@ export default function ProfileDock({ user, diaries, friends, forceOpen, onOpen,
               {copyMessage && (
                 <motion.p
                   className={`form-message ${copyMessage.startsWith('無法') ? 'error' : 'success'} compact`}
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
+                  {...fadeUpMotion}
                 >
                   <Check size={14} />
                   {copyMessage}
@@ -104,7 +102,7 @@ export default function ProfileDock({ user, diaries, friends, forceOpen, onOpen,
         )}
       </AnimatePresence>
 
-      <motion.div className="profile-fab glass" initial={false} whileHover={{ y: -1 }}>
+      <motion.div className="profile-fab glass" initial={false} whileHover={{ y: -motionTokens.distance.nudge }}>
         <button className="profile-trigger" type="button" onClick={toggleOpen} aria-label="開啟帳號卡片">
           <span className="avatar-orb small">{(user.name || 'A').slice(0, 1).toUpperCase()}</span>
           <span>

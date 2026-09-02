@@ -6817,7 +6817,7 @@ select option {
   width: min(1240px, 100%);
   min-width: 0;
   margin: 0 auto;
-  animation: presentationSlideIn 460ms ease both;
+  animation: adriftMotionFadeUp var(--duration-very-slow) var(--ease-smooth-out) both;
 }
 
 .presentation-page > .presentation-section {
@@ -10758,17 +10758,6 @@ select option {
   }
 }
 
-@keyframes presentationSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes presentationBreath {
   0%,
   100% {
@@ -14426,7 +14415,7 @@ input.mood-intensity-slider::-moz-range-thumb {
   color: var(--text-primary);
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
   backdrop-filter: blur(16px);
-  animation: markerTooltipIn var(--duration-quick) var(--ease-out) both;
+  animation: adriftMotionTooltipIn var(--duration-quick) var(--ease-out) both;
 }
 
 .mapboxgl-popup.memory-marker-tooltip strong {
@@ -14465,18 +14454,6 @@ input.mood-intensity-slider::-moz-range-thumb {
 @keyframes memoryOrbitDrift {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes markerTooltipIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
