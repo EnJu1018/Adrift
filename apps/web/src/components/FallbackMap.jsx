@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { motionTokens } from '../constants/animations.js';
 import { getMoodMarkerStyle } from '../constants/moodStyles.js';
 
 export default function FallbackMap({ diaries, selectedId, currentLocation, onSelect }) {
@@ -13,7 +14,7 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
           style={{ left: `${currentPoint.x}%`, top: `${currentPoint.y}%` }}
           initial={{ opacity: 0, scale: 0.75 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
+          transition={{ duration: motionTokens.duration.fast, ease: motionTokens.ease.smoothOut }}
           aria-label={currentLocation.accuracyType === 'approximate' ? '目前為大略位置' : '目前位置'}
         >
           <span />
@@ -40,9 +41,13 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
               '--marker-core': markerStyle.core
             }}
             onClick={() => onSelect(diary)}
-            initial={{ opacity: 0, scale: 0, y: 18 }}
+            initial={{ opacity: 0, scale: motionTokens.scale.large, y: motionTokens.distance.base }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: index * 0.08, type: 'spring', stiffness: 420, damping: 16 }}
+            transition={{
+              duration: motionTokens.duration.fast,
+              ease: motionTokens.ease.smoothOut,
+              delay: Math.min(index, 6) * motionTokens.duration.stagger
+            }}
             aria-label={approximate ? '此日記使用大略位置' : '開啟日記'}
           >
             {approximate && <i className="marker-radius" />}

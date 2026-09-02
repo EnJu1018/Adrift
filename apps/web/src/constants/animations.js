@@ -1,15 +1,25 @@
 const smoothOut = [0.22, 1, 0.36, 1];
 const softOut = [0.16, 1, 0.3, 1];
 
+export const motionMs = {
+  stagger: 40,
+  micro: 80,
+  quick: 150,
+  fast: 250,
+  medium: 350,
+  slow: 400,
+  verySlow: 500
+};
+
 export const motionTokens = {
   duration: {
-    stagger: 0.04,
-    micro: 0.08,
-    quick: 0.15,
-    fast: 0.25,
-    medium: 0.35,
-    slow: 0.4,
-    verySlow: 0.5
+    stagger: motionMs.stagger / 1000,
+    micro: motionMs.micro / 1000,
+    quick: motionMs.quick / 1000,
+    fast: motionMs.fast / 1000,
+    medium: motionMs.medium / 1000,
+    slow: motionMs.slow / 1000,
+    verySlow: motionMs.verySlow / 1000
   },
   distance: {
     micro: 4,

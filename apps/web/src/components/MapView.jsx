@@ -2,7 +2,7 @@ import mapboxgl from 'mapbox-gl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Compass, Minus, Navigation, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fadeUpMotion, pageTransition, toastMotion } from '../constants/animations.js';
+import { fadeUpMotion, motionMs, motionTokens, pageTransition, toastMotion } from '../constants/animations.js';
 import { getMoodMarkerStyle } from '../constants/moodStyles.js';
 import FallbackMap from './FallbackMap.jsx';
 
@@ -302,8 +302,8 @@ export default function MapView({
           'circle-stroke-opacity': ['case', ['boolean', ['get', 'approximate'], false], 0.68, 0.95],
           'circle-blur': ['case', ['boolean', ['get', 'approximate'], false], 0.04, 0],
           'circle-emissive-strength': 1,
-          'circle-radius-transition': { duration: 180 },
-          'circle-opacity-transition': { duration: 180 }
+          'circle-radius-transition': { duration: motionMs.quick },
+          'circle-opacity-transition': { duration: motionMs.quick }
         }
       });
 
@@ -718,7 +718,7 @@ export default function MapView({
         map.easeTo({
           center: cluster.geometry.coordinates,
           zoom,
-          duration: 650
+          duration: motionMs.verySlow
         });
       });
     }
@@ -1066,9 +1066,9 @@ export default function MapView({
           <motion.div
             className="selection-ripple"
             initial={{ opacity: 0.55, scale: 0 }}
-            animate={{ opacity: 0, scale: 5 }}
+            animate={{ opacity: 0, scale: 3.2 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.1, ease: 'easeOut' }}
+            transition={{ duration: motionTokens.duration.verySlow, ease: motionTokens.ease.smoothOut }}
           />
         )}
       </AnimatePresence>
@@ -1080,9 +1080,9 @@ export default function MapView({
     if (!map) return;
 
     if (delta > 0) {
-      map.zoomIn({ duration: 260, essential: true });
+      map.zoomIn({ duration: motionMs.fast, essential: true });
     } else {
-      map.zoomOut({ duration: 260, essential: true });
+      map.zoomOut({ duration: motionMs.fast, essential: true });
     }
   }
 
@@ -1092,7 +1092,7 @@ export default function MapView({
 
     map.easeTo({
       pitch: 0,
-      duration: 500,
+      duration: motionMs.verySlow,
       essential: true
     });
   }
@@ -1103,7 +1103,7 @@ export default function MapView({
 
     map.easeTo({
       bearing: 0,
-      duration: 500,
+      duration: motionMs.verySlow,
       essential: true
     });
   }
