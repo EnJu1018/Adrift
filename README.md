@@ -105,6 +105,14 @@ open apps/ios/Adrift.xcodeproj
 - [部署說明](docs/deployment.md)
 - [iOS 說明](docs/ios.md)
 
+## SEO Checklist
+
+- Submit `https://adrifttw.com/sitemap.xml` to Google Search Console.
+- Verify the canonical domain as `https://adrifttw.com/`.
+- Request indexing for the homepage, `/about`, `/features/map-diary`, `/features/emotion`, `/features/memories`, and `/privacy`.
+- Keep public product copy crawlable as real HTML text, not only images, canvas, or SVG text.
+- Do not add a Google Search Console verification code until the real code is issued by Google.
+
 ## 開發重點
 
 目前網站版是主要開發重點：

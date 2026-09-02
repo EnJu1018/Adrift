@@ -8,6 +8,7 @@ import AuthPanel from './components/AuthPanel.jsx';
 import DiaryModal from './components/DiaryModal.jsx';
 import DiarySidePanel from './components/DiarySidePanel.jsx';
 import FeedPage from './components/FeedPage.jsx';
+import FeaturePage from './components/FeaturePage.jsx';
 import FriendsPage from './components/FriendsPage.jsx';
 import LandingPage from './components/LandingPage.jsx';
 import LifeMapAI from './components/LifeMapAI.jsx';
@@ -36,15 +37,33 @@ const themes = ['dark', 'bright'];
 const PUBLIC_SEO = {
   '/': {
     title: 'Adrift 漂流足跡｜地圖日記與城市記憶平台',
-    description: 'Adrift 漂流足跡是一個結合地圖、日記、心情與好友社交的城市記憶平台。你可以在真實地點留下生活片段，回顧自己的情緒足跡，也探索別人的公開記憶。',
+    description: 'Adrift 漂流足跡是一個結合地圖、日記、情緒足跡、好友記憶與 Adrift Intelligence 的城市記憶平台。你可以在地圖上留下生活片段，重新遇見自己與朋友的回憶。',
     url: 'https://adrifttw.com/',
     schemaType: 'WebApplication'
   },
   '/about': {
     title: '什麼是 Adrift 漂流足跡？｜地圖日記、情緒足跡與城市記憶',
-    description: '了解 Adrift 漂流足跡如何把地點、日記、情緒與好友關係結合，讓使用者在地圖上留下生活片段，建立自己的城市記憶地圖。',
+    description: '了解 Adrift 漂流足跡如何把地點、日記、情緒與好友關係結合，讓使用者在真實地點留下生活片段，建立自己的城市記憶系統。',
     url: 'https://adrifttw.com/about',
     schemaType: 'AboutPage'
+  },
+  '/features/map-diary': {
+    title: '地圖日記｜Adrift 漂流足跡',
+    description: '地圖日記讓你把生活片段留在真實發生的地方。每一篇日記都包含地點、時間、心情與故事，讓回憶回到城市地圖上。',
+    url: 'https://adrifttw.com/features/map-diary',
+    schemaType: 'WebPage'
+  },
+  '/features/emotion': {
+    title: '情緒足跡｜Adrift 漂流足跡',
+    description: '情緒足跡讓你記錄每個地點當下的心情與強度，當紀錄累積後，看見自己在不同時間與地點的生活節奏。',
+    url: 'https://adrifttw.com/features/emotion',
+    schemaType: 'WebPage'
+  },
+  '/features/memories': {
+    title: '城市記憶｜Adrift 漂流足跡',
+    description: '城市記憶是 Adrift 的核心概念。隨著日記累積，地圖會慢慢變成屬於你和朋友的生活記憶系統。',
+    url: 'https://adrifttw.com/features/memories',
+    schemaType: 'WebPage'
   },
   '/privacy': {
     title: 'Adrift 隱私設計｜日記可見性、地點資料與智慧洞察',
@@ -96,7 +115,7 @@ function updatePublicSeo(pathname) {
   const schema = {
     '@context': 'https://schema.org',
     '@type': seo.schemaType,
-    name: seo.title,
+    name: normalizedPath === '/' ? 'Adrift 漂流足跡' : seo.title,
     alternateName: ['Adrift', '漂流足跡'],
     url: seo.url,
     description: seo.description,
@@ -106,6 +125,7 @@ function updatePublicSeo(pathname) {
   if (seo.schemaType === 'WebApplication') {
     schema.applicationCategory = 'LifestyleApplication';
     schema.operatingSystem = 'Web';
+    schema.description = 'Adrift 漂流足跡是一個以地圖為核心的生活記錄與城市記憶平台。使用者可以在去過的地點留下日記、照片與情緒，並與好友建立共同的城市記憶。';
     schema.offers = {
       '@type': 'Offer',
       price: '0',
@@ -221,8 +241,10 @@ export default function App() {
   const isLandingPage = !user && currentPath === '/';
   const isAboutPage = currentPath === '/about' || currentPath === '/about/';
   const isPrivacyPage = currentPath === '/privacy' || currentPath === '/privacy/';
+  const featureSlug = currentPath.match(/^\/features\/([^/]+)\/?$/)?.[1] || '';
+  const isFeaturePage = ['map-diary', 'emotion', 'memories'].includes(featureSlug);
   const isPublicInfoPage = isAboutPage || isPrivacyPage;
-  const isPublicStandalonePage = isPresentationPage || isPresentationDownloadPage || isLandingPage || isPublicInfoPage;
+  const isPublicStandalonePage = isPresentationPage || isPresentationDownloadPage || isLandingPage || isPublicInfoPage || isFeaturePage;
   const isAdmin = user?.role === 'admin' || user?.role === 'owner';
 
   useEffect(() => {
@@ -1021,6 +1043,8 @@ export default function App() {
           <PresentationPage />
         ) : isLandingPage ? (
           <LandingPage onNavigate={navigate} />
+        ) : isFeaturePage ? (
+          <FeaturePage slug={featureSlug} onNavigate={navigate} />
         ) : isPublicInfoPage ? (
           <PublicInfoPage type={isPrivacyPage ? 'privacy' : 'about'} onNavigate={navigate} />
         ) : user && isAdminPage ? (

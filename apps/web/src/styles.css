@@ -15925,6 +15925,12 @@ input.mood-intensity-slider {
   line-height: 1.68;
 }
 
+.landing-definition-text {
+  font-size: clamp(0.96rem, 1vw, 1.08rem) !important;
+  line-height: 1.7 !important;
+  color: var(--text-muted) !important;
+}
+
 .landing-actions,
 .public-info-actions {
   display: flex;
@@ -15997,6 +16003,7 @@ input.mood-intensity-slider {
 .landing-section,
 .landing-difference,
 .landing-two-column,
+.landing-memory-story,
 .landing-about-teaser,
 .public-info-section,
 .public-info-main {
@@ -16010,6 +16017,7 @@ input.mood-intensity-slider {
 
 .landing-section,
 .landing-difference,
+.landing-memory-story,
 .landing-about-teaser,
 .public-info-section,
 .public-info-main {
@@ -16017,6 +16025,7 @@ input.mood-intensity-slider {
 }
 
 .landing-section-heading,
+.landing-story-copy,
 .public-info-section-heading,
 .public-info-hero,
 .landing-difference > div,
@@ -16028,7 +16037,9 @@ input.mood-intensity-slider {
 .landing-section h2,
 .landing-difference h2,
 .landing-callout-card h2,
+.landing-memory-story h2,
 .landing-about-teaser h2,
+.feature-hero h1,
 .public-info-section h2,
 .public-info-main h2 {
   margin: 0;
@@ -16038,9 +16049,83 @@ input.mood-intensity-slider {
 
 .landing-section h2,
 .landing-difference h2,
+.landing-memory-story h2,
 .landing-about-teaser h2,
 .public-info-section-heading h2 {
   font-size: clamp(1.75rem, 2.6vw, 2.75rem);
+}
+
+.landing-memory-story {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+  align-items: center;
+  gap: clamp(20px, 4vw, 52px);
+  background:
+    radial-gradient(circle at 80% 18%, rgba(var(--accent-rgb, 15, 127, 156), 0.12), transparent 36%),
+    var(--card-bg);
+}
+
+.landing-story-copy {
+  max-width: 620px;
+}
+
+.landing-story-copy p:not(.eyebrow) {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(0.98rem, 1.05vw, 1.12rem);
+  line-height: 1.68;
+}
+
+.landing-story-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: clamp(20px, 2.6vw, 32px);
+  border: 1px solid var(--accent-medium, var(--border-soft));
+  border-radius: 28px;
+  background:
+    linear-gradient(135deg, var(--accent-soft), transparent 76%),
+    var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.landing-story-pin {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  place-items: center;
+  border: 1px solid var(--accent-medium, var(--border-soft));
+  border-radius: 999px;
+  background: var(--surface-strong, var(--surface));
+  color: var(--accent);
+  box-shadow: 0 14px 28px rgba(var(--accent-rgb, 15, 127, 156), 0.14);
+}
+
+.landing-story-card-main {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.landing-story-card-main span {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.landing-story-card-main strong {
+  color: var(--text-heading);
+  font-size: clamp(1.08rem, 1.35vw, 1.42rem);
+  line-height: 1.32;
+}
+
+.landing-story-card-main p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(0.92rem, 0.96vw, 1rem);
+  line-height: 1.6;
 }
 
 .landing-feature-grid,
@@ -16089,11 +16174,38 @@ input.mood-intensity-slider {
 .landing-feature-card p,
 .landing-compare-grid span,
 .public-info-section-heading p,
+.feature-definition p,
 .public-info-note p {
   margin: 0;
   color: var(--text-secondary);
   font-size: clamp(0.92rem, 0.96vw, 1rem);
   line-height: 1.65;
+}
+
+.landing-feature-card a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  min-height: 34px;
+  margin-top: 4px;
+  padding: 0 12px;
+  border: 1px solid var(--accent-medium, var(--border-soft));
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.landing-feature-card a:hover {
+  transform: translateY(-1px);
+  background: rgba(var(--accent-rgb, 15, 127, 156), 0.16);
+  color: var(--accent-hover, var(--accent));
 }
 
 .landing-compare-grid .is-adrift {
@@ -16300,6 +16412,47 @@ input.mood-intensity-slider {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.feature-main {
+  width: min(1040px, calc(100% - clamp(32px, 7vw, 112px)));
+}
+
+.feature-hero {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.feature-hero-icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border: 1px solid var(--accent-medium, var(--border-soft));
+  border-radius: 18px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.feature-hero > div:last-child {
+  display: grid;
+  gap: 12px;
+}
+
+.feature-hero p:not(.eyebrow) {
+  max-width: 760px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: clamp(1rem, 1.12vw, 1.18rem);
+  line-height: 1.68;
+}
+
+.feature-definition {
+  background:
+    linear-gradient(135deg, var(--accent-soft), transparent 76%),
+    var(--surface-soft);
+}
+
 @keyframes landingPathFlow {
   from {
     stroke-dashoffset: 0;
@@ -16452,6 +16605,7 @@ input.mood-intensity-slider {
 :root[data-theme="bright"] .landing-section,
 :root[data-theme="bright"] .landing-difference,
 :root[data-theme="bright"] .landing-two-column,
+:root[data-theme="bright"] .landing-memory-story,
 :root[data-theme="bright"] .landing-about-teaser,
 :root[data-theme="bright"] .public-info-main,
 :root[data-theme="bright"] .public-info-section,
@@ -16466,6 +16620,7 @@ input.mood-intensity-slider {
 :root[data-theme="bright"] .landing-feature-card,
 :root[data-theme="bright"] .landing-compare-grid article,
 :root[data-theme="bright"] .landing-callout-card,
+:root[data-theme="bright"] .landing-story-card,
 :root[data-theme="bright"] .public-info-scenario-list article,
 :root[data-theme="bright"] .public-info-compare-list article,
 :root[data-theme="bright"] .public-info-principles p {
@@ -16483,6 +16638,7 @@ input.mood-intensity-slider {
 @media (max-width: 980px) {
   .landing-hero,
   .landing-two-column,
+  .landing-memory-story,
   .landing-about-teaser,
   .landing-feature-grid,
   .landing-compare-grid,
@@ -16539,6 +16695,7 @@ input.mood-intensity-slider {
 
   .landing-section,
   .landing-difference,
+  .landing-memory-story,
   .landing-about-teaser,
   .public-info-section,
   .public-info-main {
@@ -16547,6 +16704,11 @@ input.mood-intensity-slider {
   }
 
   .public-info-note {
+    grid-template-columns: 1fr;
+  }
+
+  .landing-story-card,
+  .feature-hero {
     grid-template-columns: 1fr;
   }
 }

@@ -1,22 +1,25 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, Brain, Compass, LockKeyhole, MapPinned, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import { ArrowRight, Brain, Clock3, Coffee, Compass, LockKeyhole, MapPinned, Route, ShieldCheck, Sparkles, Users } from 'lucide-react';
 import { pageFadeUp } from '../constants/animations.js';
 
 const productHighlights = [
   {
     icon: <MapPinned size={24} />,
     title: '地圖日記',
-    text: '把生活片段留在真實地點，日後能用地圖重新回顧。'
+    text: '把生活片段留在真實地點。',
+    href: '/features/map-diary'
   },
   {
     icon: <Sparkles size={24} />,
     title: '情緒足跡',
-    text: '每篇日記都能記錄心情與強度，看見自己的生活節奏。'
+    text: '記錄每個地點當下的心情與強度。',
+    href: '/features/emotion'
   },
   {
     icon: <Users size={24} />,
-    title: '好友記憶',
-    text: '探索好友與公開記憶，讓城市不只是地圖，而是人的故事。'
+    title: '好友共同記憶',
+    text: '和朋友在同一座城市留下彼此的故事。',
+    href: '/features/memories'
   }
 ];
 
@@ -45,9 +48,12 @@ export default function LandingPage({ onNavigate }) {
         <section className="landing-hero">
           <div className="landing-hero-copy">
             <p className="eyebrow">Adrift 漂流足跡</p>
-            <h1>把日記留在地圖上，讓每個地點都有你的生活記憶。</h1>
+            <h1>把生活，留在發生的地方。</h1>
             <p>
-              記錄地點、心情與故事，讓生活軌跡不只是打卡，而是可以被回顧、被重新遇見的記憶地圖。
+              在地圖上留下日記、情緒與共同回憶。有一天再次經過，你會遇見當時的自己。
+            </p>
+            <p className="landing-definition-text">
+              Adrift 漂流足跡是一個地圖日記與城市記憶平台。你可以在去過的地點留下生活片段，記錄當下心情，並和好友累積屬於彼此的城市記憶。
             </p>
             <div className="landing-actions">
               <button className="primary-button" type="button" onClick={() => onNavigate('/register')}>
@@ -86,10 +92,30 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </section>
 
+        <section className="landing-memory-story">
+          <div className="landing-story-copy">
+            <p className="eyebrow">How It Works</p>
+            <h2>一段記憶，不只是一則貼文。</h2>
+            <p>
+              今天你去了民生社區的一間咖啡店，和朋友聊了很久，也把當下的心情留在地圖上。一年後再次經過這裡，Adrift 會把這段記憶重新帶回來。
+            </p>
+          </div>
+          <article className="landing-story-card" aria-label="Adrift 使用情境範例">
+            <div className="landing-story-pin">
+              <Coffee size={22} />
+            </div>
+            <div className="landing-story-card-main">
+              <span>民生社區</span>
+              <strong>原本只想坐一下，結果聊了三個小時。</strong>
+              <p>和某個朋友聊天 · 今天心情很好 · 一年後再次經過時重新遇見</p>
+            </div>
+          </article>
+        </section>
+
         <section id="how-it-works" className="landing-section">
           <div className="landing-section-heading">
-            <p className="eyebrow">What Adrift Does</p>
-            <h2>它能做什麼</h2>
+            <p className="eyebrow">City Memory System</p>
+            <h2>你的城市，慢慢變成一本日記。</h2>
           </div>
           <div className="landing-feature-grid">
             {productHighlights.map((item) => (
@@ -97,6 +123,16 @@ export default function LandingPage({ onNavigate }) {
                 {item.icon}
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
+                <a
+                  href={item.href}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    onNavigate(item.href);
+                  }}
+                >
+                  了解更多
+                  <ArrowRight size={15} />
+                </a>
               </article>
             ))}
           </div>
@@ -131,10 +167,28 @@ export default function LandingPage({ onNavigate }) {
 
         <section className="landing-two-column">
           <article className="landing-callout-card">
+            <Clock3 size={24} />
+            <h2>三個月前，你也來過這裡。</h2>
+            <p>
+              Adrift 最重要的不是即時曝光，而是當你再次經過某個地方，過去留下的記憶會重新出現。久了以後，這張地圖會變成你的生活。
+            </p>
+          </article>
+
+          <article className="landing-callout-card">
             <Brain size={24} />
+            <h2>Adrift Intelligence 會替你整理散落的片段。</h2>
+            <p>
+              當日記慢慢累積，它會根據你的地點、情緒與文字，整理生活回顧、情緒趨勢與地點洞察。
+            </p>
+          </article>
+        </section>
+
+        <section className="landing-two-column">
+          <article className="landing-callout-card">
+            <Route size={24} />
             <h2>一個人使用，也會慢慢長出價值。</h2>
             <p>
-              你的記憶地圖會隨著每篇日記成形。即使只有自己可見，也能在未來回顧生活軌跡、情緒變化與重要地點。
+              你可以先把 Adrift 當成自己的記憶地圖。即使只有自己可見，也能在未來回顧生活軌跡、情緒變化與重要地點。
             </p>
           </article>
 

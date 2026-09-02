@@ -76,8 +76,19 @@ function AboutContent({ onNavigate }) {
         <p className="eyebrow">About Adrift</p>
         <h1>什麼是 Adrift 漂流足跡？</h1>
         <p>
-          Adrift 漂流足跡是一個結合地圖、日記、心情與好友社交的城市記憶平台。你可以把生活片段留在真實地點，讓每個地方不只是地圖上的座標，而是一段能被重新遇見的記憶。
+          Adrift 漂流足跡是一個以地圖為核心的生活記錄與城市記憶平台。使用者可以在去過的地點留下日記、照片與情緒，並與好友建立共同的城市記憶。
         </p>
+      </section>
+
+      <section className="public-info-section public-info-note">
+        <MapPinned size={24} />
+        <div>
+          <p className="eyebrow">City Memory System</p>
+          <h2>漂流足跡不是單純在地圖上發東西。</h2>
+          <p>
+            Adrift 的核心是讓「地點 → 當下發生的事情 → 情緒 → 人」逐漸累積。幾個月、幾年後，這張地圖會慢慢變成你的生活，讓每個地方都有能被重新遇見的故事。
+          </p>
+        </div>
       </section>
 
       <section className="public-info-section">
