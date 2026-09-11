@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Clock3, Edit3, ImageIcon, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
+import { Clock3, Edit3, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fadeUpMotion, panelSlideLeft } from '../constants/animations.js';
 import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constants/app.js';
@@ -8,6 +8,7 @@ import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 import DiaryImage from './DiaryImage.jsx';
 import UserAvatar from './UserAvatar.jsx';
+import { normalizeDiaryCoordinate } from './markers/markerGeometry.js';
 
 const visibilityIcons = {
   private: Lock,
@@ -29,9 +30,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
   const [timeNow, setTimeNow] = useState(Date.now());
   const hasDiary = Boolean(diary);
   const VisibilityIcon = hasDiary ? visibilityIcons[diary.visibility] || Waves : Waves;
-  const coordinates = diary?.location?.coordinates || [];
-  const lng = Number.isFinite(coordinates[0]) ? coordinates[0] : diary?.location?.lng;
-  const lat = Number.isFinite(coordinates[1]) ? coordinates[1] : diary?.location?.lat;
+  const { lng, lat } = normalizeDiaryCoordinate(diary) || {};
   const currentUserId = currentUser?.id || currentUser?._id;
   const diaryUserId = diary?.user?._id || diary?.user?.id || diary?.author?._id;
   const isOwner = Boolean(currentUserId && diaryUserId && currentUserId === diaryUserId.toString());
@@ -94,7 +93,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
 
   return (
     <motion.aside
-      className="diary-side-panel glass"
+      className={`diary-side-panel glass ${hasDiary ? 'has-diary' : 'is-empty'}`}
       {...panelSlideLeft}
     >
       <AnimatePresence mode="wait">
@@ -132,12 +131,8 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
               </button>
             </header>
 
-            {diary.imageUrl ? (
+            {diary.imageUrl && (
               <DiaryImage className="diary-side-image" src={diary.imageUrl} alt={`日記「${titleText}」的照片`} />
-            ) : (
-              <div className="diary-side-image empty">
-                <ImageIcon size={18} />
-              </div>
             )}
 
             <div className="diary-detail-stack">
@@ -251,9 +246,7 @@ function getDiaryEditStatus(diary, isOwner, currentLocation, timeNow) {
     return { canEdit: false, reason: '已超過可編輯時間' };
   }
 
-  const coordinates = diary.location?.coordinates || [];
-  const diaryLng = Number.isFinite(coordinates[0]) ? coordinates[0] : diary.location?.lng;
-  const diaryLat = Number.isFinite(coordinates[1]) ? coordinates[1] : diary.location?.lat;
+  const { lng: diaryLng, lat: diaryLat } = normalizeDiaryCoordinate(diary) || {};
   const currentLat = Number(currentLocation?.lat);
   const currentLng = Number(currentLocation?.lng);
 

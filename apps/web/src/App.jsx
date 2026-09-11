@@ -14,6 +14,7 @@ import LandingPage from './components/LandingPage.jsx';
 import LifeMapAI from './components/LifeMapAI.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
+import { normalizeDiaryCoordinate } from './components/markers/markerGeometry.js';
 import Particles from './components/Particles.jsx';
 import PresentationPage from './components/PresentationPage.jsx';
 import PublicInfoPage from './components/PublicInfoPage.jsx';
@@ -155,17 +156,14 @@ function getInitialTheme() {
 }
 
 function getDiaryFocusLocation(diary) {
-  const coordinates = diary?.location?.coordinates;
-  const lng = Array.isArray(coordinates) ? Number(coordinates[0]) : Number(diary?.location?.lng);
-  const lat = Array.isArray(coordinates) ? Number(coordinates[1]) : Number(diary?.location?.lat);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  const center = normalizeDiaryCoordinate(diary);
+  if (!center) return null;
 
   const isApproximate = diary?.locationAccuracy === 'approximate';
 
   return {
-    lat,
-    lng,
+    ...center,
+    diaryId: diary._id,
     accuracyType: isApproximate ? 'approximate' : 'precise',
     source: isApproximate ? 'diary-approximate' : 'diary',
     focusId: `${diary?._id || 'diary'}-${Date.now()}`
@@ -641,23 +639,19 @@ export default function App() {
   }, [user?.id, userLocation.getLocation]);
 
   useEffect(() => {
-    if (!selectedDiary) return;
+    setSelectedDiary((current) => current
+      ? displayedDiaries.find((diary) => String(diary._id) === String(current._id)) || null
+      : null);
+  }, [displayedDiaries]);
 
-    const stillVisible = displayedDiaries.some((diary) => diary._id === selectedDiary._id);
-
-    if (!stillVisible) {
-      setSelectedDiary(null);
-    }
-  }, [displayedDiaries, selectedDiary]);
-
-  const selectDiaryAndFocus = useCallback((diary) => {
+  const selectDiaryAndFocus = useCallback((diary, options = {}) => {
     if (!diary?._id) return;
 
     setSelectedDiary(diary);
     const focus = getDiaryFocusLocation(diary);
 
     if (focus) {
-      setMapFocusLocation(focus);
+      setMapFocusLocation({ ...focus, ...options });
     }
   }, []);
 

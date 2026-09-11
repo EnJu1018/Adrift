@@ -16,7 +16,7 @@ import {
   Users,
   X
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fadeUpMotion, listItemMotion, panelSlideRight, toastMotion } from '../constants/animations.js';
 import { USER_CODE_PATTERN } from '../constants/app.js';
@@ -138,7 +138,21 @@ export default function MemoryPanel({
   const requests = friendRequests || [];
   const sentRequests = sentFriendRequests || [];
   const mine = visibleDiaries.filter((diary) => sameId(diary.user?._id || diary.user?.id, user?.id));
-  const listedDiaries = [...visibleDiaries].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const listedDiaries = useMemo(() => [...(diaries || [])].sort((a, b) =>
+    (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) || String(a._id).localeCompare(String(b._id))), [diaries]);
+  const diaryListRef = useRef(null);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      const list = diaryListRef.current;
+      const selected = list?.querySelector('[aria-pressed="true"]');
+      if (!selected) return;
+      const bounds = list.getBoundingClientRect();
+      const row = selected.getBoundingClientRect();
+      if (row.top < bounds.top) list.scrollTop += row.top - bounds.top - 8;
+      else if (row.bottom > bounds.bottom) list.scrollTop += row.bottom - bounds.bottom + 8;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selectedDiaryId, listedDiaries]);
 
   const sentRequestForSearchResult = searchResult
     ? sentRequests.find((request) => sameId(request.to?._id, searchResult._id))
@@ -603,7 +617,7 @@ export default function MemoryPanel({
                   </article>
                 )}
 
-                <div className="diary-list-scroll-area">
+                <div className="diary-list-scroll-area" ref={diaryListRef}>
                   {listedDiaries.length > 0 ? (
                     <div className="memory-list">
                       {listedDiaries.map((diary, index) => {
@@ -612,10 +626,11 @@ export default function MemoryPanel({
 
                         return (
                           <motion.button
+                            type="button"
                             key={diary._id}
                             className={`memory-item compact ${sameId(selectedDiaryId, diary._id) ? 'selected' : ''}`}
                             onClick={() => onSelectDiary(diary)}
-                            title={title}
+                            aria-pressed={sameId(selectedDiaryId, diary._id)}
                             {...listItemMotion(index, lowPerformance)}
                           >
                             <strong>{title}</strong>

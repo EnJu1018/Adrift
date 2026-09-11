@@ -4839,11 +4839,6 @@ select option {
   color: var(--muted);
 }
 
-.diary-side-image.empty {
-  min-height: 96px;
-  border-style: dashed;
-}
-
 .diary-detail-stack {
   display: grid;
   gap: 12px;
@@ -5504,8 +5499,10 @@ select option {
 
 .map-shell {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   width: 100%;
+  height: 100%;
   min-height: 540px;
   border: 1px solid rgba(194, 233, 255, 0.16);
   border-radius: var(--panel-radius);
@@ -5702,10 +5699,6 @@ select option {
 
 .app-frame.reduced-motion .ambient-bg,
 .app-frame.reduced-motion .particles,
-.app-frame.reduced-motion .diary-marker-pulse,
-.app-frame.reduced-motion .diary-marker-glow,
-.app-frame.reduced-motion .diary-cluster-halo,
-.app-frame.reduced-motion .selection-ripple,
 .app-frame.reduced-motion .life-map-glow-orb,
 .app-frame.reduced-motion .life-map-orbit-dot,
 .app-frame.reduced-motion .presentation-page::before,
@@ -5715,11 +5708,6 @@ select option {
   animation: none !important;
 }
 
-.app-frame.reduced-motion .diary-marker-orb,
-.app-frame.reduced-motion .diary-marker-visual,
-.app-frame.reduced-motion .diary-marker-core,
-.app-frame.reduced-motion .diary-cluster-body,
-.app-frame.reduced-motion .diary-cluster-visual,
 .app-frame.reduced-motion .map-controls button,
 .app-frame.reduced-motion .ui-select-menu,
 .app-frame.reduced-motion .modal-card,
@@ -5744,12 +5732,8 @@ select option {
     scroll-behavior: auto !important;
   }
 
-  .ambient-bg,
+.ambient-bg,
   .particles,
-  .diary-marker-pulse,
-  .diary-marker-glow,
-  .diary-cluster-halo,
-  .selection-ripple,
   .life-map-glow-orb,
   .life-map-orbit-dot,
   .loading-node,
@@ -5757,11 +5741,7 @@ select option {
   .memory-drift-path,
   .drifting-memory-dot,
   .landing-memory-path,
-  .landing-memory-halo,
-  .memory-marker-aura,
-  .memory-marker-orbit::before,
-  .memory-stack-connector-layer line,
-  .memory-stack-expanded-item {
+  .landing-memory-halo {
     animation: none !important;
   }
 }
@@ -5923,19 +5903,6 @@ select option {
   inset: -22px;
   border: 1px dashed rgba(188, 210, 255, 0.48);
   background: rgba(154, 180, 255, 0.11);
-}
-
-.selection-ripple {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  border: 1px solid rgba(142, 229, 255, 0.65);
-  box-shadow: 0 0 45px rgba(99, 204, 255, 0.42);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
 }
 
 .diary-modal header {
@@ -11178,6 +11145,10 @@ select option {
     display: block;
   }
 
+  .diary-side-panel.is-empty {
+    display: none;
+  }
+
   .diary-side-panel {
     position: absolute;
     left: 12px;
@@ -11405,7 +11376,17 @@ select option {
     bottom: 10px;
     left: 10px;
     width: auto;
+    height: min(58%, 320px);
     max-height: 58%;
+  }
+
+  .map-stage:has(.diary-side-panel.has-diary) .map-controls {
+    top: 12px;
+    bottom: auto;
+  }
+
+  .map-stage:has(.diary-side-panel.has-diary) .map-memory-legend {
+    display: none;
   }
 
   .map-mode-switch,
@@ -11598,7 +11579,6 @@ select option {
 
 :root[data-theme="bright"] :where(
   .diary-side-empty .brand-mark,
-  .diary-side-image.empty,
   .diary-time-pill,
   .diary-place-pill,
   .diary-meta-secondary span,
@@ -11615,7 +11595,6 @@ select option {
 
 :root[data-theme="bright"] :where(
   .diary-side-empty svg,
-  .diary-side-image.empty svg,
   .diary-time-pill svg,
   .diary-place-pill svg,
   .diary-meta-secondary svg
@@ -13748,756 +13727,6 @@ input.mood-intensity-slider::-moz-range-thumb {
   }
 }
 
-/* Final unified Memory Node skin.
-   Mapbox owns `.marker-mapbox-anchor` positioning; do not set transform/animation there. */
-:root[data-theme="dark"] {
-  --marker-surface-top: rgba(20, 42, 67, 0.97);
-  --marker-surface-bottom: rgba(4, 13, 27, 0.96);
-  --marker-drop-shadow: rgba(0, 0, 0, 0.42);
-  --marker-rim: rgba(229, 252, 255, 0.18);
-  --marker-inner-glow: rgba(255, 255, 255, 0.12);
-  --marker-lower-depth: rgba(0, 0, 0, 0.32);
-  --marker-text: rgba(244, 254, 255, 0.98);
-  --marker-tooltip-bg: rgba(8, 18, 32, 0.97);
-  --marker-tooltip-border: rgba(140, 220, 255, 0.22);
-}
-
-:root[data-theme="bright"] {
-  --marker-surface-top: rgba(255, 255, 255, 0.99);
-  --marker-surface-bottom: rgba(229, 248, 255, 0.98);
-  --marker-drop-shadow: rgba(14, 116, 144, 0.24);
-  --marker-rim: rgba(14, 116, 144, 0.2);
-  --marker-inner-glow: rgba(255, 255, 255, 0.76);
-  --marker-lower-depth: rgba(14, 116, 144, 0.09);
-  --marker-text: #053d56;
-  --marker-tooltip-bg: rgba(255, 255, 255, 0.98);
-  --marker-tooltip-border: rgba(0, 143, 199, 0.22);
-}
-
-.marker-mapbox-anchor {
-  width: 72px !important;
-  height: 72px !important;
-  margin: 0 !important;
-  overflow: visible;
-  pointer-events: auto;
-  user-select: none;
-}
-
-.marker-hit-area {
-  display: grid;
-  width: 72px;
-  height: 72px;
-  place-items: center;
-  pointer-events: auto;
-}
-
-.marker-visual {
-  transform: translate(var(--marker-offset-x, 0), var(--marker-offset-y, 0));
-  transform-origin: center center;
-  pointer-events: auto;
-}
-
-.memory-marker,
-.memory-stack-marker {
-  position: relative;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  pointer-events: auto;
-}
-
-.memory-marker {
-  width: 50px;
-  height: 50px;
-}
-
-.memory-marker.is-compact {
-  width: 44px;
-  height: 44px;
-}
-
-.memory-marker-aura,
-.memory-stack-aura {
-  position: absolute;
-  border-radius: 999px;
-  opacity: 0.46;
-  pointer-events: none;
-  transform-origin: center center;
-  background:
-    radial-gradient(circle, rgba(var(--marker-rgb), 0.24) 0%, rgba(var(--marker-rgb), 0.1) 42%, transparent 74%);
-  animation: memoryAuraBreath var(--motion-breathe) var(--ease-in-out) infinite;
-}
-
-.memory-marker-aura {
-  width: 44px;
-  height: 44px;
-}
-
-.memory-marker.is-selected .memory-marker-aura,
-.memory-stack-marker.is-selected .memory-stack-aura,
-.memory-stack-marker.is-expanded .memory-stack-aura {
-  opacity: 0.58;
-  background:
-    radial-gradient(circle, rgba(var(--marker-rgb), 0.3) 0%, rgba(var(--marker-rgb), 0.13) 44%, transparent 76%);
-}
-
-.memory-marker-orbit {
-  position: absolute;
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(var(--marker-rgb), 0.38);
-  border-radius: 999px;
-  opacity: 0.72;
-  pointer-events: none;
-  transform-origin: center center;
-  box-shadow:
-    inset 0 0 12px rgba(var(--marker-rgb), 0.08),
-    0 0 18px rgba(var(--marker-rgb), 0.16);
-  transition:
-    opacity var(--duration-quick) var(--ease-smooth-out),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    box-shadow var(--duration-quick) var(--ease-smooth-out);
-}
-
-.memory-marker-orbit::before,
-.memory-stack-rings::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  background:
-    conic-gradient(
-      from 214deg,
-      transparent 0deg 138deg,
-      rgba(var(--marker-rgb), 0.5) 154deg,
-      rgba(255, 255, 255, 0.48) 166deg,
-      transparent 184deg 360deg
-    );
-  opacity: 0.5;
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
-  pointer-events: none;
-  animation: memoryOrbitDrift var(--motion-float) var(--ease-linear) infinite;
-}
-
-.memory-marker-core,
-.memory-stack-core {
-  position: relative;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid rgba(var(--marker-rgb), 0.64);
-  border-radius: 999px;
-  color: var(--marker-text);
-  cursor: pointer;
-  isolation: isolate;
-  outline: none;
-  overflow: hidden;
-  transform-origin: center center;
-  background:
-    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, 0.42), transparent 22%),
-    linear-gradient(145deg, var(--marker-surface-top), var(--marker-surface-bottom));
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.62),
-    inset 0 -7px 14px var(--marker-lower-depth),
-    0 11px 24px var(--marker-drop-shadow),
-    0 0 22px rgba(var(--marker-rgb), 0.22);
-  transition:
-    transform var(--duration-quick) var(--ease-standard),
-    box-shadow var(--duration-quick) var(--ease-smooth-out),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    filter var(--duration-quick) var(--ease-smooth-out);
-}
-
-.memory-marker-core {
-  width: 28px;
-  height: 28px;
-}
-
-.memory-marker.is-compact .memory-marker-core {
-  width: 24px;
-  height: 24px;
-}
-
-.memory-marker-core::before {
-  content: "";
-  position: absolute;
-  inset: 2px;
-  z-index: 1;
-  border: 1px solid var(--marker-rim);
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 34% 22%, var(--marker-inner-glow), transparent 32%),
-    radial-gradient(circle at 72% 78%, rgba(var(--marker-rgb), 0.14), transparent 36%);
-  pointer-events: none;
-}
-
-.memory-marker-core::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  background:
-    linear-gradient(180deg, transparent 42%, var(--marker-lower-depth) 100%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 44%);
-  pointer-events: none;
-}
-
-.memory-marker-glass {
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  background:
-    radial-gradient(circle at 34% 24%, rgba(255, 255, 255, 0.62), transparent 28%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.16), transparent 58%);
-  opacity: 0.82;
-  pointer-events: none;
-}
-
-.memory-marker-dot {
-  position: relative;
-  z-index: 3;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgb(var(--marker-rgb));
-  box-shadow:
-    0 0 11px rgba(var(--marker-rgb), 0.72),
-    inset 0 1px 1px rgba(255, 255, 255, 0.72);
-}
-
-.memory-marker.is-compact .memory-marker-dot {
-  width: 7px;
-  height: 7px;
-}
-
-.memory-marker-shine,
-.memory-stack-shine {
-  position: absolute;
-  z-index: 3;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.54);
-  filter: blur(0.35px);
-  transform: rotate(-22deg);
-  pointer-events: none;
-}
-
-.memory-marker-shine {
-  top: 6px;
-  left: 8px;
-  width: 10px;
-  height: 5px;
-}
-
-.memory-marker:hover .memory-marker-core,
-.memory-marker.is-hovered .memory-marker-core {
-  transform: scale(1.09);
-  border-color: rgba(var(--marker-rgb), 0.78);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.68),
-    inset 0 -7px 14px var(--marker-lower-depth),
-    0 13px 30px var(--marker-drop-shadow),
-    0 0 28px rgba(var(--marker-rgb), 0.34);
-}
-
-.memory-marker:hover .memory-marker-orbit,
-.memory-marker.is-hovered .memory-marker-orbit,
-.memory-marker.is-selected .memory-marker-orbit {
-  opacity: 1;
-  border-color: rgba(var(--marker-rgb), 0.62);
-  box-shadow:
-    inset 0 0 14px rgba(var(--marker-rgb), 0.1),
-    0 0 24px rgba(var(--marker-rgb), 0.24);
-}
-
-.memory-marker.is-selected .memory-marker-core {
-  transform: scale(1.14);
-  border-color: rgba(var(--marker-rgb), 0.92);
-  filter: saturate(1.08);
-}
-
-.memory-marker.is-selected .memory-marker-dot {
-  width: 9px;
-  height: 9px;
-  box-shadow:
-    0 0 14px rgba(var(--marker-rgb), 0.82),
-    0 0 24px rgba(var(--marker-rgb), 0.32),
-    inset 0 1px 1px rgba(255, 255, 255, 0.75);
-}
-
-.memory-marker.is-selected::after,
-.marker-mapbox-anchor:focus-visible .memory-marker::after {
-  content: "";
-  position: absolute;
-  width: 44px;
-  height: 44px;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--marker-rgb), 0.46);
-  box-shadow:
-    0 0 0 6px rgba(var(--marker-rgb), 0.11),
-    0 0 30px rgba(var(--marker-rgb), 0.32);
-  pointer-events: none;
-}
-
-.memory-stack-marker {
-  width: 60px;
-  height: 60px;
-}
-
-.memory-stack-aura {
-  width: 54px;
-  height: 54px;
-  background:
-    radial-gradient(circle, rgba(var(--marker-rgb), 0.22) 0%, rgba(var(--marker-rgb), 0.09) 46%, transparent 76%);
-}
-
-.memory-stack-core {
-  width: 38px;
-  height: 38px;
-  overflow: visible;
-  font-size: 0.86rem;
-  font-weight: 900;
-  letter-spacing: 0.01em;
-}
-
-.memory-stack-core::before,
-.memory-stack-core::after {
-  content: "";
-  position: absolute;
-  inset: 3px;
-  z-index: -1;
-  border: 1px solid rgba(var(--marker-rgb), 0.2);
-  border-radius: inherit;
-  background: linear-gradient(145deg, var(--marker-surface-top), var(--marker-surface-bottom));
-  box-shadow: 0 7px 18px rgba(var(--marker-rgb), 0.08);
-  pointer-events: none;
-}
-
-.memory-stack-core::before {
-  transform: translate(3px, 3px) scale(0.98);
-  opacity: 0.82;
-}
-
-.memory-stack-core::after {
-  transform: translate(6px, 6px) scale(0.96);
-  opacity: 0.44;
-}
-
-.memory-stack-rings {
-  position: absolute;
-  inset: 5px;
-  border: 1px dashed rgba(var(--marker-rgb), 0.26);
-  border-radius: inherit;
-  opacity: 0.72;
-  pointer-events: none;
-}
-
-.memory-stack-rings::after {
-  content: "";
-  position: absolute;
-  inset: 5px;
-  border-radius: inherit;
-  background: radial-gradient(circle, rgba(var(--marker-rgb), 0.18), transparent 62%);
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.memory-stack-count {
-  position: relative;
-  z-index: 2;
-  color: var(--marker-text);
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 7px rgba(255, 255, 255, 0.28);
-}
-
-.memory-stack-shine {
-  top: 8px;
-  left: 10px;
-  width: 13px;
-  height: 6px;
-}
-
-.memory-stack-marker:hover .memory-stack-core,
-.memory-stack-marker.is-expanded .memory-stack-core,
-.memory-stack-marker.is-selected .memory-stack-core {
-  transform: scale(1.06);
-  border-color: rgba(var(--marker-rgb), 0.78);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.68),
-    inset 0 -7px 14px var(--marker-lower-depth),
-    0 14px 34px var(--marker-drop-shadow),
-    0 0 30px rgba(var(--marker-rgb), 0.32);
-}
-
-.memory-stack-marker.is-expanded::after,
-.memory-stack-marker.is-selected::after {
-  content: "";
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  border-radius: 999px;
-  border: 1px solid rgba(var(--marker-rgb), 0.42);
-  box-shadow: 0 0 0 7px rgba(var(--marker-rgb), 0.1);
-  pointer-events: none;
-}
-
-.marker-stack-anchor.is-expanded,
-.marker-stack-anchor.is-selected {
-  z-index: 36;
-}
-
-.memory-stack-expanded {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
-  pointer-events: none;
-}
-
-.memory-stack-connector-layer {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 240px;
-  height: 240px;
-  overflow: visible;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-}
-
-.memory-stack-connector-layer line {
-  stroke: rgba(var(--marker-rgb), 0.32);
-  stroke-width: 1.15;
-  stroke-linecap: round;
-  stroke-dasharray: 2 4;
-  filter: drop-shadow(0 0 6px rgba(var(--marker-rgb), 0.2));
-  animation: stackConnectorIn var(--duration-fast) var(--ease-out) both;
-}
-
-.memory-stack-expanded-item {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  display: grid;
-  width: 44px;
-  height: 44px;
-  place-items: center;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  cursor: pointer;
-  pointer-events: auto;
-  transform:
-    translate(-50%, -50%)
-    translate(var(--expanded-x, 0), var(--expanded-y, 0))
-    scale(1);
-  transform-origin: center center;
-  animation: stackItemIn var(--duration-fast) var(--ease-smooth-out) both;
-  animation-delay: var(--stack-item-delay, 0ms);
-}
-
-.memory-expanded-aura {
-  position: absolute;
-  width: 38px;
-  height: 38px;
-  border-radius: 999px;
-  background:
-    radial-gradient(circle, rgba(var(--marker-rgb), 0.2) 0%, rgba(var(--marker-rgb), 0.08) 46%, transparent 74%);
-  pointer-events: none;
-}
-
-.memory-expanded-core {
-  position: relative;
-  display: grid;
-  width: 24px;
-  height: 24px;
-  place-items: center;
-  border: 1px solid rgba(var(--marker-rgb), 0.64);
-  border-radius: 999px;
-  background:
-    radial-gradient(circle at 35% 22%, rgba(255, 255, 255, 0.42), transparent 24%),
-    linear-gradient(145deg, var(--marker-surface-top), var(--marker-surface-bottom));
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.62),
-    inset 0 -6px 12px var(--marker-lower-depth),
-    0 10px 22px var(--marker-drop-shadow),
-    0 0 20px rgba(var(--marker-rgb), 0.22);
-  pointer-events: none;
-  transition:
-    transform var(--duration-quick) var(--ease-standard),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    box-shadow var(--duration-quick) var(--ease-smooth-out);
-}
-
-.memory-expanded-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: rgb(var(--marker-rgb));
-  box-shadow:
-    0 0 10px rgba(var(--marker-rgb), 0.68),
-    inset 0 1px 1px rgba(255, 255, 255, 0.72);
-}
-
-.memory-expanded-shine {
-  position: absolute;
-  top: 5px;
-  left: 7px;
-  width: 9px;
-  height: 4px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.52);
-  filter: blur(0.35px);
-  transform: rotate(-22deg);
-}
-
-.memory-stack-expanded-item:hover .memory-expanded-core,
-.memory-stack-expanded-item.is-selected .memory-expanded-core {
-  border-color: rgba(var(--marker-rgb), 0.92);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.7),
-    inset 0 -6px 12px var(--marker-lower-depth),
-    0 12px 28px var(--marker-drop-shadow),
-    0 0 28px rgba(var(--marker-rgb), 0.36);
-  transform: scale(1.14);
-}
-
-.memory-stack-expanded-item.is-selected::after {
-  content: "";
-  position: absolute;
-  width: 39px;
-  height: 39px;
-  border: 1px solid rgba(var(--marker-rgb), 0.44);
-  border-radius: 999px;
-  box-shadow:
-    0 0 0 5px rgba(var(--marker-rgb), 0.1),
-    0 0 24px rgba(var(--marker-rgb), 0.3);
-  pointer-events: none;
-}
-
-.memory-stack-panel {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  display: grid;
-  width: min(270px, calc(100vw - 48px));
-  max-height: 310px;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--marker-tooltip-border);
-  border-radius: 18px;
-  background: var(--marker-tooltip-bg);
-  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(18px);
-  pointer-events: auto;
-  transform: translate(-50%, -116%);
-  animation: stackPanelIn var(--duration-quick) var(--ease-out) both;
-}
-
-.memory-stack-panel-header {
-  display: grid;
-  gap: 3px;
-}
-
-.memory-stack-panel-header strong {
-  color: var(--text-primary);
-  font-size: 0.92rem;
-  line-height: 1.25;
-}
-
-.memory-stack-panel-header span {
-  color: var(--text-secondary);
-  font-size: 0.76rem;
-}
-
-.memory-stack-panel-list {
-  display: grid;
-  max-height: 225px;
-  gap: 6px;
-  overflow-y: auto;
-  padding-right: 4px;
-  scrollbar-gutter: stable;
-}
-
-.memory-stack-panel-item {
-  display: grid;
-  grid-template-columns: 14px minmax(0, 1fr);
-  align-items: center;
-  gap: 9px;
-  width: 100%;
-  padding: 9px 10px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-  transition:
-    background-color var(--duration-quick) var(--ease-smooth-out),
-    border-color var(--duration-quick) var(--ease-smooth-out),
-    transform var(--duration-quick) var(--ease-smooth-out);
-}
-
-.memory-stack-panel-item:hover,
-.memory-stack-panel-item.is-selected {
-  border-color: rgba(var(--marker-rgb), 0.24);
-  background: rgba(var(--marker-rgb), 0.1);
-}
-
-.memory-stack-panel-item:active {
-  transform: scale(0.99);
-}
-
-.memory-stack-panel-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: rgb(var(--marker-rgb));
-  box-shadow: 0 0 11px rgba(var(--marker-rgb), 0.4);
-}
-
-.memory-stack-panel-item strong,
-.memory-stack-panel-item small {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.memory-stack-panel-item strong {
-  color: var(--text-primary);
-  font-size: 0.82rem;
-  line-height: 1.25;
-}
-
-.memory-stack-panel-item small {
-  margin-top: 2px;
-  color: var(--text-secondary);
-  font-size: 0.7rem;
-  line-height: 1.3;
-}
-
-.marker-mapbox-anchor.is-selected {
-  z-index: 24;
-}
-
-.mapboxgl-popup.memory-marker-tooltip {
-  z-index: 30;
-}
-
-.mapboxgl-popup.memory-marker-tooltip .mapboxgl-popup-content {
-  display: grid;
-  gap: 4px;
-  min-width: 150px;
-  padding: 10px 12px;
-  border: 1px solid var(--marker-tooltip-border);
-  border-radius: 14px;
-  background: var(--marker-tooltip-bg);
-  color: var(--text-primary);
-  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.22);
-  backdrop-filter: blur(16px);
-  animation: adriftMotionTooltipIn var(--duration-quick) var(--ease-out) both;
-}
-
-.mapboxgl-popup.memory-marker-tooltip strong {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 0.86rem;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.mapboxgl-popup.memory-marker-tooltip span {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.35;
-}
-
-.mapboxgl-popup.memory-marker-tooltip .mapboxgl-popup-tip {
-  border-top-color: var(--marker-tooltip-bg);
-  border-bottom-color: var(--marker-tooltip-bg);
-}
-
-@keyframes memoryAuraBreath {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: scale(0.86);
-  }
-
-  50% {
-    opacity: 0.6;
-    transform: scale(1.14);
-  }
-}
-
-@keyframes memoryOrbitDrift {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes stackConnectorIn {
-  from {
-    opacity: 0;
-    stroke-dashoffset: 10;
-  }
-
-  to {
-    opacity: 1;
-    stroke-dashoffset: 0;
-  }
-}
-
-@keyframes stackItemIn {
-  from {
-    opacity: 0;
-    transform:
-      translate(-50%, -50%)
-      translate(calc(var(--expanded-x, 0) * 0.28), calc(var(--expanded-y, 0) * 0.28))
-      scale(0.72);
-  }
-
-  to {
-    opacity: 1;
-    transform:
-      translate(-50%, -50%)
-      translate(var(--expanded-x, 0), var(--expanded-y, 0))
-      scale(1);
-  }
-}
-
-@keyframes stackPanelIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -106%) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translate(-50%, -116%) scale(1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .memory-marker-aura,
-  .memory-stack-aura,
-  .memory-marker-orbit::before,
-  .memory-stack-rings::before,
-  .memory-stack-connector-layer line,
-  .memory-stack-expanded-item,
-  .memory-stack-panel,
-  .mapboxgl-popup.memory-marker-tooltip .mapboxgl-popup-content {
-    animation: none !important;
-  }
-
-  .memory-marker-core,
-  .memory-stack-core,
-  .memory-marker-orbit {
-    transition: none !important;
-  }
-}
 
 /* Diary composer polish: roomier form, aligned mood controls, stable theme-aware inputs. */
 .diary-modal {
