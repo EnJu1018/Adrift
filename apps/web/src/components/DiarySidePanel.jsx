@@ -1,7 +1,8 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import DiaryContent from './ui/ContentTransition.jsx';
+import Tooltip from './ui/Tooltip.jsx';
 import { Clock3, Edit3, Lock, MapPin, Trash2, Users, Waves, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { fadeUpMotion, panelSlideLeft } from '../constants/animations.js';
 import { FALLBACK_DIARY_TITLE, MOOD_LABELS, REACTION_OPTIONS } from '../constants/app.js';
 import { getDistanceInMeters } from '../utils/distance.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
@@ -92,28 +93,25 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
   }
 
   return (
-    <motion.aside
+    <aside
       className={`diary-side-panel glass ${hasDiary ? 'has-diary' : 'is-empty'}`}
-      {...panelSlideLeft}
     >
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait" initial={false}>
         {!hasDiary ? (
-          <motion.div
+          <DiaryContent
             key="empty"
             className="diary-side-empty"
-            {...fadeUpMotion}
           >
             <img className="brand-icon diary-empty-brand-icon" src="/adrift-icon.png" alt="" aria-hidden="true" />
             <div>
               <p className="eyebrow">Diary Detail</p>
               <h2>選擇一則日記查看內容</h2>
             </div>
-          </motion.div>
+          </DiaryContent>
         ) : (
-          <motion.div
+          <DiaryContent
             key={diary._id}
             className="diary-side-content"
-            {...fadeUpMotion}
           >
             <header className="diary-side-header">
               <div className="diary-author-block">
@@ -165,17 +163,19 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
               <section className="diary-mood-section" aria-label="Mood">
                 <div className="reaction-row" aria-label="共鳴">
                   {REACTION_OPTIONS.map((reaction) => (
+                    <Tooltip key={reaction.type} label={reaction.label}>
                     <button
-                      key={reaction.type}
                       className={`reaction-button ${diary.userReaction === reaction.type ? 'active' : ''}`}
                       onClick={() => handleReact(reaction.type)}
                       disabled={Boolean(reactingType)}
-                      title={reaction.label}
+                      aria-label={reaction.label}
+                      aria-pressed={diary.userReaction === reaction.type}
                       type="button"
                     >
                       <span>{reaction.icon}</span>
                       <strong>{reactionCounts[reaction.type]}</strong>
                     </button>
+                    </Tooltip>
                   ))}
                 </div>
               </section>
@@ -207,10 +207,10 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
                 </button>
               </div>
             )}
-          </motion.div>
+          </DiaryContent>
         )}
       </AnimatePresence>
-    </motion.aside>
+    </aside>
   );
 }
 

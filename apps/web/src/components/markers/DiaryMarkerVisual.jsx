@@ -42,7 +42,10 @@ export default function DiaryMarkerVisual({ diary, count = 1, selected = false, 
   return (
     <div ref={nodeRef} className="dn-node" data-tooltip={tooltipState ? tooltipState.activeTooltip === tooltipId : undefined} data-selected={selected} data-expanded={expanded} data-dimmed={dimmed} data-stack={stack} data-approximate={diary?.locationAccuracy === 'approximate'} style={{ '--dn-mood': mood.color }}>
       <button type="button" className="dn-hit" onClick={(event) => { hideTooltip(); onSelect?.(event); }}
-        onMouseEnter={placeTooltip} onFocus={placeTooltip} onMouseLeave={hideTooltip} onBlur={hideTooltip}
+        onPointerEnter={(event) => { if (event.pointerType !== 'touch') placeTooltip(); }}
+        onFocus={(event) => { if (event.target.matches(':focus-visible')) placeTooltip(); }}
+        onPointerLeave={hideTooltip} onBlur={hideTooltip}
+        onKeyDown={(event) => { if (event.key === 'Escape') hideTooltip(); }}
         aria-label={stack ? `${count} 篇日記` : `查看日記：${markerTitle(diary)}`}
         aria-pressed={stack ? undefined : selected} aria-expanded={stack ? expanded : undefined} aria-describedby={tooltipId}>
         <span className="dn-aura" aria-hidden="true" />

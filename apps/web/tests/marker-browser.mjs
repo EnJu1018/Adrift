@@ -88,8 +88,13 @@ try {
   await page.keyboard.press('Tab');
   await marker.focus();
   await page.locator('.diary-node-anchor[data-diary-id="b"] .dn-hit').hover();
+  await page.waitForTimeout(180);
   assert.equal(await page.locator('.dn-tooltip:visible').count(), 1, 'pointer tooltip replaces keyboard tooltip');
   await marker.hover();
+  await marker.focus();
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.dn-tooltip:visible').count(), 0, 'Escape dismisses a single-marker tooltip without moving focus');
+  assert.equal(await marker.evaluate((el) => document.activeElement === el), true);
   await checkCenters('hover');
   await marker.click();
   assert.equal(await page.evaluate(() => window.lastSelected._id), 'a');
@@ -119,6 +124,7 @@ try {
   });
   await page.getByRole('button', { name: '查看日記：更新後的日記', exact: true }).waitFor();
   await marker.hover();
+  await page.locator('.diary-node-anchor[data-diary-id="a"] .dn-tooltip').waitFor({ state: 'visible' });
   assert.match(await page.locator('.diary-node-anchor[data-diary-id="a"] .dn-tooltip').innerText(), /更新後的日記[\s\S]*疑惑/);
   await marker.click();
   assert.equal(await page.evaluate(() => window.lastSelected.title), '更新後的日記');
@@ -172,6 +178,8 @@ try {
   assert.equal(await page.evaluate(() => window.stackCoordinates === JSON.stringify(window.markerTest.state.diaries)), true);
   await page.screenshot({ path: '/tmp/adrift-stack-5-dark.png' });
   await page.keyboard.press('Escape');
+  await page.locator('.dn-expansion[inert]').waitFor({ state: 'attached' });
+  assert.equal(await page.locator('.dn-expansion').evaluate((el) => getComputedStyle(el).pointerEvents), 'none', 'closing choices cannot receive a stale click');
   await page.locator('.dn-stack-overlay').waitFor({ state: 'detached' });
   assert.equal(await stack.evaluate((el) => document.activeElement === el), true);
   await page.keyboard.press('Enter');
@@ -346,7 +354,12 @@ try {
   assert.match(await page.locator('.diary-side-content').innerText(), /記憶 5/);
   const cameraBefore = await page.evaluate(() => [window.fullMap.getCenter().lng, window.fullMap.getCenter().lat, window.fullMap.getZoom()]);
   await page.locator('[data-stack-choice="stack-2"] .dn-hit, button[data-stack-choice="stack-2"]').click();
+  await page.locator('.diary-side-content[inert]').waitFor({ state: 'attached' });
   assert.deepEqual(await page.evaluate(() => [window.fullMap.getCenter().lng, window.fullMap.getCenter().lat, window.fullMap.getZoom()]), cameraBefore, 'expanded selection must not move the camera');
+  await page.waitForFunction(() => document.querySelector('.diary-side-content:not([inert]) .diary-side-title')?.textContent.includes('記憶 3'));
+  assert.equal(await page.locator('.diary-side-panel').evaluate((el) => getComputedStyle(el).transform), 'none', 'detail anchor is static');
+  assert.equal(await page.locator('.map-shell').evaluate((el) => getComputedStyle(el).transform), 'none', 'map surface is static');
+  assert.ok(await page.locator('.map-controls button').evaluateAll((buttons) => buttons.every((button) => button.offsetWidth >= 44 && button.offsetHeight >= 44)), 'map controls meet touch target size');
   await page.evaluate(() => {
     window.integratedAnchor = document.querySelector('.diary-node-anchor');
     window.fullMapTest.render({ theme: 'dark' });
@@ -369,11 +382,15 @@ try {
   const scrollBounds = await page.locator('.diary-list-scroll-area').boundingBox();
   assert.ok(selectedBounds.y >= scrollBounds.y - 1 && selectedBounds.y + selectedBounds.height <= scrollBounds.y + scrollBounds.height + 1, 'selection scrolls only the right diary list');
   await page.locator('button[data-stack-choice="stack-29"][aria-pressed="true"]').waitFor();
+  await page.waitForFunction(() => !window.fullMap.isMoving());
   await page.screenshot({ path: '/tmp/adrift-integrated-bright.png' });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => window.fullMapTest.render());
   await page.evaluate(() => window.fullMapTest.select(window.fullMapTest.state.diaries[15]));
-  await page.waitForTimeout(550);
+  await page.waitForFunction(() => window.fullMap.isMoving());
+  await page.waitForFunction(() => !window.fullMap.isMoving()
+    && document.querySelector('button[data-stack-choice="stack-15"][aria-pressed="true"]'));
+  await page.waitForTimeout(400);
   const projected = await page.evaluate(() => {
     const map = window.fullMap;
     const bounds = map.getContainer().getBoundingClientRect();
@@ -381,12 +398,41 @@ try {
     const panel = document.querySelector('.diary-side-panel').getBoundingClientRect();
     return { x: bounds.left + point.x, y: bounds.top + point.y, panelTop: panel.top, mapTop: bounds.top };
   });
-  assert.ok(projected.y > projected.mapTop && projected.y < projected.panelTop - 24, 'camera keeps selected memory above the mobile detail sheet');
+  assert.ok(projected.y > projected.mapTop && projected.y < projected.panelTop - 24, `camera keeps selected memory above the mobile detail sheet: ${JSON.stringify(projected)}`);
   const mobileList = await page.locator('.dn-stack-list').boundingBox();
+  await page.screenshot({ path: '/tmp/adrift-mobile-containment.png' });
+  assert.ok(mobileList.x >= 0 && mobileList.y >= projected.mapTop && mobileList.x + mobileList.width <= 390, `compact list stays within the mobile map after camera movement: ${JSON.stringify({ mobileList, projected, styles: await page.locator('.dn-stack-list').getAttribute('style'), overlay: await page.locator('.dn-stack-overlay').getAttribute('style') })}`);
   assert.ok(mobileList.y + mobileList.height <= projected.panelTop, 'compact list must not obscure the detail sheet');
   const closeButton = page.getByRole('button', { name: 'Close diary', exact: true });
   await closeButton.click({ trial: true });
   await page.screenshot({ path: '/tmp/adrift-integrated-mobile.png' });
+  const movingListBounds = await page.evaluate(async () => {
+    const list = document.querySelector('.dn-stack-list');
+    const samples = [];
+    window.fullMap.panBy([0, 70], { duration: 500 });
+    for (let frame = 0; frame < 40; frame += 1) {
+      await new Promise(requestAnimationFrame);
+      if (!list.isConnected) throw Error('Camera travel recreated the stack list');
+      const rect = list.getBoundingClientRect();
+      const bounds = window.fullMap.getContainer().getBoundingClientRect();
+      const sheet = document.querySelector('.diary-side-panel').getBoundingClientRect();
+      samples.push(rect.top >= bounds.top && rect.bottom <= sheet.top && rect.left >= bounds.left && rect.right <= bounds.right);
+    }
+    return samples;
+  });
+  assert.ok(movingListBounds.every(Boolean), 'stack list remains bounded throughout camera motion, not only after moveend');
+  await page.evaluate(() => window.fullMap.easeTo({ zoom: 13, duration: 2000 }));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.waitForFunction(() => !window.fullMap.isMoving());
+  await page.evaluate(() => {
+    window.cameraDurations = [];
+    const easeTo = window.fullMap.easeTo.bind(window.fullMap);
+    window.fullMap.easeTo = (options, ...rest) => { window.cameraDurations.push(options.duration); return easeTo(options, ...rest); };
+    window.fullMapTest.select(window.fullMapTest.state.diaries[3]);
+  });
+  await page.waitForFunction(() => window.cameraDurations.length > 0);
+  assert.equal(await page.evaluate(() => window.cameraDurations[0]), 0, 'reduced motion list selection does not animate the camera');
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   if (process.env.REAL_MAP_STYLE === '1') {
     await page.setViewportSize({ width: 1440, height: 900 });
     for (const theme of ['bright', 'dark']) {
@@ -406,6 +452,33 @@ try {
     console.log('PASS: live Mapbox light-v11 / dark-v11 tiles');
   }
   await page.evaluate(() => { window.fullMapTest.root.unmount(); window.fullMapTest.restore(); });
+  await page.evaluate(async () => {
+    const { React, createRoot } = window.markerTest;
+    const { default: FallbackMap } = await import('/src/components/FallbackMap.jsx');
+    const mount = document.createElement('div');
+    mount.style.cssText = 'position:fixed;inset:0';
+    document.body.append(mount);
+    const root = createRoot(mount);
+    const props = { diaries: [{ _id: 'fallback', location: { lng: 0, lat: 0 } }, { _id: 'invalid' }], currentLocation: { lng: 0, lat: 0 }, onSelect() { render('fallback'); } };
+    function render(selectedId) { root.render(React.createElement(FallbackMap, { ...props, selectedId })); }
+    window.fallbackTest = { root, render };
+    render();
+  });
+  const fallback = page.locator('.marker-button');
+  await fallback.waitFor();
+  assert.equal(await fallback.count(), 1, 'fallback uses shared coordinate normalization and skips invalid records');
+  for (const state of ['default', 'hover', 'selected']) {
+    if (state === 'hover') await fallback.hover();
+    if (state === 'selected') await fallback.click();
+    await page.waitForTimeout(180);
+    const alignment = await page.evaluate(() => ['.marker-button', '.current-location-fallback'].map((selector) => {
+      const el = document.querySelector(selector);
+      const rect = el.getBoundingClientRect();
+      return Math.hypot(rect.x + rect.width / 2 - innerWidth / 2, rect.y + rect.height / 2 - innerHeight / 2);
+    }));
+    assert.ok(alignment.every((offset) => offset < 1), `fallback ${state}: centered independently of visual state`);
+  }
+  await page.evaluate(() => window.fallbackTest.root.unmount());
   assert.deepEqual(errors, []);
   console.log('PASS: projection, stable anchors, arcs/lists, keyboard, CRUD, screen collisions, list/detail/camera synchronization, theme/style reload, mobile sheet avoidance, reduced motion and cleanup');
 } finally {

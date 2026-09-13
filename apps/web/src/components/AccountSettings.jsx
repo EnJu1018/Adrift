@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
   Check,
@@ -13,7 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { modalBackdropMotion, modalPopMotion, pageFadeUp } from '../constants/animations.js';
+import Modal from './ui/Modal.jsx';
 import { EMAIL_PATTERN } from '../constants/app.js';
 import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
@@ -394,7 +394,7 @@ export default function AccountSettings({
   }
 
   return (
-    <motion.section className="settings-page" {...pageFadeUp}>
+    <section className="settings-page">
       <ToastViewport toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="settings-page-content">
@@ -429,6 +429,7 @@ export default function AccountSettings({
                     className={`motion-soft-press ${activeSection === section.id ? 'active' : ''}`}
                     type="button"
                     onClick={() => setActiveSection(section.id)}
+                    aria-pressed={activeSection === section.id}
                   >
                     <Icon size={17} />
                     {section.label}
@@ -709,8 +710,7 @@ export default function AccountSettings({
 
       <AnimatePresence>
         {avatarCropOpen && (
-          <motion.div className="modal-backdrop" {...modalBackdropMotion}>
-            <motion.div className="avatar-crop-modal" {...modalPopMotion}>
+            <Modal className="avatar-crop-modal" label="調整頭貼" onClose={closeAvatarCrop} busy={loadingAction === 'avatar'}>
               <header>
                 <div>
                   <h3>調整頭貼</h3>
@@ -780,15 +780,13 @@ export default function AccountSettings({
                   儲存頭貼
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </Modal>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {deleteConfirmOpen && (
-          <motion.div className="modal-backdrop" {...modalBackdropMotion}>
-            <motion.div className="confirm-modal settings-delete-modal" {...modalPopMotion}>
+            <Modal className="confirm-modal settings-delete-modal" label="刪除帳號" onClose={() => setDeleteConfirmOpen(false)} busy={loadingAction === 'delete'}>
               <div className="modal-icon danger">
                 <Trash2 size={20} />
               </div>
@@ -803,20 +801,19 @@ export default function AccountSettings({
                   確認刪除
                 </button>
               </div>
-            </motion.div>
-          </motion.div>
+            </Modal>
         )}
       </AnimatePresence>
-    </motion.section>
+    </section>
   );
 }
 
 function SettingsCard({ id, icon, title, description, visible, danger = false, children }) {
   return (
-    <motion.section
+    <section
       id={`settings-${id}`}
-      className={`settings-card glass motion-card-hover ${visible ? 'visible' : 'hidden'} ${danger ? 'danger-zone' : ''}`}
-      {...pageFadeUp}
+      className={`settings-card ${visible ? 'visible' : 'hidden'} ${danger ? 'danger-zone' : ''}`}
+      hidden={!visible}
     >
       <header className="settings-card-header">
         <div>
@@ -828,13 +825,23 @@ function SettingsCard({ id, icon, title, description, visible, danger = false, c
         </div>
       </header>
       <div className="settings-card-body">{children}</div>
-    </motion.section>
+    </section>
   );
 }
 
 function SettingsRow({ label, value, actionLabel, actionIcon, onAction, actionDisabled, isEditing, children }) {
+  const rowRef = useRef(null);
+  const wasEditing = useRef(false);
+  useEffect(() => {
+    const row = rowRef.current;
+    if (isEditing) row?.querySelector('input')?.focus({ preventScroll: true });
+    else if (wasEditing.current && (document.activeElement === document.body || row?.contains(document.activeElement))) {
+      row?.querySelector('.settings-row-action')?.focus({ preventScroll: true });
+    }
+    wasEditing.current = isEditing;
+  }, [isEditing]);
   return (
-    <div className={`settings-row motion-card-hover ${isEditing ? 'is-editing' : ''}`}>
+    <div ref={rowRef} className={`settings-row ${isEditing ? 'is-editing' : ''}`}>
       <span className="settings-row-label">{label}</span>
       <div className="settings-row-value">
         {isEditing ? children : <strong title={typeof value === 'string' ? value : undefined}>{value}</strong>}
@@ -852,7 +859,7 @@ function SettingsRow({ label, value, actionLabel, actionIcon, onAction, actionDi
 function InlineActions({ loading, disabled, onCancel, saveLabel = '儲存' }) {
   return (
     <div className="settings-inline-actions">
-      <button className="ghost-button motion-soft-press" type="button" onClick={onCancel}>
+      <button className="ghost-button motion-soft-press" type="button" onClick={onCancel} disabled={loading}>
         取消
       </button>
       <button className="primary-button motion-soft-press" type="submit" disabled={disabled}>
@@ -874,7 +881,7 @@ function PasswordInput({ visible, onToggle, value, onChange, onBlur, placeholder
         placeholder={placeholder}
         aria-invalid={invalid}
       />
-      <button className="motion-soft-press" type="button" onClick={onToggle} aria-label={visible ? '隱藏密碼' : '顯示密碼'}>
+      <button className="motion-soft-press" type="button" onClick={onToggle} aria-pressed={visible} aria-label={visible ? '隱藏密碼' : '顯示密碼'}>
         {visible ? <EyeOff size={16} /> : <Eye size={16} />}
       </button>
     </span>

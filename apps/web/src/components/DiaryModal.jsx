@@ -1,8 +1,7 @@
-﻿import { motion } from 'framer-motion';
 import { ImagePlus, LocateFixed, Mic, RefreshCcw, Square, Trash2, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { MOOD_OPTIONS, VISIBILITY_OPTIONS } from '../constants/app.js';
-import { modalBackdropMotion, modalPopMotion } from '../constants/animations.js';
+import Modal from './ui/Modal.jsx';
 import { getDistanceInMeters } from '../utils/distance.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
@@ -358,11 +357,9 @@ export default function DiaryModal({
   }
 
   return (
-    <motion.div className="modal-backdrop" {...modalBackdropMotion}>
-      <motion.form
+      <Modal as="form" label={isEditMode ? '編輯日記' : '新增日記'} onClose={onClose} busy={loading}
         className="diary-modal glass"
         onSubmit={submit}
-        {...modalPopMotion}
       >
         <header>
           <div>
@@ -523,8 +520,7 @@ export default function DiaryModal({
           {loading && <span className="button-spinner dark" />}
           {loading ? '保存中...' : isEditMode ? '儲存變更' : '保存日記'}
         </button>
-      </motion.form>
-    </motion.div>
+      </Modal>
   );
 }
 

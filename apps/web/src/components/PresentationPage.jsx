@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
@@ -18,8 +17,8 @@ import {
   Sparkles,
   Users
 } from 'lucide-react';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { listItemMotion, pageTransition } from '../constants/animations.js';
+import { memo, useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState } from 'react';
+import { motionMs } from '../constants/animations.js';
 import { createPresentationMapMotion } from '../lib/motion/animeMotion.js';
 
 const slides = [
@@ -45,10 +44,7 @@ const slides = [
   { id: 'thank-you', label: 'Thank You', group: '成果展示' }
 ];
 
-const navGroups = [...new Map(slides.map((slide) => [slide.group, slide])).entries()].map(([label, firstSlide]) => ({
-  label,
-  firstSlideId: firstSlide.id
-}));
+const navGroups = [...new Set(slides.map(slide => slide.group))].map(label => ({ label }));
 
 const memberList = [
   ['張惠芯', '411200536'],
@@ -449,13 +445,22 @@ export default function PresentationPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const pageRef = useRef(null);
   const currentSlideRef = useRef(currentSlide);
-  const wheelLockRef = useRef(false);
+  const wheelLockRef = useRef(0);
   const touchStartYRef = useRef(null);
   const activeSlide = slides[currentSlide] ?? slides[0];
   const activeGroup = activeSlide.group;
 
-  useEffect(() => {
-    currentSlideRef.current = currentSlide;
+  useLayoutEffect(() => {
+    const sections = pageRef.current.querySelectorAll('.presentation-slide-track > .presentation-section');
+    sections.forEach((section, index) => {
+      const active = index === currentSlide;
+      if (!active && section.contains(document.activeElement)) pageRef.current.focus({ preventScroll: true });
+      section.inert = !active;
+      section.dataset.active = String(active);
+      section.setAttribute('aria-hidden', String(!active));
+      section.setAttribute('aria-label', slides[index].label);
+      section.setAttribute('aria-roledescription', '投影片');
+    });
   }, [currentSlide]);
 
   const goToSlide = useCallback((index) => {
@@ -478,17 +483,27 @@ export default function PresentationPage() {
   }, [goToSlide]);
 
   const handleWheel = useCallback((event) => {
-    if (Math.abs(event.deltaY) < 36 || wheelLockRef.current) return;
+    if (event.ctrlKey) return;
+    const section = event.target.closest?.('.presentation-section');
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? window.innerHeight : 1);
+    if (section && (delta > 0 ? section.scrollTop + section.clientHeight < section.scrollHeight - 1 : section.scrollTop > 0)) return;
+    if (Math.abs(delta) < 36) return;
     event.preventDefault();
-    wheelLockRef.current = true;
-    goToSlide(currentSlideRef.current + (event.deltaY > 0 ? 1 : -1));
-    window.setTimeout(() => {
-      wheelLockRef.current = false;
-    }, 460);
+    if (performance.now() < wheelLockRef.current) return;
+    wheelLockRef.current = performance.now() + motionMs.slow;
+    goToSlide(currentSlideRef.current + (delta > 0 ? 1 : -1));
   }, [goToSlide]);
 
+  useEffect(() => {
+    const page = pageRef.current;
+    page.addEventListener('wheel', handleWheel, { passive: false });
+    return () => page.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
   const handleTouchStart = useCallback((event) => {
-    touchStartYRef.current = event.touches?.[0]?.clientY ?? null;
+    const section = event.target.closest?.('.presentation-section');
+    touchStartYRef.current = event.touches?.length === 1 && (!section || section.scrollHeight <= section.clientHeight + 1)
+      ? event.touches[0].clientY : null;
   }, []);
 
   const handleTouchEnd = useCallback((event) => {
@@ -533,15 +548,12 @@ export default function PresentationPage() {
   }, [goToNextSlide, goToPreviousSlide, goToSlide]);
 
   return (
-    <motion.main
+    <main
       className="presentation-page"
       ref={pageRef}
-      onWheel={handleWheel}
+      tabIndex={-1}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={pageTransition}
     >
       <PresentationAtmosphere />
       <PresentationNav activeGroup={activeGroup} onSelect={goToGroup} />
@@ -582,13 +594,13 @@ export default function PresentationPage() {
           </article>
           <div className="motivation-point-list" aria-label="Adrift 專題動機">
             {motivationPoints.map(([title, text], index) => (
-              <motion.article key={title} className="motivation-point" {...listItemMotion(index)}>
+              <article key={title} className="motivation-point">
                 <span>{String(index + 1).padStart(2, '0')}</span>
                 <div>
                   <strong>{title}</strong>
                   <p>{text}</p>
                 </div>
-              </motion.article>
+              </article>
             ))}
           </div>
         </div>
@@ -620,7 +632,7 @@ export default function PresentationPage() {
 
       <SlideSection id="map-diary" eyebrow="Core Feature 01" title="地圖日記" subtitle="以地圖作為主介面，讓使用者在真實地點留下日記、照片與心情。">
         <div className="presentation-feature-layout">
-          <PresentationMapVisual />
+          <PresentationMapVisual active={activeSlide.id === 'map-diary'} />
           <div className="presentation-card-grid two">
             {mapDiaryCards.map(([title, text, icon], index) => (
               <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
@@ -691,13 +703,13 @@ export default function PresentationPage() {
           </article>
           <div className="ux-principle-grid">
             {uxPrinciples.map(([title, text, icon], index) => (
-              <motion.article key={title} className="ux-principle-card" {...listItemMotion(index)}>
+              <article key={title} className="ux-principle-card">
                 <span>{icon}</span>
                 <div>
                   <strong>{title}</strong>
                   <p>{text}</p>
                 </div>
-              </motion.article>
+              </article>
             ))}
           </div>
         </div>
@@ -716,20 +728,20 @@ export default function PresentationPage() {
         <div className="governance-layout">
           <div className="governance-role-row">
             {governanceRoles.map((item, index) => (
-              <motion.article key={item.role} className="governance-role-card" {...listItemMotion(index)}>
+              <article key={item.role} className="governance-role-card">
                 <div className="governance-role-icon">{item.icon}</div>
                 <span>{item.role}</span>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
-              </motion.article>
+              </article>
             ))}
           </div>
 
           <div className="governance-principle-strip" aria-label="權限設計原則">
             {governancePrinciples.map((item, index) => (
-              <motion.span key={item} {...listItemMotion(index + 3)}>
+              <span key={item}>
                 {String(index + 1).padStart(2, '0')} · {item}
-              </motion.span>
+              </span>
             ))}
           </div>
         </div>
@@ -738,14 +750,14 @@ export default function PresentationPage() {
       <SlideSection id="future" eyebrow="Roadmap" title="未來展望" subtitle="持續強化真實性、好友互動、手機版體驗，讓 Adrift 更接近正式產品。">
         <div className="future-roadmap" aria-label="Adrift 未來規劃">
           {futureRoadmap.map((item, index) => (
-            <motion.article key={item.phase} className="future-roadmap-card" {...listItemMotion(index)}>
+            <article key={item.phase} className="future-roadmap-card">
               <div className="future-roadmap-head">
                 <span className="future-roadmap-icon">{item.icon}</span>
                 <span className="future-roadmap-phase">{item.phase}</span>
               </div>
               <h3>{item.title}</h3>
               <p>{item.text}</p>
-            </motion.article>
+            </article>
           ))}
         </div>
         <p className="future-copy">根據實際使用情境的回饋，我們將 Adrift 定位為「城市記憶系統」：降低記錄門檻，讓長期累積的日記把地圖慢慢變成自己的生活記憶。</p>
@@ -754,10 +766,10 @@ export default function PresentationPage() {
       <SlideSection id="team" eyebrow="Team" title="分工表" subtitle="以下為本專題主要分工與網站實作補充。">
         <div className="team-table">
           {teamRows.map(([name, work], index) => (
-            <motion.div key={name} className="team-row" {...listItemMotion(index)}>
+            <div key={name} className="team-row">
               <strong>{name}</strong>
               <span>{work}</span>
-            </motion.div>
+            </div>
           ))}
         </div>
       </SlideSection>
@@ -816,7 +828,7 @@ export default function PresentationPage() {
         onGoToPrevious={goToPreviousSlide}
         onGoToNext={goToNextSlide}
       />
-    </motion.main>
+    </main>
   );
 }
 
@@ -837,6 +849,7 @@ function PresentationNav({ activeGroup, onSelect }) {
           key={group.label}
           className={activeGroup === group.label ? 'active' : ''}
           type="button"
+          aria-current={activeGroup === group.label ? 'step' : undefined}
           onClick={() => onSelect(group.label)}
         >
           {group.label}
@@ -856,7 +869,7 @@ function PresentationControls({ activeIndex, onGoToPrevious, onGoToNext }) {
       <div className="presentation-progress">
         <span>{String(activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
         <div className="presentation-progress-track">
-          <i style={{ width: `${progress}%` }} />
+          <i style={{ transform: `scaleX(${progress / 100})` }} />
         </div>
       </div>
       <div className="presentation-control-actions">
@@ -885,7 +898,7 @@ function PresentationControls({ activeIndex, onGoToPrevious, onGoToNext }) {
 
 function GoalCard({ icon, title, text, index = 0 }) {
   return (
-    <motion.article className="presentation-goal-card" {...listItemMotion(index)}>
+    <article className="presentation-goal-card">
       <div className="goal-card-orbit">
         <span>{icon}</span>
       </div>
@@ -893,7 +906,7 @@ function GoalCard({ icon, title, text, index = 0 }) {
         <strong>{title}</strong>
         <p>{text}</p>
       </div>
-    </motion.article>
+    </article>
   );
 }
 
@@ -901,11 +914,10 @@ function SlideSection({ id, eyebrow, title, subtitle, children }) {
   const slideIndex = slides.findIndex((slide) => slide.id === id);
 
   return (
-    <motion.section
+    <section
       className="presentation-section"
       id={id}
       data-slide-index={slideIndex >= 0 ? slideIndex : undefined}
-      {...pageFadeUp}
     >
       <SlideBrand />
       <div className="presentation-section-inner">
@@ -916,20 +928,19 @@ function SlideSection({ id, eyebrow, title, subtitle, children }) {
         </div>
         {children}
       </div>
-    </motion.section>
+    </section>
   );
 }
 
 function FeatureCard({ icon, title, text, index = 0, large = false, compact = false }) {
   return (
-    <motion.article
+    <article
       className={`presentation-feature-card ${large ? 'large' : ''} ${compact ? 'compact-card' : ''}`}
-      {...listItemMotion(index)}
     >
       <span>{icon}</span>
       <strong>{title}</strong>
       <p>{text}</p>
-    </motion.article>
+    </article>
   );
 }
 
@@ -959,7 +970,7 @@ function HorizontalUserFlow({ steps }) {
         <span />
       </div>
       {steps.map((step, index) => (
-        <motion.article className="horizontal-flow-step" key={step.title} {...listItemMotion(index)}>
+        <article className="horizontal-flow-step" key={step.title}>
           <span className="horizontal-flow-index">{String(index + 1).padStart(2, '0')}</span>
           <div className="horizontal-flow-copy">
             <h3>{step.title}</h3>
@@ -970,7 +981,7 @@ function HorizontalUserFlow({ steps }) {
               <li key={item}>{item}</li>
             ))}
           </ul>
-        </motion.article>
+        </article>
       ))}
     </div>
   );
@@ -984,12 +995,12 @@ function PresentationFlowChart({ rootTitle, branches, compact = false, compactCo
       aria-label={`${rootTitle}流程圖`}
     >
       {!compact && <ChartConnectors count={branches.length} />}
-      <motion.div className="flowchart-root flow-node root-node" {...listItemMotion(0)}>
+      <div className="flowchart-root flow-node root-node">
         {rootTitle}
-      </motion.div>
+      </div>
       <div className="flowchart-branches">
         {branches.map((branch, branchIndex) => (
-          <motion.section className="flowchart-branch" key={branch.title} {...listItemMotion(branchIndex + 1)}>
+          <section className="flowchart-branch" key={branch.title}>
             <div className="flow-node branch-node">{branch.title}</div>
             <div className="flowchart-actions">
               {branch.items.map((item) => (
@@ -1007,7 +1018,7 @@ function PresentationFlowChart({ rootTitle, branches, compact = false, compactCo
                 </div>
               ))}
             </div>
-          </motion.section>
+          </section>
         ))}
       </div>
     </div>
@@ -1022,12 +1033,12 @@ function PresentationSystemTree({ rootTitle, modules, compact = false, compactCo
       aria-label={`${rootTitle}系統架構樹狀圖`}
     >
       {!compact && <ChartConnectors count={modules.length} type="system" />}
-      <motion.div className="system-tree-root flow-node root-node" {...listItemMotion(0)}>
+      <div className="system-tree-root flow-node root-node">
         {rootTitle}
-      </motion.div>
+      </div>
       <div className="system-tree-modules">
         {modules.map((module, moduleIndex) => (
-          <motion.section className={`system-module ${module.tone}`} key={module.title} {...listItemMotion(moduleIndex + 1)}>
+          <section className={`system-module ${module.tone}`} key={module.title}>
             <div className="flow-node module-node">{module.title}</div>
             <div className="system-module-items">
               {module.items.map((item) => (
@@ -1040,7 +1051,7 @@ function PresentationSystemTree({ rootTitle, modules, compact = false, compactCo
                 </div>
               ))}
             </div>
-          </motion.section>
+          </section>
         ))}
       </div>
     </div>
@@ -1065,10 +1076,10 @@ function TechMap({ items, icon }) {
       </div>
       <div className="tech-map-items">
         {items.map(([title, text], index) => (
-          <motion.article className="tech-map-node" key={title} {...listItemMotion(index)}>
+          <article className="tech-map-node" key={title}>
             <strong className="tech-map-title">{formatSlashTitle(title)}</strong>
             <p>{text}</p>
-          </motion.article>
+          </article>
         ))}
       </div>
     </div>
@@ -1114,7 +1125,7 @@ const VisualOrb = memo(function VisualOrb({ compact = false }) {
   );
 });
 
-const PresentationMapVisual = memo(function PresentationMapVisual() {
+const PresentationMapVisual = memo(function PresentationMapVisual({ active }) {
   const mapVisualRef = useRef(null);
   const nodes = [
     { className: 'node-a', x: 132, y: 144, label: 'home' },
@@ -1124,7 +1135,17 @@ const PresentationMapVisual = memo(function PresentationMapVisual() {
     { className: 'node-e', x: 84, y: 286, label: 'public' }
   ];
 
-  useEffect(() => createPresentationMapMotion(mapVisualRef.current), []);
+  useEffect(() => {
+    if (!active) return;
+    let dispose;
+    function syncVisibility() {
+      dispose?.();
+      dispose = document.hidden ? undefined : createPresentationMapMotion(mapVisualRef.current);
+    }
+    syncVisibility();
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => { dispose?.(); document.removeEventListener('visibilitychange', syncVisibility); };
+  }, [active]);
 
   return (
     <div ref={mapVisualRef} className="presentation-map-visual" aria-hidden="true">
@@ -1153,9 +1174,9 @@ const PresentationMapVisual = memo(function PresentationMapVisual() {
         <path data-map-draw className="map-road-line road-two" d="M210 42C205 98 218 143 254 186C291 231 344 257 408 312" />
         <path data-map-draw className="map-road-line road-three" d="M28 208C88 202 154 214 214 248C270 280 326 296 450 286" />
 
-        <path id="presentationMemoryDriftPathMain" className="memory-drift-path path-shadow" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
-        <path data-memory-path data-flow-duration="12000" className="memory-drift-path" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286" />
-        <path id="presentationMemoryDriftPathAlt" data-memory-path data-flow-duration="14000" className="memory-drift-path secondary" d="M84 286C144 248 180 204 132 144C204 132 250 162 286 112C314 178 344 218 382 244C320 250 264 276 226 342" />
+        <path id="presentationMemoryDriftPathMain" className="memory-drift-path path-shadow" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286C60 218 86 176 132 144Z" />
+        <path data-memory-path data-flow-duration="12000" className="memory-drift-path" d="M132 144C178 102 238 82 286 112C332 140 338 204 382 244C334 272 286 308 226 342C172 318 124 304 84 286C60 218 86 176 132 144Z" />
+        <path id="presentationMemoryDriftPathAlt" data-memory-path data-flow-duration="14000" className="memory-drift-path secondary" d="M84 286C144 248 180 204 132 144C204 132 250 162 286 112C314 178 344 218 382 244C320 250 264 276 226 342C172 372 88 358 84 286Z" />
 
         <g
           className="drifting-memory-dot dot-one"
@@ -1184,7 +1205,7 @@ const PresentationMapVisual = memo(function PresentationMapVisual() {
           className="drifting-memory-dot dot-three"
           data-drift-dot
           data-path-id="presentationMemoryDriftPathMain"
-          data-duration="32000"
+          data-duration="30000"
           data-path-offset="0.68"
           data-opacity="0.58"
         >

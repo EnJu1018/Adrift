@@ -76,10 +76,10 @@ function fits(rect, bounds, obstacles) {
     && !obstacles.some((obstacle) => intersects(rect, obstacle));
 }
 
-export function getStackLayout(count, center, viewport, obstacles = []) {
+export function getStackLayout(count, center, viewport, obstacles = [], forceList = false) {
   const bounds = { left: viewport.left + 12, right: viewport.right - 12, top: viewport.top + 12, bottom: viewport.bottom - 12 };
   const angle = Math.atan2((bounds.top + bounds.bottom) / 2 - center.y, (bounds.left + bounds.right) / 2 - center.x);
-  if (count >= 2 && count <= 6) {
+  if (!forceList && count >= 2 && count <= 6) {
     const span = count <= 3 ? Math.PI * 2 / 3 : Math.PI;
     const radius = Math.max(76, Math.ceil(60 / (2 * Math.sin(span / (count - 1) / 2))));
     const directions = [angle, 0, Math.PI, -Math.PI / 2, Math.PI / 2, -Math.PI / 4, Math.PI / 4, Math.PI * 3 / 4, -Math.PI * 3 / 4];

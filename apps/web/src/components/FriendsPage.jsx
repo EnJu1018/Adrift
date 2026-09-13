@@ -16,8 +16,9 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { fadeUpMotion, listItemMotion, modalBackdropMotion, modalPopMotion, pageFadeUp } from '../constants/animations.js';
+import { listItemMotion } from '../constants/animations.js';
+import ContentTransition from './ui/ContentTransition.jsx';
+import Modal from './ui/Modal.jsx';
 import { USER_CODE_PATTERN } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
@@ -397,9 +398,8 @@ export default function FriendsPage({
     selectFriend(searchResult);
   }
 
-  const deleteFriendModal = friendToDelete ? createPortal(
-    <motion.div className="modal-backdrop" {...modalBackdropMotion}>
-      <motion.article className="friend-profile-modal danger glass" {...modalPopMotion}>
+  const deleteFriendModal = friendToDelete ? (
+      <Modal as="article" className="friend-profile-modal danger glass" label="刪除好友" onClose={() => setFriendToDelete(null)} busy={busyAction === `delete-friend-${friendToDelete._id}`} error={messageType === 'error' ? message : ''}>
         <header className="friend-profile-header">
           <UserAvatar user={friendToDelete} size="sm" />
           <div>
@@ -424,9 +424,7 @@ export default function FriendsPage({
             刪除好友
           </button>
         </footer>
-      </motion.article>
-    </motion.div>,
-    document.body
+      </Modal>
   ) : null;
 
   const selectedDisplayProfile = selectedProfile || selectedFriend;
@@ -437,8 +435,8 @@ export default function FriendsPage({
         toast={message ? { id: `${messageType}-${message}`, message, type: messageType } : null}
         onDismiss={() => setMessage('')}
       />
-      {deleteFriendModal}
-      <motion.main className="friends-hub glass" {...pageFadeUp}>
+      <AnimatePresence>{deleteFriendModal}</AnimatePresence>
+      <main className="friends-hub glass">
         <header className="friends-hub-header">
           <div className="friends-title-copy">
             <p className="friends-hub-kicker">Friends</p>
@@ -450,7 +448,7 @@ export default function FriendsPage({
           </div>
         </header>
 
-        <motion.div className="friends-new-user-flow" {...fadeUpMotion}>
+        <div className="friends-new-user-flow">
           <SearchCard
             searchCode={searchCode}
             searchResult={searchResult}
@@ -495,7 +493,7 @@ export default function FriendsPage({
             onSelectFriend={selectFriend}
             onFriendActionMenuChange={setFriendActionMenuId}
             onViewDiary={viewFriendDiaries}
-            onDeleteFriend={setFriendToDelete}
+            onDeleteFriend={friend => { setMessage(''); setFriendToDelete(friend); }}
           />
 
           <RecommendationsPanel
@@ -510,8 +508,8 @@ export default function FriendsPage({
             onSendRecommendation={sendRecommendationRequest}
             onCancelRecommendation={cancelRecommendationRequest}
           />
-        </motion.div>
-      </motion.main>
+        </div>
+      </main>
     </>
   );
 }
@@ -566,7 +564,7 @@ function SearchCard({
 
       <AnimatePresence mode="wait">
         {searchResult ? (
-          <motion.article className="search-result-card social-person-row" key={searchResult._id} {...fadeUpMotion}>
+          <ContentTransition as="article" className="search-result-card social-person-row" key={searchResult._id}>
             <FriendIdentity user={searchResult} meta={getFriendshipLabel(searchFriendshipStatus)} />
             <SearchResultActions
               status={searchFriendshipStatus}
@@ -579,12 +577,12 @@ function SearchCard({
               onAccept={onAccept}
               onReject={onReject}
             />
-          </motion.article>
+          </ContentTransition>
         ) : searchError ? (
-          <motion.div className="friends-search-error" key="search-error" {...fadeUpMotion}>
+          <ContentTransition className="friends-search-error" role="status" key="search-error">
             <strong>{searchError.startsWith('找不到') ? '找不到此使用者' : searchError}</strong>
             {searchError.startsWith('找不到') && <span>請確認 userCode 是否正確。</span>}
-          </motion.div>
+          </ContentTransition>
         ) : (
           null
         )}
@@ -700,11 +698,11 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
         description="集中處理新的連結與等待回覆。"
       />
       <div className="friend-segmented compact-tabs" aria-label="好友邀請分類">
-        <button className={inviteTab === 'received' ? 'active' : ''} type="button" onClick={() => onInviteTabChange('received')}>
+        <button className={inviteTab === 'received' ? 'active' : ''} type="button" aria-pressed={inviteTab === 'received'} onClick={() => onInviteTabChange('received')}>
           收到的
           {requests.length > 0 && <span>{requests.length}</span>}
         </button>
-        <button className={inviteTab === 'sent' ? 'active' : ''} type="button" onClick={() => onInviteTabChange('sent')}>
+        <button className={inviteTab === 'sent' ? 'active' : ''} type="button" aria-pressed={inviteTab === 'sent'} onClick={() => onInviteTabChange('sent')}>
           已送出
           {sentRequests.length > 0 && <span>{sentRequests.length}</span>}
         </button>
@@ -712,10 +710,10 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
 
       <AnimatePresence mode="wait">
         {inviteTab === 'received' ? (
-          <motion.div className="social-invite-list" key="received" {...fadeUpMotion}>
+          <ContentTransition className="social-invite-list" key="received">
             {requests.length > 0 ? (
-              requests.map((request, index) => (
-                <motion.article className="social-person-row" key={request.requestId} {...listItemMotion(index)}>
+              requests.map((request) => (
+                <article className="social-person-row" key={request.requestId}>
                   <FriendIdentity user={request.from} meta={formatDateTime(request.createdAt) || '新的邀請'} />
                   <div className="friend-actions">
                     <button
@@ -737,7 +735,7 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
                       拒絕
                     </button>
                   </div>
-                </motion.article>
+                </article>
               ))
             ) : (
               <div className="friends-empty-panel compact">
@@ -745,12 +743,12 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
                 <strong>目前沒有好友邀請</strong>
               </div>
             )}
-          </motion.div>
+          </ContentTransition>
         ) : (
-          <motion.div className="social-invite-list" key="sent" {...fadeUpMotion}>
+          <ContentTransition className="social-invite-list" key="sent">
             {sentRequests.length > 0 ? (
-              sentRequests.map((request, index) => (
-                <motion.article className="social-person-row" key={request.requestId} {...listItemMotion(index)}>
+              sentRequests.map((request) => (
+                <article className="social-person-row" key={request.requestId}>
                   <FriendIdentity user={request.to} meta={formatDateTime(request.createdAt) || '等待回覆'} />
                   <div className="friend-actions">
                     <span className="friend-status-pill">等待回覆</span>
@@ -764,7 +762,7 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
                       收回
                     </button>
                   </div>
-                </motion.article>
+                </article>
               ))
             ) : (
               <div className="friends-empty-panel compact">
@@ -772,7 +770,7 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
                 <strong>尚未送出好友邀請</strong>
               </div>
             )}
-          </motion.div>
+          </ContentTransition>
         )}
       </AnimatePresence>
     </section>

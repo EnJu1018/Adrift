@@ -1,6 +1,5 @@
-import { motion } from 'framer-motion';
-import { motionTokens } from '../constants/animations.js';
 import { getMoodMarkerStyle } from '../constants/moodStyles.js';
+import { normalizeDiaryCoordinate } from './markers/markerGeometry.js';
 
 export default function FallbackMap({ diaries, selectedId, currentLocation, onSelect }) {
   const currentPoint = getFallbackPoint(currentLocation);
@@ -9,26 +8,26 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
     <div className="fallback-map">
       <div className="map-grid" />
       {currentPoint && (
-        <motion.div
+        <div
           className={`current-location-fallback ${currentLocation.accuracyType === 'approximate' ? 'approximate' : ''}`}
           style={{ left: `${currentPoint.x}%`, top: `${currentPoint.y}%` }}
-          initial={{ opacity: 0, scale: motionTokens.scale.large }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: motionTokens.duration.fast, ease: motionTokens.ease.smoothOut }}
           aria-label={currentLocation.accuracyType === 'approximate' ? '目前為大略位置' : '目前位置'}
         >
           <span />
-        </motion.div>
+        </div>
       )}
-      {diaries.map((diary, index) => {
-        const [lng, lat] = diary.location.coordinates;
+      {diaries.map((diary) => {
+        const coordinates = normalizeDiaryCoordinate(diary);
+        if (!coordinates) return null;
+        const { lng, lat } = coordinates;
         const x = ((lng + 180) / 360) * 100;
         const y = (1 - (lat + 90) / 180) * 100;
         const markerStyle = getMoodMarkerStyle(diary.mood?.type || 'other', { explore: Boolean(diary.isExplore) });
         const approximate = diary.locationAccuracy === 'approximate';
 
         return (
-          <motion.button
+          <button
+            type="button"
             key={diary._id}
             className={`marker-button diary-memory-marker ${selectedId === diary._id ? 'selected' : ''} ${diary.isExplore ? 'explore' : ''} ${approximate ? 'approximate' : ''}`}
             data-mood={diary.mood?.type || 'other'}
@@ -41,18 +40,12 @@ export default function FallbackMap({ diaries, selectedId, currentLocation, onSe
               '--marker-core': markerStyle.core
             }}
             onClick={() => onSelect(diary)}
-            initial={{ opacity: 0, scale: motionTokens.scale.large }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{
-              duration: motionTokens.duration.fast,
-              ease: motionTokens.ease.smoothOut,
-              delay: Math.min(index, 6) * motionTokens.duration.stagger
-            }}
+            aria-pressed={selectedId === diary._id}
             aria-label={approximate ? '此日記使用大略位置' : '開啟日記'}
           >
             {approximate && <i className="marker-radius" />}
             <span>{markerStyle.icon}</span>
-          </motion.button>
+          </button>
         );
       })}
     </div>

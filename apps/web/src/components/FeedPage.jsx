@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Heart, MessageCircle, Plus, Radio, Users, Waves } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { fadeUpMotion, listItemMotion } from '../constants/animations.js';
+import { listItemMotion } from '../constants/animations.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
 import DiaryImage from './DiaryImage.jsx';
@@ -29,7 +29,7 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
   }, [diaries, filter]);
 
   return (
-    <motion.section className="feed-page glass" {...fadeUpMotion}>
+    <section className="feed-page glass">
       <header className="feed-page-hero">
         <div>
           <p className="eyebrow">Feed</p>
@@ -44,6 +44,7 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
             key={option.value}
             className={`motion-soft-press ${filter === option.value ? 'active' : ''}`}
             type="button"
+            aria-pressed={filter === option.value}
             onClick={() => setFilter(option.value)}
           >
             {option.label}
@@ -61,7 +62,10 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
               role="button"
               tabIndex={0}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') onOpenDiary?.(diary);
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  onOpenDiary?.(diary);
+                }
               }}
               {...listItemMotion(index)}
             >
@@ -115,12 +119,8 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
           </div>
         )}
       </div>
-    </motion.section>
+    </section>
   );
-}
-
-function getAuthorName(diary, currentUser) {
-  return diary.author?.name || diary.user?.name || currentUser?.name || 'A';
 }
 
 function getAuthorCode(diary, currentUser) {

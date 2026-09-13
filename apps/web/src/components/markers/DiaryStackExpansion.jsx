@@ -10,7 +10,7 @@ export default function DiaryStackExpansion({ group, layout, selectedId, onSelec
   const systemReducedMotion = useReducedMotion();
   const ref = useRef(null);
   const quiet = reducedMotion || systemReducedMotion;
-  const transition = { duration: quiet ? 0 : present ? motionTokens.duration.fast : motionTokens.duration.quick, ease: motionTokens.ease.smoothOut };
+  const transition = { duration: quiet ? 0 : present ? motionTokens.duration.medium : motionTokens.duration.fast, ease: motionTokens.ease.smoothOut };
 
   useEffect(() => {
     if (keyboardOpen) ref.current?.querySelector('button[aria-pressed="true"], [data-stack-choice] button, button[data-stack-choice]')?.focus({ preventScroll: true });
@@ -34,19 +34,20 @@ export default function DiaryStackExpansion({ group, layout, selectedId, onSelec
 
   return <motion.div ref={ref} className={`dn-expansion dn-expansion-${layout.kind}`} role="dialog" aria-label={`${group.count} 篇記憶`} aria-modal="false"
     inert={!present ? true : undefined} aria-hidden={!present || undefined} onKeyDown={handleKey}
-    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={transition}>
+    initial={quiet ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={transition}>
     {layout.kind === 'arc' ? <>
       <svg className="dn-connectors" width="1" height="1" aria-hidden="true">
         {layout.items.map(({ x, y }, index) => <line key={group.diaries[index]._id} x1="0" y1="0" x2={x} y2={y} />)}
       </svg>
       {group.diaries.map((diary, index) => <motion.div className="dn-arc-item" key={diary._id} data-stack-choice={diary._id}
-        initial={{ x: 0, y: 0, opacity: 0, scale: 0.9 }}
-        animate={{ ...layout.items[index], opacity: 1, scale: 1 }} exit={{ x: 0, y: 0, opacity: 0, scale: 0.9 }}
+        initial={quiet ? false : { x: 0, y: 0, opacity: 0, scale: motionTokens.scale.small }}
+        animate={{ ...layout.items[index], opacity: 1, scale: 1 }} exit={{ x: 0, y: 0, opacity: 0, scale: motionTokens.scale.small }}
         transition={{ ...transition, delay: quiet || !present ? 0 : index * motionTokens.duration.stagger }}>
         <DiaryMarkerVisual diary={diary} selected={String(diary._id) === String(selectedId)} onSelect={() => onSelect(diary)} />
       </motion.div>)}
     </> : <motion.div className="dn-stack-list" style={{ width: layout.width, maxHeight: layout.height }}
-      initial={{ x: layout.x, y: layout.y, scale: 0.98 }} animate={{ x: layout.x, y: layout.y, scale: 1 }} exit={{ scale: 0.98 }} transition={transition}>
+      initial={quiet ? false : { x: layout.x, y: layout.y, scale: motionTokens.scale.small }} animate={{ x: layout.x, y: layout.y, scale: 1 }} exit={{ scale: motionTokens.scale.small }}
+      transition={{ ...transition, x: { duration: 0 }, y: { duration: 0 } }}>
       <header><strong>{group.count} 篇記憶</strong><button type="button" onClick={() => onClose(true)} aria-label="收合記憶清單"><X size={18}/></button></header>
       <div className="dn-stack-scroll">
         {group.diaries.map((diary) => <button type="button" key={diary._id} data-stack-choice={diary._id}

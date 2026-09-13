@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion';
 import {
   AlertCircle,
   ArrowLeft,
@@ -10,9 +10,9 @@ import {
   Mail,
   UserPlus
 } from 'lucide-react';
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { api } from '../api/client.js';
-import { fadeUpMotion, modalPopMotion, pageFadeUp, panelSlideLeft, toastMotion } from '../constants/animations.js';
+import { motionTokens, pageFadeUp } from '../constants/animations.js';
 import { EMAIL_PATTERN, USER_CODE_PATTERN } from '../constants/app.js';
 
 const STEP = {
@@ -24,6 +24,9 @@ const STEP = {
 
 export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading, error, notice }) {
   const [step, setStep] = useState(STEP.EMAIL);
+  const [direction, setDirection] = useState(1);
+  const formRef = useRef(null);
+  const requestPending = useRef(false);
   const [mode, setMode] = useState(null);
   const [form, setForm] = useState({ name: '', userCode: '', email: '', password: '', confirmPassword: '' });
   const [touched, setTouched] = useState({});
@@ -87,6 +90,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
   }
 
   function blurField(field) {
+    if (!submitted && !touched[field]) return;
     setTouched((current) => ({ ...current, [field]: true }));
     setErrors((current) => ({ ...current, [field]: validateField(field) }));
   }
@@ -95,10 +99,13 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
     const nextErrors = Object.fromEntries(fields.map((field) => [field, validateField(field)]).filter(([, message]) => message));
     setErrors(nextErrors);
     setTouched((current) => ({ ...current, ...Object.fromEntries(fields.map((field) => [field, true])) }));
+    const firstInvalid = Object.keys(nextErrors)[0];
+    if (firstInvalid) formRef.current?.elements.namedItem(firstInvalid)?.focus();
     return Object.keys(nextErrors).length === 0;
   }
 
-  function moveTo(nextStep) {
+  function moveTo(nextStep, nextDirection = 1) {
+    setDirection(nextDirection);
     setStep(nextStep);
     setSubmitted(false);
     setErrors({});
@@ -108,6 +115,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
 
   async function submit(event) {
     event.preventDefault();
+    if (loading || requestPending.current) return;
     setSubmitted(true);
     setStepError('');
     onClearError?.();
@@ -118,6 +126,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
       const email = form.email.trim().toLowerCase();
       setForm((current) => ({ ...current, email }));
       setIsCheckingEmail(true);
+      requestPending.current = true;
 
       try {
         const payload = await api.checkEmail(email);
@@ -127,6 +136,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
       } catch (requestError) {
         setStepError(requestError.message || '無法確認 Email，請稍後再試');
       } finally {
+        requestPending.current = false;
         setIsCheckingEmail(false);
       }
       return;
@@ -141,6 +151,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
     if (!validateFields(fields)) return;
 
     try {
+      requestPending.current = true;
       await onAuth(mode, {
         name: form.name.trim(),
         userCode: form.userCode.trim().toLowerCase(),
@@ -149,24 +160,31 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
       });
     } catch (requestError) {
       if (mode === 'register' && requestError.message?.includes('使用者 ID')) {
-        moveTo(STEP.REGISTER_PROFILE);
+        moveTo(STEP.REGISTER_PROFILE, -1);
         setTouched({ userCode: true });
         setErrors({ userCode: requestError.message });
+      } else {
+        setStepError(requestError.message || '暫時無法完成，請稍後再試');
       }
+    } finally {
+      requestPending.current = false;
     }
   }
 
   function goBack() {
-    moveTo(step === STEP.REGISTER_PASSWORD ? STEP.REGISTER_PROFILE : STEP.EMAIL);
+    if (loading || requestPending.current) return;
+    moveTo(step === STEP.REGISTER_PASSWORD ? STEP.REGISTER_PROFILE : STEP.EMAIL, -1);
   }
 
   const copy = getStepCopy(step);
 
   return (
-    <motion.section className="auth-page" {...pageFadeUp}>
+    <section className="auth-page">
       <AuthBrand />
 
-      <motion.aside className="auth-card glass" {...modalPopMotion}>
+      <aside className="auth-card">
+        <AnimatePresence mode="wait" initial={false} custom={direction}>
+        <AuthStep key={step} direction={direction}>
         <div className="auth-card-header">
           <h1>{copy.title}</h1>
           <p>{copy.subtitle}</p>
@@ -179,9 +197,8 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
           </div>
         )}
 
-        <form className="auth-form new-auth-form" onSubmit={submit} noValidate>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div key={step} className="auth-step-fields" {...fadeUpMotion}>
+        <form ref={formRef} className="auth-form new-auth-form" onSubmit={submit} noValidate aria-busy={loading || isCheckingEmail}>
+            <div className="auth-step-fields">
               {step === STEP.EMAIL && (
                 <AuthInput label="Email" type="email" value={form.email} onChange={(value) => updateField('email', value)} onBlur={() => blurField('email')} placeholder="you@example.com" invalid={Boolean(errors.email && (touched.email || submitted))} error={errors.email} autoComplete="email" autoFocus />
               )}
@@ -203,8 +220,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
                   <PasswordInput label="確認密碼" value={form.confirmPassword} visible={showConfirmPassword} onToggle={() => setShowConfirmPassword((current) => !current)} onChange={(value) => updateField('confirmPassword', value)} onBlur={() => blurField('confirmPassword')} placeholder="再次輸入密碼" invalid={Boolean(errors.confirmPassword && (touched.confirmPassword || submitted))} error={errors.confirmPassword} autoComplete="new-password" />
                 </>
               )}
-            </motion.div>
-          </AnimatePresence>
+            </div>
 
           <div className="auth-actions">
             {step !== STEP.EMAIL && (
@@ -219,18 +235,17 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
             </button>
           </div>
 
-          <AnimatePresence mode="wait">
             {visibleMessage && (
-              <motion.p className={`auth-inline-message ${stepError || error ? 'error' : 'success'}`} {...toastMotion}>
+              <p className={`auth-inline-message ${stepError || error ? 'error' : 'success'}`} role={stepError || error ? 'alert' : 'status'}>
                 {stepError || error ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
                 {visibleMessage}
-              </motion.p>
+              </p>
             )}
-          </AnimatePresence>
         </form>
-
-      </motion.aside>
-    </motion.section>
+        </AuthStep>
+        </AnimatePresence>
+      </aside>
+    </section>
   );
 }
 
@@ -243,39 +258,54 @@ function getStepCopy(step) {
 
 function AuthBrand() {
   return (
-    <motion.section className="auth-brand-panel" {...panelSlideLeft}>
-      <div className="auth-floating-light one" />
-      <div className="auth-floating-light two" />
-      <div className="auth-floating-light three" />
+    <motion.section className="auth-brand-panel" {...pageFadeUp}>
       <p className="eyebrow">Adrift 漂流足跡</p>
-      <h1>把生活，<br /><span className="auth-brand-line">留在發生的地方。</span></h1>
+      <h2>把生活，<br /><span className="auth-brand-line">留在發生的地方。</span></h2>
       <p className="auth-brand-body">在地圖上記錄地點、心情與故事，讓每段生活軌跡慢慢成為自己的城市記憶。</p>
     </motion.section>
   );
 }
 
+function AuthStep({ children, direction }) {
+  const present = useIsPresent();
+  const reduced = useReducedMotion();
+  return <motion.div className="auth-step" inert={!present ? true : undefined}
+    custom={direction} initial={reduced ? false : 'enter'} animate="active" exit="exit"
+    variants={{
+      enter: direction => ({ opacity: 0, x: reduced ? 0 : direction * motionTokens.distance.base }),
+      active: { opacity: 1, x: 0 },
+      exit: direction => ({ opacity: 0, x: reduced ? 0 : -direction * motionTokens.distance.base,
+        transition: { duration: reduced ? 0 : motionTokens.duration.quick } })
+    }} transition={{ duration: reduced ? 0 : motionTokens.duration.fast, ease: motionTokens.ease.softOut }}>
+    {children}
+  </motion.div>;
+}
+
 function AuthInput({ label, type = 'text', value, onChange, onBlur, placeholder, invalid, error, hint, autoComplete, autoFocus }) {
+  const id = useId();
+  const name = type === 'email' ? 'email' : autoComplete === 'name' ? 'name' : 'userCode';
   return (
     <label className="auth-input">
       <span>{label}</span>
-      <input type={type} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} autoComplete={autoComplete} autoFocus={autoFocus} />
-      {hint && <small className="field-hint">{hint}</small>}
-      {invalid && <span className="field-error">{error}</span>}
+      <input name={name} type={type} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid ? `${id}-error` : hint ? `${id}-hint` : undefined} autoComplete={autoComplete} autoFocus={autoFocus} />
+      {hint && <small id={`${id}-hint`} className="field-hint">{hint}</small>}
+      {invalid && <span id={`${id}-error`} className="field-error">{error}</span>}
     </label>
   );
 }
 
 function PasswordInput({ label, value, visible, onToggle, onChange, onBlur, placeholder, invalid, error, autoComplete, autoFocus }) {
+  const id = useId();
   return (
     <label className="auth-input">
       <span>{label}</span>
       <span className="password-control">
-        <input type={visible ? 'text' : 'password'} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} autoComplete={autoComplete} autoFocus={autoFocus} />
-        <button type="button" onClick={onToggle} aria-label={visible ? '隱藏密碼' : '顯示密碼'}>
+        <input name={label === '確認密碼' ? 'confirmPassword' : 'password'} type={visible ? 'text' : 'password'} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid ? `${id}-error` : undefined} autoComplete={autoComplete} autoFocus={autoFocus} />
+        <button className="motion-soft-press" type="button" onClick={onToggle} aria-pressed={visible} aria-label={visible ? '隱藏密碼' : '顯示密碼'}>
           {visible ? <EyeOff size={17} /> : <Eye size={17} />}
         </button>
       </span>
-      {invalid && <span className="field-error">{error}</span>}
+      {invalid && <span id={`${id}-error`} className="field-error">{error}</span>}
     </label>
   );
 }

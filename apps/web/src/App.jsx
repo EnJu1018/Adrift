@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Activity, Bell, Brain, Copy, Home, LogOut, MapPin, Settings, Shield, UserRound, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearStoredAuth, getDiaryEventsUrl, getStoredAuth, saveAuth } from './api/client.js';
@@ -15,12 +15,10 @@ import LifeMapAI from './components/LifeMapAI.jsx';
 import MapView from './components/MapView.jsx';
 import MemoryPanel from './components/MemoryPanel.jsx';
 import { normalizeDiaryCoordinate } from './components/markers/markerGeometry.js';
-import Particles from './components/Particles.jsx';
 import PresentationPage from './components/PresentationPage.jsx';
 import PublicInfoPage from './components/PublicInfoPage.jsx';
 import ToastViewport from './components/ToastViewport.jsx';
 import UserAvatar from './components/UserAvatar.jsx';
-import { pageFadeUp } from './constants/animations.js';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
 import { normalizeTaiwanPlaceName } from './utils/locationFormatter.js';
@@ -1031,11 +1029,9 @@ export default function App() {
       className={`app-frame ${performanceMode.lowPerformance ? 'low-performance' : ''} ${performanceMode.reducedMotion ? 'reduced-motion' : ''}`}
     >
       <div className="ambient-bg" />
-      <Particles lowPerformance={performanceMode.lowPerformance} reducedMotion={performanceMode.reducedMotion} />
 
-      <motion.div
+      <div
         className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isLandingPage ? 'landing-mode' : ''} ${isPublicInfoPage ? 'public-info-mode' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
-        {...pageFadeUp}
       >
         {isPresentationDownloadPage ? (
           <PresentationPdfDownload />
@@ -1341,7 +1337,7 @@ export default function App() {
         )}
         </>
         )}
-      </motion.div>
+      </div>
       <AnimatePresence>
         {draftLocation && (
           <DiaryModal

@@ -1,8 +1,8 @@
 import mapboxgl from 'mapbox-gl';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Compass, Minus, Navigation, Plus } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { dropdownMotion, fadeUpMotion, motionMs, pageTransition, toastMotion } from '../constants/animations.js';
+import { dropdownMotion, motionMs, motionTokens } from '../constants/animations.js';
 import FallbackMap from './FallbackMap.jsx';
 import DiaryMarkerLayer from './markers/DiaryMarkerLayer.jsx';
 import { groupDiaryMarkers } from './markers/markerGeometry.js';
@@ -43,6 +43,12 @@ export default function MapView({
   const [mapPitch, setMapPitch] = useState(0);
   const [mapBearing, setMapBearing] = useState(0);
   const [isMapMoving, setIsMapMoving] = useState(false);
+  const systemReducedMotion = useReducedMotion();
+  const quiet = reducedMotion || systemReducedMotion;
+  const statusMotion = {
+    initial: quiet ? false : { opacity: 0 }, animate: { opacity: 1 }, exit: { opacity: 0 },
+    transition: { duration: quiet ? 0 : motionTokens.duration.quick }
+  };
 
   const currentLocationGeoJson = useMemo(() => {
     const lat = Number(currentLocation?.lat);
@@ -274,6 +280,8 @@ export default function MapView({
     if (focusLocation.source === 'marker') return;
     const map = mapRef.current;
     const frame = requestAnimationFrame(() => {
+      // A responsive layout change can precede ResizeObserver's map update.
+      map.resize();
       const group = previousGroups.current.find((item) => item.diaries.some((diary) => String(diary._id) === String(focusLocation.diaryId)));
       const center = group?.center || { lng, lat };
       const nearestLng = center.lng + Math.round((map.getCenter().lng - center.lng) / 360) * 360;
@@ -283,12 +291,16 @@ export default function MapView({
         center: [nearestLng, center.lat],
         offset: getMapFocusOffset(map.getContainer().getBoundingClientRect(), getMapObstacles(map)),
         zoom: diaryFocus ? Math.max(map.getZoom(), 12) : getLocationZoom(focusLocation),
-        duration: reducedMotion || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : motionMs.slow,
+        duration: quiet || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : motionMs.verySlow,
         essential: false
       });
     });
     return () => cancelAnimationFrame(frame);
   }, [focusLocation, mapReady]);
+
+  useEffect(() => {
+    if (quiet) mapRef.current?.stop();
+  }, [quiet]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -311,11 +323,8 @@ export default function MapView({
   const showCompassButton = MAPBOX_TOKEN && mapReady && !isNorthUp(mapBearing);
 
   return (
-    <motion.section
+    <section
       className={`map-shell ${isMapMoving ? 'is-map-moving' : ''} ${lowPerformance ? 'low-performance-map' : ''} ${reducedMotion ? 'reduced-motion-map' : ''}`}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={pageTransition}
     >
       {MAPBOX_TOKEN ? (
         <div className="mapbox-container" ref={mapContainer} />
@@ -325,7 +334,7 @@ export default function MapView({
 
       {mapReady && <DiaryMarkerLayer map={mapRef.current} diaries={diaries} geographicGroups={geographicGroups}
         theme={theme} selectedId={selectedDiary?._id} selectionToken={focusLocation?.focusId}
-        onSelect={(diary) => onSelect(diary, { source: 'marker' })} reducedMotion={reducedMotion} />}
+        onSelect={(diary) => onSelect(diary, { source: 'marker' })} reducedMotion={quiet} />}
 
       <div className="map-controls" aria-label="地圖控制">
         <button
@@ -347,7 +356,7 @@ export default function MapView({
                 className="compass"
                 onClick={resetBearing}
                 aria-label="回到北方在上"
-                {...dropdownMotion(false)}
+                {...(quiet ? statusMotion : dropdownMotion(false))}
               >
                 <Compass size={17} style={{ transform: `rotate(${-mapBearing}deg)` }} />
               </motion.button>
@@ -360,7 +369,7 @@ export default function MapView({
                 className="map-control-text"
                 onClick={resetPitch}
                 aria-label="返回 2D 地圖"
-                {...dropdownMotion(false)}
+                {...(quiet ? statusMotion : dropdownMotion(false))}
               >
                 2D
               </motion.button>
@@ -383,8 +392,9 @@ export default function MapView({
       <AnimatePresence>
         {!loading && !disabled && diaries.length === 0 && (
           <motion.div
+            key="empty"
             className="map-empty subtle glass"
-            {...fadeUpMotion}
+            {...statusMotion}
           >
             這片地圖還沒有留下記憶
           </motion.div>
@@ -392,16 +402,18 @@ export default function MapView({
 
         {loading && (
           <motion.div
+            key="loading"
             className="map-loading"
-            {...toastMotion}
+            role="status"
+            {...statusMotion}
           >
-            <div className="map-skeleton" />
+            <span className="button-spinner" aria-hidden="true" />
             <p>{mode === 'explore' ? '正在探索附近日記...' : '正在載入地圖日記...'}</p>
           </motion.div>
         )}
 
       </AnimatePresence>
-    </motion.section>
+    </section>
   );
 
   function zoomMap(delta) {
@@ -409,9 +421,9 @@ export default function MapView({
     if (!map) return;
 
     if (delta > 0) {
-      map.zoomIn({ duration: reducedMotion ? 0 : motionMs.fast, essential: false });
+      map.zoomIn({ duration: quiet ? 0 : motionMs.fast, essential: false });
     } else {
-      map.zoomOut({ duration: reducedMotion ? 0 : motionMs.fast, essential: false });
+      map.zoomOut({ duration: quiet ? 0 : motionMs.fast, essential: false });
     }
   }
 
@@ -421,7 +433,7 @@ export default function MapView({
 
     map.easeTo({
       pitch: 0,
-      duration: reducedMotion ? 0 : motionMs.verySlow,
+      duration: quiet ? 0 : motionMs.verySlow,
       essential: false
     });
   }
@@ -432,7 +444,7 @@ export default function MapView({
 
     map.easeTo({
       bearing: 0,
-      duration: reducedMotion ? 0 : motionMs.verySlow,
+      duration: quiet ? 0 : motionMs.verySlow,
       essential: false
     });
   }

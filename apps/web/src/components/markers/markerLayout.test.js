@@ -51,6 +51,11 @@ test('crowded viewports fall back to a list and avoid panel obstacles where spac
   const sheet = { left: 10, top: 270, right: 380, bottom: 640 };
   const aboveSheet = getStackLayout(30, { x: 195, y: 140 }, { left: 0, top: 0, right: 390, bottom: 640 }, [sheet]);
   assert.ok(140 + aboveSheet.y + aboveSheet.height <= sheet.top, 'shorten the list rather than cover the detail sheet');
+  for (const y of [140, 180, 220, 260]) {
+    const moving = getStackLayout(5, { x: 195, y }, { left: 0, top: 0, right: 390, bottom: 640 }, [sheet], true);
+    assert.equal(moving.kind, 'list', 'a moving list does not turn into an arc mid-gesture');
+    assert.ok(y + moving.y >= 12 && y + moving.y + moving.height <= sheet.top);
+  }
 });
 
 test('camera targets actual unobstructed space, ignoring panels outside the map', () => {

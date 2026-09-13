@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'framer-motion';
 import {
   ArrowLeft,
   Brain,
@@ -11,18 +11,13 @@ import {
   Target,
   TrendingUp
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { api } from '../api/client.js';
-import { fadeUpMotion, listItemMotion, pageFadeUp } from '../constants/animations.js';
+import { motionTokens } from '../constants/animations.js';
+import ContentTransition from './ui/ContentTransition.jsx';
+import { createInsightReveal } from '../lib/motion/animeMotion.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
-
-const loadingMessages = [
-  '正在讀取你的日記...',
-  '正在整理情緒軌跡...',
-  '正在分析地點與時間模式...',
-  '正在生成 Adrift Intelligence 洞察...'
-];
 
 const previewFeatures = [
   {
@@ -55,7 +50,7 @@ const emptyInsight = {
 };
 
 export default function LifeMapAI({ state, onStateChange, onBack }) {
-  const [loadingIndex, setLoadingIndex] = useState(0);
+  const pending = useRef(false);
   const status = state?.status || 'idle';
   const insight = state?.insight || null;
   const dataWarmup = state?.dataWarmup || null;
@@ -70,21 +65,11 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
     }));
   }
 
-  useEffect(() => {
-    if (status !== 'loading') return undefined;
-
-    setLoadingIndex(0);
-    const timer = window.setInterval(() => {
-      setLoadingIndex((index) => (index + 1) % loadingMessages.length);
-    }, 1200);
-
-    return () => window.clearInterval(timer);
-  }, [status]);
-
   async function generateInsight() {
+    if (pending.current) return;
+    pending.current = true;
     try {
       updateLifeMapState({ status: 'loading', insight: null, dataWarmup: null });
-      setLoadingIndex(0);
       const payload = await api.getLifeMapInsight();
       const data = payload?.data || null;
 
@@ -101,6 +86,8 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
       updateLifeMapState({ status: 'success', insight: normalizeInsight(data), dataWarmup: null });
     } catch {
       updateLifeMapState({ status: 'error', insight: null, dataWarmup: null });
+    } finally {
+      pending.current = false;
     }
   }
 
@@ -108,7 +95,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
   const hasResult = status === 'success' && insight;
 
   return (
-    <motion.main className="life-map-panel glass" {...pageFadeUp}>
+    <main className="life-map-panel glass">
       <section className="life-map-hero">
         <button className="icon-button life-map-back motion-soft-press" type="button" onClick={onBack} aria-label="返回地圖">
           <ArrowLeft size={17} />
@@ -131,32 +118,24 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
           </div>
         </div>
 
-        <div className="life-map-visual" aria-hidden="true">
-          <span className="life-map-glow-orb" />
-          <span className="life-map-trace trace-one" />
-          <span className="life-map-trace trace-two" />
-          <span className="life-map-orbit-dot dot-one" />
-          <span className="life-map-orbit-dot dot-two" />
-          <span className="life-map-orbit-dot dot-three" />
-        </div>
       </section>
 
-      <section className="life-map-state-stage" aria-live="polite">
+      <section className="life-map-state-stage">
         <AnimatePresence mode="wait" initial={false}>
           {status === 'idle' && (
-            <motion.section className="life-map-prep-grid" key="idle" {...fadeUpMotion}>
-              {previewFeatures.map((feature, index) => (
-                <motion.article className="life-map-feature-card motion-card-hover" key={feature.title} {...listItemMotion(index)}>
+            <ContentTransition as="section" className="life-map-prep-grid" key="idle">
+              {previewFeatures.map((feature) => (
+                <article className="life-map-feature-card" key={feature.title}>
                   <div className="life-map-feature-icon">{feature.icon}</div>
                   <h3>{feature.title}</h3>
                   <p>{feature.copy}</p>
-                </motion.article>
+                </article>
               ))}
-            </motion.section>
+            </ContentTransition>
           )}
 
           {status === 'loading' && (
-            <motion.section className="life-map-loading-state" key="loading" {...fadeUpMotion}>
+            <ContentTransition as="section" className="life-map-loading-state" key="loading">
               <div className="life-map-loading-visual" aria-hidden="true">
                 <span className="loading-node center" />
                 <span className="loading-node node-a" />
@@ -167,24 +146,24 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
               </div>
               <div>
                 <h2>Adrift Intelligence 正在整理你的生活軌跡...</h2>
-                <p>{loadingMessages[loadingIndex]}</p>
+                <p role="status">正在根據你的日記整理洞察，完成後會顯示結果。</p>
               </div>
-            </motion.section>
+            </ContentTransition>
           )}
 
           {status === 'notEnoughData' && (
-            <motion.section className="life-map-empty-state" key="not-enough" {...fadeUpMotion}>
+            <ContentTransition as="section" className="life-map-empty-state" key="not-enough">
               <Target size={22} />
               <h2>資料還不夠完整</h2>
               <p>至少需要 {dataWarmup?.required || 3} 篇日記，才能產生 Adrift Intelligence 洞察。目前已有 {dataWarmup?.current || 0} 篇。</p>
               <button className="life-map-cta compact motion-soft-press" type="button" onClick={onBack}>
                 回到地圖新增日記
               </button>
-            </motion.section>
+            </ContentTransition>
           )}
 
           {status === 'error' && (
-            <motion.section className="life-map-empty-state error" key="error" {...fadeUpMotion}>
+            <ContentTransition as="section" className="life-map-empty-state error" key="error">
               <Brain size={22} />
               <h2>Adrift Intelligence 暫時無法使用</h2>
               <p>請稍後再試一次。</p>
@@ -192,7 +171,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
                 <RefreshCw size={16} />
                 重新嘗試
               </button>
-            </motion.section>
+            </ContentTransition>
           )}
 
           {hasResult && (
@@ -205,17 +184,23 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
         <ShieldCheck size={17} />
         <p>Adrift Intelligence 只會根據你自己的日記產生洞察，不會分析其他使用者資料。分析結果僅供自我回顧參考，並非醫療或心理診斷。</p>
       </section>
-    </motion.main>
+    </main>
   );
 }
 
 function LifeMapDashboard({ insight, onRegenerate }) {
   const safeInsight = normalizeInsight(insight);
+  const rootRef = useRef(null);
+  const present = useIsPresent();
+  const reduced = useReducedMotion();
+  useLayoutEffect(() => createInsightReveal(rootRef.current), []);
   const averageIntensity = Number(safeInsight.moodTrend.averageIntensity || 0);
 
   return (
-    <motion.section className="life-map-dashboard" {...fadeUpMotion}>
-      <article className="life-map-summary-card motion-card-hover">
+    <motion.section ref={rootRef} className="life-map-dashboard" inert={!present ? true : undefined}
+      initial={false} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: reduced ? 0 : motionTokens.duration.quick }}>
+      <article className="life-map-summary-card" data-insight-reveal>
         <div className="life-map-card-heading">
           <span><Sparkles size={17} /> 整體摘要</span>
           <button className="life-map-secondary-action compact motion-soft-press" type="button" onClick={onRegenerate}>
@@ -226,8 +211,8 @@ function LifeMapDashboard({ insight, onRegenerate }) {
         <p>{safeInsight.summary || '目前沒有足夠摘要內容。'}</p>
       </article>
 
-      <div className="life-map-dashboard-grid">
-        <article className="life-map-insight-card mood motion-card-hover">
+      <div className="life-map-dashboard-grid" data-insight-reveal>
+        <article className="life-map-insight-card mood">
           <div className="life-map-card-heading">
             <span><TrendingUp size={17} /> 情緒趨勢</span>
           </div>
@@ -241,7 +226,7 @@ function LifeMapDashboard({ insight, onRegenerate }) {
           </div>
         </article>
 
-        <article className="life-map-insight-card suggestion motion-card-hover">
+        <article className="life-map-insight-card suggestion">
           <div className="life-map-card-heading">
             <span><Lightbulb size={17} /> 智慧建議</span>
           </div>
@@ -255,18 +240,18 @@ function LifeMapDashboard({ insight, onRegenerate }) {
         </article>
       </div>
 
-      <section className="life-map-wide-section">
+      <section className="life-map-wide-section" data-insight-reveal>
         <div className="life-map-card-heading">
           <span><MapPin size={17} /> 地點洞察</span>
         </div>
         <div className="life-map-location-grid">
           {safeInsight.locationInsights.length > 0 ? (
             safeInsight.locationInsights.map((item, index) => (
-              <motion.article className="life-map-location-card motion-card-hover" key={`${item.place}-${index}`} {...listItemMotion(index)}>
+              <article className="life-map-location-card" key={`${item.place}-${index}`}>
                 <strong>{normalizeTaiwanPlaceName(item.place) || '未命名地點'}</strong>
                 <span>{normalizeTaiwanPlaceName(item.dominantMood) || '未分類心情'}</span>
                 <p>{normalizeTaiwanPlaceName(item.insight) || '這個地點還需要更多日記，才能看出更清楚的模式。'}</p>
-              </motion.article>
+              </article>
             ))
           ) : (
             <p className="life-map-muted">目前還沒有足夠的地點洞察。</p>
@@ -274,16 +259,16 @@ function LifeMapDashboard({ insight, onRegenerate }) {
         </div>
       </section>
 
-      <section className="life-map-wide-section">
+      <section className="life-map-wide-section" data-insight-reveal>
         <div className="life-map-card-heading">
           <span><Compass size={17} /> 行為模式</span>
         </div>
         <div className="life-map-pattern-list">
           {safeInsight.behaviorPatterns.length > 0 ? (
             safeInsight.behaviorPatterns.map((item, index) => (
-              <motion.p key={`pattern-${index}`} {...listItemMotion(index)}>
+              <p key={`pattern-${index}`}>
                 {item}
-              </motion.p>
+              </p>
             ))
           ) : (
             <p>持續記錄後，系統會整理出更清楚的時間與地點模式。</p>

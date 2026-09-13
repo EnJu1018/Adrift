@@ -1,6 +1,8 @@
-import { motion } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import { ArrowRight, Brain, Camera, Clock3, Coffee, Compass, LockKeyhole, MapPinned, Route, ShieldCheck, Sparkles, Users } from 'lucide-react';
-import { pageFadeUp, revealOnViewMotion, staggeredRevealMotion } from '../constants/animations.js';
+import { revealOnViewMotion, staggeredRevealMotion } from '../constants/animations.js';
+import { createMapVisualMotion } from '../lib/motion/animeMotion.js';
 
 const productHighlights = [
   {
@@ -30,8 +32,25 @@ const privacyModes = [
 ];
 
 export default function LandingPage({ onNavigate }) {
+  const mapRef = useRef(null);
+  const mapInView = useInView(mapRef);
+  const reduced = useReducedMotion();
+  const reveal = reduced ? { initial: false } : revealOnViewMotion;
+
+  useEffect(() => {
+    if (!mapInView) return;
+    let dispose;
+    function syncVisibility() {
+      dispose?.();
+      dispose = document.hidden ? undefined : createMapVisualMotion(mapRef.current);
+    }
+    syncVisibility();
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => { dispose?.(); document.removeEventListener('visibilitychange', syncVisibility); };
+  }, [mapInView]);
+
   return (
-    <motion.section className="landing-page" {...pageFadeUp}>
+    <section className="landing-page">
       <header className="landing-nav">
         <button className="landing-brand motion-soft-press" type="button" onClick={() => onNavigate('/')}>
           <img src="/adrift-icon.png" alt="" aria-hidden="true" />
@@ -68,7 +87,7 @@ export default function LandingPage({ onNavigate }) {
             </div>
           </div>
 
-          <div className="landing-map-visual" aria-hidden="true">
+          <div ref={mapRef} className="landing-map-visual" aria-hidden="true">
             <svg viewBox="0 0 520 460" role="img">
               <defs>
                 <linearGradient id="landingPathGradient" x1="70" y1="320" x2="460" y2="120" gradientUnits="userSpaceOnUse">
@@ -76,10 +95,11 @@ export default function LandingPage({ onNavigate }) {
                   <stop offset="1" stopColor="var(--tech-mint, #14b8a6)" stopOpacity="0.72" />
                 </linearGradient>
               </defs>
-              <path className="landing-contour-line" d="M46 280 C118 240 116 154 206 132 S340 124 412 64" />
-              <path className="landing-contour-line soft" d="M62 360 C146 312 184 374 266 302 S392 224 470 252" />
-              <path className="landing-contour-line soft" d="M58 118 C142 90 156 54 232 78 S332 154 448 116" />
-              <path className="landing-memory-path" d="M82 330 C142 238 208 292 258 202 S390 112 452 218" />
+              <path data-map-draw className="landing-contour-line" d="M46 280 C118 240 116 154 206 132 S340 124 412 64" />
+              <path data-map-draw className="landing-contour-line soft" d="M62 360 C146 312 184 374 266 302 S392 224 470 252" />
+              <path data-map-draw className="landing-contour-line soft" d="M58 118 C142 90 156 54 232 78 S332 154 448 116" />
+              <path id="landing-memory-route" data-memory-path data-flow-distance="-52" className="landing-memory-path"
+                d="M82 330 C142 238 208 292 258 202 S390 112 452 218 C496 300 360 402 248 372 S120 400 82 330Z" />
               {[
                 [82, 330, 9],
                 [258, 202, 12],
@@ -91,11 +111,18 @@ export default function LandingPage({ onNavigate }) {
                   <circle className="landing-memory-core" r={r} />
                 </g>
               ))}
+              {[22000, 28000].map((duration, index) => (
+                <g key={duration} className="landing-drift-dot" data-drift-dot data-path-id="landing-memory-route"
+                  data-duration={duration} data-path-offset={index * 0.5}>
+                  <circle className="landing-memory-halo" r="14" />
+                  <circle className="landing-memory-core" r="4" />
+                </g>
+              ))}
             </svg>
           </div>
         </section>
 
-        <motion.section className="landing-memory-story" {...revealOnViewMotion}>
+        <motion.section className="landing-memory-story" {...reveal}>
           <div className="landing-story-copy">
             <p className="eyebrow">How It Works</p>
             <h2>一段記憶，不只是一則貼文。</h2>
@@ -116,14 +143,14 @@ export default function LandingPage({ onNavigate }) {
           </article>
         </motion.section>
 
-        <motion.section id="how-it-works" className="landing-section" {...revealOnViewMotion}>
-          <div className="landing-section-heading">
+        <section id="how-it-works" className="landing-section">
+          <motion.div className="landing-section-heading" {...reveal}>
             <p className="eyebrow">City Memory System</p>
             <h2>你的城市，慢慢變成一本日記。</h2>
-          </div>
+          </motion.div>
           <div className="landing-feature-grid">
             {productHighlights.map((item, index) => (
-              <motion.article className="landing-feature-card motion-card-hover" key={item.title} {...staggeredRevealMotion(index)}>
+              <motion.article className="landing-feature-card motion-card-hover" key={item.title} {...staggeredRevealMotion(index, reduced)}>
                 {item.icon}
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
@@ -140,9 +167,9 @@ export default function LandingPage({ onNavigate }) {
               </motion.article>
             ))}
           </div>
-        </motion.section>
+        </section>
 
-        <motion.section className="landing-difference" {...revealOnViewMotion}>
+        <motion.section className="landing-difference" {...reveal}>
           <div>
             <p className="eyebrow">Positioning</p>
             <h2>不是打卡，也不只是地圖。</h2>
@@ -169,8 +196,8 @@ export default function LandingPage({ onNavigate }) {
           </div>
         </motion.section>
 
-        <motion.section className="landing-two-column" {...revealOnViewMotion}>
-          <motion.article className="landing-callout-card motion-card-hover" {...staggeredRevealMotion(0)}>
+        <section className="landing-two-column">
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(0, reduced)}>
             <Clock3 size={24} />
             <h2>三個月前，你也來過這裡。</h2>
             <p>
@@ -178,17 +205,17 @@ export default function LandingPage({ onNavigate }) {
             </p>
           </motion.article>
 
-          <motion.article className="landing-callout-card motion-card-hover" {...staggeredRevealMotion(1)}>
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(1, reduced)}>
             <Brain size={24} />
             <h2>Adrift Intelligence 會替你整理散落的片段。</h2>
             <p>
               當日記慢慢累積，它會根據你的地點、情緒與文字，整理生活回顧、情緒趨勢與地點洞察。
             </p>
           </motion.article>
-        </motion.section>
+        </section>
 
-        <motion.section className="landing-two-column" {...revealOnViewMotion}>
-          <motion.article className="landing-callout-card motion-card-hover" {...staggeredRevealMotion(0)}>
+        <section className="landing-two-column">
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(0, reduced)}>
             <Route size={24} />
             <h2>一個人使用，也會慢慢長出價值。</h2>
             <p>
@@ -196,7 +223,7 @@ export default function LandingPage({ onNavigate }) {
             </p>
           </motion.article>
 
-          <motion.article className="landing-callout-card motion-card-hover" {...staggeredRevealMotion(1)}>
+          <motion.article className="landing-callout-card" {...staggeredRevealMotion(1, reduced)}>
             <ShieldCheck size={24} />
             <h2>你的足跡，由你決定誰能看見。</h2>
             <p>Adrift 讓你記錄地點，但不要求你暴露即時位置。</p>
@@ -210,9 +237,9 @@ export default function LandingPage({ onNavigate }) {
               ))}
             </div>
           </motion.article>
-        </motion.section>
+        </section>
 
-        <motion.section className="landing-about-teaser" {...revealOnViewMotion}>
+        <motion.section className="landing-about-teaser" {...reveal}>
           <div>
             <p className="eyebrow">First Visit</p>
             <h2>第一次來到 Adrift？</h2>
@@ -226,6 +253,6 @@ export default function LandingPage({ onNavigate }) {
           </button>
         </motion.section>
       </main>
-    </motion.section>
+    </section>
   );
 }

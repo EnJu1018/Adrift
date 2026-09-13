@@ -43,6 +43,7 @@ export default function DiaryMarkerLayer({ map, diaries, geographicGroups, visib
   const close = useCallback((restoreFocus = false) => {
     const key = openedRef.current?.groupKey;
     setExpanded(null);
+    setActiveTooltip(null);
     if (restoreFocus && key) entriesRef.current.get(key)?.element.querySelector('.dn-hit')?.focus({ preventScroll: true });
   }, []);
 
@@ -99,6 +100,8 @@ export default function DiaryMarkerLayer({ map, diaries, geographicGroups, visib
       }
     }
     const blank = () => close();
+    const hideTooltip = () => setActiveTooltip(null);
+    map.on('movestart', hideTooltip);
     map.on('move', position);
     map.on('moveend', regroup);
     map.on('resize', regroup);
@@ -108,6 +111,7 @@ export default function DiaryMarkerLayer({ map, diaries, geographicGroups, visib
     return () => {
       observer.disconnect(); cancelAnimationFrame(positionFrame); cancelAnimationFrame(groupingFrame);
       map.off('move', position); map.off('moveend', regroup); map.off('resize', regroup); map.off('click', blank);
+      map.off('movestart', hideTooltip);
       window.removeEventListener('scroll', position, true);
       document.removeEventListener('keydown', escape, true);
     };
@@ -133,8 +137,12 @@ export default function DiaryMarkerLayer({ map, diaries, geographicGroups, visib
     const point = projectGroup(map, opened.center);
     const center = { x: viewport.left + point.x, y: viewport.top + point.y };
     if (point.x >= 0 && point.y >= 0 && point.x <= viewport.width && point.y <= viewport.height) {
+      // Lists stay bounded during camera travel; fan offsets stay fixed.
+      const layout = openedLayout.kind === 'list'
+        ? getStackLayout(opened.count, center, viewport, getMapObstacles(map), true)
+        : openedLayout;
       overlay = <div className="dn-stack-overlay dn-theme" data-theme={theme} data-reduced-motion={reducedMotion} style={{ left: center.x, top: center.y }} key={opened.groupKey}>
-        <DiaryStackExpansion group={opened} layout={openedLayout} selectedId={selectedId} onSelect={onSelect} onClose={close} keyboardOpen={expanded.keyboard} reducedMotion={reducedMotion}/>
+        <DiaryStackExpansion group={opened} layout={layout} selectedId={selectedId} onSelect={onSelect} onClose={close} keyboardOpen={expanded.keyboard} reducedMotion={reducedMotion}/>
       </div>;
     }
   }

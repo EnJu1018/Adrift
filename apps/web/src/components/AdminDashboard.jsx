@@ -1,9 +1,9 @@
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, Eye, RefreshCcw, Search, Shield, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Eye, RefreshCcw, Search, Shield, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { api, getImageUrl } from '../api/client.js';
-import { dropdownMotion, fadeUpMotion, modalBackdropMotion, modalPopMotion, pageFadeUp } from '../constants/animations.js';
+import ContentTransition from './ui/ContentTransition.jsx';
+import Modal from './ui/Modal.jsx';
 import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
@@ -246,9 +246,8 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
   }
 
   return (
-    <motion.section
+    <section
       className="admin-page admin-dashboard-container"
-      {...pageFadeUp}
     >
       <header className="admin-hero glass">
         <button className="icon-button" type="button" onClick={onBack} aria-label="返回">
@@ -303,6 +302,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
               className={activeTab === tab.id ? 'active' : ''}
               type="button"
               onClick={() => setActiveTab(tab.id)}
+              aria-pressed={activeTab === tab.id}
             >
               {tab.label}
             </button>
@@ -320,10 +320,9 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
       <div className="admin-content-frame">
         <AnimatePresence mode="wait" initial={false}>
           {activeTab === 'overview' && (
-            <motion.section
+            <ContentTransition as="section"
               key="overview"
               className="admin-card admin-overview-card glass"
-              {...fadeUpMotion}
             >
             {loading.overview ? (
               <p className="admin-empty">載入管理資料中...</p>
@@ -344,14 +343,13 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                 </div>
               </>
             )}
-            </motion.section>
+            </ContentTransition>
           )}
 
           {activeTab === 'users' && (
-            <motion.section
+            <ContentTransition as="section"
               key="users"
               className="admin-card admin-data-card glass"
-              {...fadeUpMotion}
             >
             <div className="admin-controls">
               <label className="admin-search">
@@ -380,17 +378,16 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
               roleLoadingId={roleLoadingId}
               userDeleteLoadingId={userDeleteLoadingId}
               onUpdateRole={updateUserRole}
-              onDeleteUser={setUserDeleteTarget}
+              onDeleteUser={user => { setError(''); setUserDeleteTarget(user); }}
             />
             <Pagination pagination={usersPagination} onPageChange={setUserPage} />
-            </motion.section>
+            </ContentTransition>
           )}
 
           {activeTab === 'diaries' && (
-            <motion.section
+            <ContentTransition as="section"
               key="diaries"
               className="admin-card admin-data-card glass"
-              {...fadeUpMotion}
             >
             <div className="admin-controls diaries-controls">
               <label className="admin-search">
@@ -426,11 +423,11 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
               diaries={diaries}
               loading={loading.diaries}
               deleteLoadingId={deleteLoadingId}
-              onView={setSelectedDiary}
+              onView={diary => { setError(''); setSelectedDiary(diary); }}
               onDelete={deleteDiary}
             />
             <Pagination pagination={diariesPagination} onPageChange={setDiaryPage} />
-            </motion.section>
+            </ContentTransition>
           )}
         </AnimatePresence>
       </div>
@@ -439,6 +436,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
         {selectedDiary && (
           <DiaryDetailModal
             diary={selectedDiary}
+            error={error}
             deleteLoading={deleteLoadingId === selectedDiary._id}
             onClose={() => setSelectedDiary(null)}
             onDelete={() => deleteDiary(selectedDiary._id)}
@@ -447,6 +445,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
         {userDeleteTarget && (
           <DeleteUserModal
             user={userDeleteTarget}
+            error={error}
             loading={userDeleteLoadingId === userDeleteTarget._id}
             onClose={() => setUserDeleteTarget(null)}
             onConfirm={() => deleteUser(userDeleteTarget._id)}
@@ -460,15 +459,14 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
           setError('');
         }}
       />
-    </motion.section>
+    </section>
   );
 }
 
 export function AdminForbidden({ onBack }) {
   return (
-    <motion.section
+    <section
       className="admin-page admin-forbidden"
-      {...pageFadeUp}
     >
       <div className="admin-card glass">
         <p className="eyebrow">Admin Mode</p>
@@ -478,7 +476,7 @@ export function AdminForbidden({ onBack }) {
           返回首頁
         </button>
       </div>
-    </motion.section>
+    </section>
   );
 }
 
@@ -507,7 +505,7 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoad
       </div>
       {loading && <p className="admin-empty">載入管理資料中...</p>}
       {!loading && users.map((item) => {
-        const isSelf = item._id === currentUser?._id || item.id === currentUser?.id;
+        const isSelf = String(item._id || item.id) === String(currentUser?._id || currentUser?.id);
 
         return (
           <div className="admin-table-row" key={item._id}>
@@ -551,136 +549,18 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoad
 }
 
 function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole }) {
-  const [open, setOpen] = useState(false);
-  const [placement, setPlacement] = useState(null);
-  const controlRef = useRef(null);
-  const triggerRef = useRef(null);
-  const menuRef = useRef(null);
   const role = user.role || 'user';
-  const isSelf = user._id === currentUser?._id || user.id === currentUser?.id;
-  const roleChoices = ROLE_OPTIONS;
-
-  function updateMenuPlacement() {
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const menuWidth = 136;
-    const left = Math.min(Math.max(12, rect.left), Math.max(12, window.innerWidth - menuWidth - 12));
-    const below = rect.bottom + 7;
-    const openUp = below + 126 > window.innerHeight - 12 && rect.top > 140;
-
-    setPlacement({
-      left,
-      top: openUp ? rect.top - 126 - 7 : below,
-      width: Math.max(menuWidth, rect.width),
-      openUp
-    });
-  }
-
-  useEffect(() => {
-    if (!open) return;
-
-    updateMenuPlacement();
-
-    function closeOnOutsideClick(event) {
-      if (!controlRef.current?.contains(event.target) && !menuRef.current?.contains(event.target)) {
-        setOpen(false);
-      }
-    }
-
-    function closeOnEscape(event) {
-      if (event.key === 'Escape') {
-        setOpen(false);
-      }
-    }
-
-    function syncPosition() {
-      updateMenuPlacement();
-    }
-
-    document.addEventListener('mousedown', closeOnOutsideClick);
-    document.addEventListener('keydown', closeOnEscape);
-    window.addEventListener('resize', syncPosition);
-    window.addEventListener('scroll', syncPosition, true);
-
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutsideClick);
-      document.removeEventListener('keydown', closeOnEscape);
-      window.removeEventListener('resize', syncPosition);
-      window.removeEventListener('scroll', syncPosition, true);
-    };
-  }, [open]);
-
-  if (isSelf) {
-    return <span className={`role-pill ${role} self`}>{formatRole(role)} · 目前帳號</span>;
-  }
-
-  if (!canManageRoles) {
-    return <span className={`role-pill ${role}`}>{formatRole(role)}</span>;
-  }
-
-  async function selectRole(nextRole) {
-    setOpen(false);
-    if (nextRole === role || loading) return;
-    await onUpdateRole(user._id, nextRole);
-  }
-
-  return (
-    <span className="role-editor">
-      <span className="role-selector" ref={controlRef}>
-        <button
-          ref={triggerRef}
-          className={`role-pill role-trigger ${role}`}
-          type="button"
-          onClick={() => {
-            updateMenuPlacement();
-            setOpen((current) => !current);
-          }}
-          disabled={loading}
-          aria-haspopup="menu"
-          aria-expanded={open}
-        >
-          {formatRole(role)}
-          <ChevronDown size={13} />
-        </button>
-        {createPortal(
-          <AnimatePresence>
-            {open && placement && (
-            <motion.div
-              ref={menuRef}
-              className="role-menu"
-              style={{
-                left: placement.left,
-                top: placement.top,
-                minWidth: placement.width
-              }}
-              {...dropdownMotion(placement.openUp)}
-              role="menu"
-            >
-              {roleChoices.map((item) => (
-                <button
-                  key={item}
-                  className={item === role ? 'active' : ''}
-                  type="button"
-                  onClick={() => selectRole(item)}
-                  disabled={loading}
-                  role="menuitem"
-                >
-                  <span className={`role-dot ${item}`} />
-                  {formatRole(item)}
-                </button>
-              ))}
-            </motion.div>
-            )}
-          </AnimatePresence>,
-          document.body
-        )}
-      </span>
-      {loading && <span className="button-spinner" />}
-    </span>
-  );
+  const isSelf = String(user._id || user.id) === String(currentUser?._id || currentUser?.id);
+  if (isSelf) return <span className={`role-pill ${role} self`}>{formatRole(role)} · 目前帳號</span>;
+  if (!canManageRoles) return <span className={`role-pill ${role}`}>{formatRole(role)}</span>;
+  return <div className="role-editor">
+    <Select placeholder={`角色：${user.name || user.userCode}`} value={role}
+      options={ROLE_OPTIONS.map(value => ({ value, label: formatRole(value) }))}
+      busy={loading} size="sm" fullWidth={false}
+      onChange={nextRole => { if (nextRole !== role && !loading) onUpdateRole(user._id, nextRole); }} />
+    {loading && <span className="button-spinner" />}
+  </div>;
 }
-
 function formatRole(role) {
   if (role === 'owner') return 'Owner';
   if (role === 'admin') return 'Admin';
@@ -752,15 +632,14 @@ function Pagination({ pagination, onPageChange }) {
   );
 }
 
-function DeleteUserModal({ user, loading, onClose, onConfirm }) {
+function DeleteUserModal({ user, loading, error, onClose, onConfirm }) {
   const [confirmText, setConfirmText] = useState('');
   const canConfirm = confirmText === 'DELETE';
 
   return (
-    <motion.div className="admin-modal-backdrop" {...modalBackdropMotion}>
-      <motion.article
+      <Modal as="article" backdropClassName="admin-modal-backdrop" label="刪除使用者" onClose={onClose} busy={loading}
+        error={error}
         className="admin-detail-modal admin-danger-modal glass"
-        {...modalPopMotion}
       >
         <header>
           <div>
@@ -793,7 +672,7 @@ function DeleteUserModal({ user, loading, onClose, onConfirm }) {
             value={confirmText}
             onChange={(event) => setConfirmText(event.target.value)}
             placeholder="DELETE"
-            disabled={loading}
+        disabled={loading}
           />
         </label>
 
@@ -806,20 +685,18 @@ function DeleteUserModal({ user, loading, onClose, onConfirm }) {
             確認刪除
           </button>
         </footer>
-      </motion.article>
-    </motion.div>
+      </Modal>
   );
 }
 
-function DiaryDetailModal({ diary, deleteLoading, onClose, onDelete }) {
+function DiaryDetailModal({ diary, deleteLoading, error, onClose, onDelete }) {
   const [lng, lat] = diary.location?.coordinates || [];
   const placeName = normalizeTaiwanPlaceName(diary.location?.placeName || (Number.isFinite(lat) && Number.isFinite(lng) ? `${lat.toFixed(5)}, ${lng.toFixed(5)}` : '未記錄地點'));
 
   return (
-    <motion.div className="admin-modal-backdrop" {...modalBackdropMotion}>
-      <motion.article
+      <Modal as="article" backdropClassName="admin-modal-backdrop" label="日記詳情" onClose={onClose} busy={deleteLoading}
+        error={error}
         className="admin-detail-modal glass"
-        {...modalPopMotion}
       >
         <header>
           <div>
@@ -848,8 +725,7 @@ function DiaryDetailModal({ diary, deleteLoading, onClose, onDelete }) {
             刪除這篇日記
           </button>
         </footer>
-      </motion.article>
-    </motion.div>
+      </Modal>
   );
 }
 
