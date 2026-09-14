@@ -1,6 +1,6 @@
 import { AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Eye, RefreshCcw, Search, Shield, Trash2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, getImageUrl } from '../api/client.js';
 import ContentTransition from './ui/ContentTransition.jsx';
 import Modal from './ui/Modal.jsx';
@@ -9,6 +9,7 @@ import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
 import Select from './ui/Select.jsx';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
@@ -57,6 +58,11 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
   const [roleLoadingId, setRoleLoadingId] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const requestVersions = useRef({ overview: 0, users: 0, diaries: 0 });
+
+  useEffect(() => () => {
+    for (const key of Object.keys(requestVersions.current)) requestVersions.current[key]++;
+  }, []);
 
   useEffect(() => {
     loadStats();
@@ -126,19 +132,22 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
   }, [activeTab]);
 
   async function loadStats() {
+    const version = ++requestVersions.current.overview;
     try {
       setLoading((current) => ({ ...current, overview: true }));
       setError('');
       const payload = await api.getAdminStats();
+      if (version !== requestVersions.current.overview) return;
       setStats(payload.data && typeof payload.data === 'object' ? payload.data : null);
     } catch (err) {
-      setError(err.message || '管理資料載入失敗，請稍後再試');
+      if (version === requestVersions.current.overview) setError(err.message || '管理資料載入失敗，請稍後再試');
     } finally {
-      setLoading((current) => ({ ...current, overview: false }));
+      if (version === requestVersions.current.overview) setLoading((current) => ({ ...current, overview: false }));
     }
   }
 
   async function loadUsers() {
+    const version = ++requestVersions.current.users;
     try {
       setLoading((current) => ({ ...current, users: true }));
       setError('');
@@ -148,16 +157,18 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
         search: debouncedUserSearch,
         role: userRole
       });
+      if (version !== requestVersions.current.users) return;
       setUsers(asArray(payload.data?.items));
       setUsersPagination(payload.data?.pagination || defaultPagination);
     } catch (err) {
-      setError(err.message || '管理資料載入失敗，請稍後再試');
+      if (version === requestVersions.current.users) setError(err.message || '管理資料載入失敗，請稍後再試');
     } finally {
-      setLoading((current) => ({ ...current, users: false }));
+      if (version === requestVersions.current.users) setLoading((current) => ({ ...current, users: false }));
     }
   }
 
   async function loadDiaries() {
+    const version = ++requestVersions.current.diaries;
     try {
       setLoading((current) => ({ ...current, diaries: true }));
       setError('');
@@ -168,12 +179,13 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
         visibility: diaryVisibility,
         mood: diaryMood
       });
+      if (version !== requestVersions.current.diaries) return;
       setDiaries(asArray(payload.data?.items));
       setDiariesPagination(payload.data?.pagination || defaultPagination);
     } catch (err) {
-      setError(err.message || '管理資料載入失敗，請稍後再試');
+      if (version === requestVersions.current.diaries) setError(err.message || '管理資料載入失敗，請稍後再試');
     } finally {
-      setLoading((current) => ({ ...current, diaries: false }));
+      if (version === requestVersions.current.diaries) setLoading((current) => ({ ...current, diaries: false }));
     }
   }
 
@@ -324,7 +336,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
               key="overview"
               className="admin-card admin-overview-card glass"
             >
-            {loading.overview ? (
+            {loading.overview && !stats ? (
               <p className="admin-empty">載入管理資料中...</p>
             ) : (
               <>
@@ -484,7 +496,7 @@ function Stat({ label, value }) {
   return (
     <div className="admin-stat">
       <span>{label}</span>
-      <strong>{value ?? 0}</strong>
+      <strong><AnimatedNumber value={value ?? 0} digits={7} /></strong>
     </div>
   );
 }
@@ -494,7 +506,7 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoad
   const canDeleteUsers = currentUser?.role === 'owner';
 
   return (
-    <div className="admin-table users-table">
+    <div className="admin-table users-table" aria-busy={loading} inert={loading || undefined}>
       <div className="admin-table-row header">
         <span>使用者名稱</span>
         <span>User ID</span>
@@ -503,8 +515,8 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoad
         <span>Created</span>
         <span>操作</span>
       </div>
-      {loading && <p className="admin-empty">載入管理資料中...</p>}
-      {!loading && users.map((item) => {
+      {loading && users.length === 0 && <p className="admin-empty">載入管理資料中...</p>}
+      {users.map((item) => {
         const isSelf = String(item._id || item.id) === String(currentUser?._id || currentUser?.id);
 
         return (
@@ -573,7 +585,7 @@ function asArray(value) {
 
 function DiariesTable({ diaries, loading, deleteLoadingId, onView, onDelete }) {
   return (
-    <div className="admin-table diaries-table">
+    <div className="admin-table diaries-table" aria-busy={loading} inert={loading || undefined}>
       <div className="admin-table-row header">
         <span>Title</span>
         <span>Author</span>
@@ -582,8 +594,8 @@ function DiariesTable({ diaries, loading, deleteLoadingId, onView, onDelete }) {
         <span>Created</span>
         <span>操作</span>
       </div>
-      {loading && <p className="admin-empty">載入管理資料中...</p>}
-      {!loading && diaries.map((diary) => (
+      {loading && diaries.length === 0 && <p className="admin-empty">載入管理資料中...</p>}
+      {diaries.map((diary) => (
         <div className="admin-table-row admin-diary-row" key={diary._id}>
           <span title={diary.title}>{diary.title}</span>
           <span title={diary.author?.userCode || ''}>@{diary.author?.userCode || 'unknown'}</span>
@@ -619,7 +631,7 @@ function Pagination({ pagination, onPageChange }) {
 
   return (
     <div className="admin-pagination">
-      <span>第 {page} / {totalPages} 頁 · 共 {total} 筆</span>
+      <span>第 <AnimatedNumber value={page} digits={2} /> / {totalPages} 頁 · 共 <AnimatedNumber value={total} digits={5} /> 筆</span>
       <div>
         <button className="ghost-button" type="button" onClick={() => onPageChange(page - 1)} disabled={page <= 1}>
           上一頁

@@ -15,6 +15,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { api } from '../api/client.js';
 import { motionTokens } from '../constants/animations.js';
 import ContentTransition from './ui/ContentTransition.jsx';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 import { createInsightReveal } from '../lib/motion/animeMotion.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
@@ -219,10 +220,10 @@ function LifeMapDashboard({ insight, onRegenerate }) {
           <p>{safeInsight.moodTrend.description || '目前沒有明確情緒趨勢。'}</p>
           <div className="life-map-mood-metrics">
             <span>主要心情：<strong>{safeInsight.moodTrend.dominantMood || '-'}</strong></span>
-            <span>平均強度：<strong>{formatIntensity(averageIntensity)} / 5</strong></span>
+            <span>平均強度：<strong><AnimatedNumber value={formatIntensity(averageIntensity)} digits={3} /> / 5</strong></span>
           </div>
           <div className="life-map-progress" aria-label={`平均強度 ${formatIntensity(averageIntensity)} / 5`}>
-            <span style={{ width: `${Math.min(100, Math.max(0, (averageIntensity / 5) * 100))}%` }} />
+            <span style={{ transform: `scaleX(${Math.min(1, Math.max(0, averageIntensity / 5))})` }} />
           </div>
         </article>
 

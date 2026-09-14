@@ -6,6 +6,7 @@ import { getDistanceInMeters } from '../utils/distance.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 import Select from './ui/Select.jsx';
+import ButtonFeedback from './ui/ButtonFeedback.jsx';
 
 const moodIcons = {
   calm: '🌿',
@@ -517,8 +518,7 @@ export default function DiaryModal({
         {error && <p className="form-error">{error}</p>}
 
         <button className="primary-button motion-soft-press" type="submit" disabled={loading || !canSubmitEdit}>
-          {loading && <span className="button-spinner dark" />}
-          {loading ? '保存中...' : isEditMode ? '儲存變更' : '保存日記'}
+          <ButtonFeedback busy={loading} label={isEditMode ? '儲存變更' : '保存日記'} busyLabel="保存中..." />
         </button>
       </Modal>
   );

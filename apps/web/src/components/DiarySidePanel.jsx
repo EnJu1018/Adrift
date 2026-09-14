@@ -8,6 +8,7 @@ import { getDistanceInMeters } from '../utils/distance.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import { formatCoordinates, resolvePlaceName } from '../utils/placeName.js';
 import DiaryImage from './DiaryImage.jsx';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 import UserAvatar from './UserAvatar.jsx';
 import { normalizeDiaryCoordinate } from './markers/markerGeometry.js';
 
@@ -173,7 +174,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
                       type="button"
                     >
                       <span>{reaction.icon}</span>
-                      <strong>{reactionCounts[reaction.type]}</strong>
+                      <strong><AnimatedNumber value={reactionCounts[reaction.type]} /></strong>
                     </button>
                     </Tooltip>
                   ))}

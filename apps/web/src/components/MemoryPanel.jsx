@@ -22,6 +22,7 @@ import { fadeUpMotion, listItemMotion, panelSlideRight, toastMotion } from '../c
 import { USER_CODE_PATTERN } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
 import ToastViewport from './ToastViewport.jsx';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 
 const VISIBILITY_FILTER_OPTIONS = [
   { value: 'all', label: '全部' },
@@ -415,12 +416,12 @@ export default function MemoryPanel({
           <article>
             <Eye size={16} />
             <span>公開日記</span>
-            <strong>{friendProfile.diaryStats?.publicCount ?? 0}</strong>
+            <strong><AnimatedNumber value={friendProfile.diaryStats?.publicCount ?? 0} /></strong>
           </article>
           <article>
             <Users size={16} />
             <span>好友限定</span>
-            <strong>{friendProfile.diaryStats?.friendsCount ?? 0}</strong>
+            <strong><AnimatedNumber value={friendProfile.diaryStats?.friendsCount ?? 0} /></strong>
           </article>
         </div>
 
@@ -496,15 +497,15 @@ export default function MemoryPanel({
             </header>
             <div className="friends-stat-grid" aria-label="好友狀態摘要">
               <article>
-                <strong>{friendList.length}</strong>
+                <strong><AnimatedNumber value={friendList.length} /></strong>
                 <span>我的好友</span>
               </article>
               <article>
-                <strong>{requests.length}</strong>
+                <strong><AnimatedNumber value={requests.length} /></strong>
                 <span>收到邀請</span>
               </article>
               <article>
-                <strong>{sentRequests.length}</strong>
+                <strong><AnimatedNumber value={sentRequests.length} /></strong>
                 <span>已送出</span>
               </article>
             </div>
@@ -564,11 +565,11 @@ export default function MemoryPanel({
 
                 <div className="memory-stats">
                   <article>
-                    <span>{mine.length}</span>
+                    <span><AnimatedNumber value={mine.length} digits={3} /></span>
                     <p>我的足跡</p>
                   </article>
                   <article>
-                    <span>{visibleDiaries.length}</span>
+                    <span><AnimatedNumber value={visibleDiaries.length} digits={3} /></span>
                     <p>可見記憶</p>
                   </article>
                 </div>
@@ -635,9 +636,9 @@ export default function MemoryPanel({
                           >
                             <strong>{title}</strong>
                             <span className="memory-reactions-row">
-                              <span>❤️ {diary.reactions?.understand || 0}</span>
-                              <span>🤗 {diary.reactions?.hug || 0}</span>
-                              <span>🌧 {diary.reactions?.relate || 0}</span>
+                              <span>❤️ <AnimatedNumber value={diary.reactions?.understand || 0} digits={3} /></span>
+                              <span>🤗 <AnimatedNumber value={diary.reactions?.hug || 0} digits={3} /></span>
+                              <span>🌧 <AnimatedNumber value={diary.reactions?.relate || 0} digits={3} /></span>
                             </span>
                             <span className="memory-item-meta">
                               <span className="memory-author-line">

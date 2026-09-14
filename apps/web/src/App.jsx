@@ -19,6 +19,8 @@ import PresentationPage from './components/PresentationPage.jsx';
 import PublicInfoPage from './components/PublicInfoPage.jsx';
 import ToastViewport from './components/ToastViewport.jsx';
 import UserAvatar from './components/UserAvatar.jsx';
+import AnimatedNumber from './components/ui/AnimatedNumber.jsx';
+import ContentTransition from './components/ui/ContentTransition.jsx';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
 import { normalizeTaiwanPlaceName } from './utils/locationFormatter.js';
@@ -1100,10 +1102,10 @@ export default function App() {
                     aria-expanded={notificationsOpen}
                   >
                     <Bell size={18} />
-                    {friendRequests.length > 0 && <span className="nav-badge">{friendRequests.length}</span>}
+                    {friendRequests.length > 0 && <span className="nav-badge"><AnimatedNumber value={friendRequests.length > 99 ? '99+' : friendRequests.length} digits={3} /></span>}
                   </button>
-                  {notificationsOpen && (
-                    <div className="nav-dropdown notifications-dropdown glass">
+                  <AnimatePresence initial={false}>{notificationsOpen && (
+                    <ContentTransition className="nav-dropdown notifications-dropdown glass">
                       <div className="nav-dropdown-header">
                         <strong>通知</strong>
                         <span>{friendRequests.length > 0 ? `${friendRequests.length} 則好友邀請` : '目前沒有新通知'}</span>
@@ -1121,8 +1123,8 @@ export default function App() {
                       ) : (
                         <p>目前沒有新通知</p>
                       )}
-                    </div>
-                  )}
+                    </ContentTransition>
+                  )}</AnimatePresence>
                 </div>
 
                 <div className="nav-popover-wrap">
@@ -1139,8 +1141,8 @@ export default function App() {
                     <UserAvatar user={user} size="sm" />
                     <small>{user.name || '使用者'}</small>
                   </button>
-                  {userMenuOpen && (
-                    <div className="nav-dropdown user-dropdown glass">
+                  <AnimatePresence initial={false}>{userMenuOpen && (
+                    <ContentTransition className="nav-dropdown user-dropdown glass">
                       <div className="nav-dropdown-header">
                         <div className="nav-dropdown-avatar-row">
                           <UserAvatar user={user} size="md" />
@@ -1176,8 +1178,8 @@ export default function App() {
                         <LogOut size={15} />
                         登出
                       </button>
-                    </div>
-                  )}
+                    </ContentTransition>
+                  )}</AnimatePresence>
                 </div>
               </div>
 

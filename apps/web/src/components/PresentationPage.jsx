@@ -20,6 +20,7 @@ import {
 import { memo, useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState } from 'react';
 import { motionMs } from '../constants/animations.js';
 import { createPresentationMapMotion } from '../lib/motion/animeMotion.js';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 
 const slides = [
   { id: 'cover', label: '封面', group: '封面' },
@@ -867,7 +868,7 @@ function PresentationControls({ activeIndex, onGoToPrevious, onGoToNext }) {
   return (
     <div className="presentation-controls" aria-label="簡報控制">
       <div className="presentation-progress">
-        <span>{String(activeIndex + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
+        <span><AnimatedNumber value={String(activeIndex + 1).padStart(2, '0')} digits={2} /> / {String(slides.length).padStart(2, '0')}</span>
         <div className="presentation-progress-track">
           <i style={{ transform: `scaleX(${progress / 100})` }} />
         </div>

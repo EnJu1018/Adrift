@@ -80,6 +80,7 @@ try {
   assert.equal(await page.evaluate(() => window.scrollY), scroll);
   await first.evaluate(el => { window.retainedCard = el; });
   await page.locator('.feed-filter').getByRole('button', { name: '公開', exact: true }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.feed-card').length === 1);
   assert.equal(await page.locator('.feed-card').count(), 1);
   assert.equal(await first.evaluate(el => el === window.retainedCard), true);
   assert.equal(await page.locator('.feed-filter button.active').getAttribute('aria-pressed'), 'true');
@@ -123,6 +124,28 @@ try {
   await page.keyboard.press('Escape');
   await page.getByRole('listbox').waitFor({ state: 'detached' });
   assert.equal(await role.evaluate(el => el === document.activeElement), true);
+
+  await page.evaluate(async () => {
+    const { api } = await import('/src/api/client.js');
+    window.pendingUsers = [];
+    window.retainedUserRow = document.querySelector('.users-table .admin-table-row:not(.header)');
+    api.getAdminUsers = () => new Promise(resolve => window.pendingUsers.push(resolve));
+  });
+  await page.getByRole('button', { name: '重新整理', exact: true }).click();
+  await page.waitForFunction(() => window.pendingUsers.length === 1);
+  assert.equal(await page.locator('.users-table').evaluate(n => n.inert && n.contains(window.retainedUserRow)), true, 'refresh must retain rows while blocking stale actions');
+  await page.getByRole('button', { name: 'Overview', exact: true }).click();
+  await page.getByRole('button', { name: 'Users', exact: true }).click();
+  await page.waitForFunction(() => window.pendingUsers.length === 2);
+  await page.evaluate(() => window.pendingUsers[1]({ data: { items: [{ _id: 'latest', name: 'Latest result', role: 'user' }] } }));
+  await page.getByText('Latest result', { exact: true }).waitFor();
+  await page.evaluate(() => window.pendingUsers[0]({ data: { items: [{ _id: 'old', name: 'Outdated result', role: 'user' }] } }));
+  await page.waitForTimeout(80);
+  assert.equal(await page.getByText('Outdated result', { exact: true }).count(), 0);
+  await page.evaluate(async () => {
+    const { api } = await import('/src/api/client.js');
+    api.getAdminUsers = async () => ({ data: { items: [] } });
+  });
 
   await view('LifeMapAI', '.life-map-panel');
   await page.locator('.life-map-hero .life-map-cta').evaluate(el => { el.click(); el.click(); });

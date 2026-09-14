@@ -14,6 +14,7 @@ import { useId, useRef, useState } from 'react';
 import { api } from '../api/client.js';
 import { motionTokens, pageFadeUp } from '../constants/animations.js';
 import { EMAIL_PATTERN, USER_CODE_PATTERN } from '../constants/app.js';
+import ButtonFeedback from './ui/ButtonFeedback.jsx';
 
 const STEP = {
   EMAIL: 'email',
@@ -230,8 +231,8 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
               </button>
             )}
             <button className="primary-button auth-submit motion-soft-press" type="submit" disabled={loading || isCheckingEmail}>
-              {loading || isCheckingEmail ? <span className="button-spinner dark" /> : step === STEP.LOGIN_PASSWORD ? <LogIn size={17} /> : step === STEP.REGISTER_PASSWORD ? <UserPlus size={17} /> : <ArrowRight size={17} />}
-              {isCheckingEmail ? '確認中...' : loading ? copy.loading : copy.action}
+              <ButtonFeedback busy={loading || isCheckingEmail} label={copy.action} busyLabel={isCheckingEmail ? '確認中...' : copy.loading}
+                icon={step === STEP.LOGIN_PASSWORD ? <LogIn size={17} /> : step === STEP.REGISTER_PASSWORD ? <UserPlus size={17} /> : <ArrowRight size={17} />} />
             </button>
           </div>
 

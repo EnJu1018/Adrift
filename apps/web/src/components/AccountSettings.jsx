@@ -17,6 +17,7 @@ import Modal from './ui/Modal.jsx';
 import { EMAIL_PATTERN } from '../constants/app.js';
 import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
+import ButtonFeedback from './ui/ButtonFeedback.jsx';
 
 const sections = [
   { id: 'profile', label: '個人檔案', icon: UserRound },
@@ -776,8 +777,7 @@ export default function AccountSettings({
                   取消
                 </button>
                 <button className="primary-button motion-soft-press" type="button" onClick={submitCroppedAvatar} disabled={loadingAction === 'avatar'}>
-                  {loadingAction === 'avatar' && <span className="button-spinner dark" />}
-                  儲存頭貼
+                  <ButtonFeedback busy={loadingAction === 'avatar'} label="儲存頭貼" icon={<Check size={16} />} />
                 </button>
               </div>
             </Modal>
@@ -863,8 +863,7 @@ function InlineActions({ loading, disabled, onCancel, saveLabel = '儲存' }) {
         取消
       </button>
       <button className="primary-button motion-soft-press" type="submit" disabled={disabled}>
-        {loading && <span className="button-spinner dark" />}
-        {saveLabel}
+        <ButtonFeedback busy={loading} label={saveLabel} icon={<Check size={16} />} />
       </button>
     </div>
   );

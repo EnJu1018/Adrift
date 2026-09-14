@@ -1,11 +1,12 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Heart, MessageCircle, Plus, Radio, Users, Waves } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { listItemMotion } from '../constants/animations.js';
+import ContentTransition from './ui/ContentTransition.jsx';
 import { MOOD_LABELS } from '../constants/app.js';
 import { formatDiaryTime } from '../utils/diaryTime.js';
 import DiaryImage from './DiaryImage.jsx';
 import UserAvatar from './UserAvatar.jsx';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 
 const feedFilters = [
   { value: 'all', label: '全部' },
@@ -53,10 +54,11 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
       </div>
 
       <div className="feed-list">
+        <AnimatePresence initial={false}>
         {feedItems.length > 0 ? (
-          feedItems.map((diary, index) => (
-            <motion.article
-              key={diary._id}
+          feedItems.map((diary) => (
+            <ContentTransition collapse key={diary._id}>
+            <article
               className="feed-card motion-card-hover"
               onClick={() => onOpenDiary?.(diary)}
               role="button"
@@ -67,7 +69,6 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
                   onOpenDiary?.(diary);
                 }
               }}
-              {...listItemMotion(index)}
             >
               <div className="feed-card-header">
                 <UserAvatar user={getAuthor(diary, user)} size="sm" />
@@ -98,17 +99,18 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
                 </span>
                 <span>
                   <Heart size={14} />
-                  {(diary.reactions?.understand || 0) + (diary.reactions?.hug || 0) + (diary.reactions?.relate || 0)}
+                  <AnimatedNumber value={(diary.reactions?.understand || 0) + (diary.reactions?.hug || 0) + (diary.reactions?.relate || 0)} />
                 </span>
                 <span>
                   <MessageCircle size={14} />
                   查看詳情
                 </span>
               </footer>
-            </motion.article>
+            </article>
+            </ContentTransition>
           ))
         ) : (
-          <div className="feed-empty motion-fade-up">
+          <ContentTransition collapse key="empty"><div className="feed-empty">
             <Radio size={20} />
             <h3>附近還很安靜</h3>
             <p>先把這裡變成你的記憶地圖。即使只有自己可見，也能在未來回顧今天的生活片段。</p>
@@ -116,8 +118,9 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
               <Plus size={15} />
               留下第一篇日記
             </button>
-          </div>
+          </div></ContentTransition>
         )}
+        </AnimatePresence>
       </div>
     </section>
   );

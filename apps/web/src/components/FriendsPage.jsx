@@ -23,6 +23,7 @@ import { USER_CODE_PATTERN } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
+import AnimatedNumber from './ui/AnimatedNumber.jsx';
 
 export default function FriendsPage({
   user,
@@ -444,7 +445,7 @@ export default function FriendsPage({
             <span>透過使用者 ID 找到朋友，分享你的地圖日記。</span>
           </div>
           <div className="friends-hub-pills" aria-label="好友狀態摘要">
-            <span><strong>{friendList.length}</strong> 位好友 · <strong>{requests.length}</strong> 則邀請</span>
+            <span><strong><AnimatedNumber value={friendList.length} digits={3} /></strong> 位好友 · <strong><AnimatedNumber value={requests.length} digits={3} /></strong> 則邀請</span>
           </div>
         </header>
 
@@ -700,20 +701,21 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
       <div className="friend-segmented compact-tabs" aria-label="好友邀請分類">
         <button className={inviteTab === 'received' ? 'active' : ''} type="button" aria-pressed={inviteTab === 'received'} onClick={() => onInviteTabChange('received')}>
           收到的
-          {requests.length > 0 && <span>{requests.length}</span>}
+          <span><AnimatedNumber value={requests.length} digits={3} /></span>
         </button>
         <button className={inviteTab === 'sent' ? 'active' : ''} type="button" aria-pressed={inviteTab === 'sent'} onClick={() => onInviteTabChange('sent')}>
           已送出
-          {sentRequests.length > 0 && <span>{sentRequests.length}</span>}
+          <span><AnimatedNumber value={sentRequests.length} digits={3} /></span>
         </button>
       </div>
 
       <AnimatePresence mode="wait">
         {inviteTab === 'received' ? (
           <ContentTransition className="social-invite-list" key="received">
+            <AnimatePresence initial={false}>
             {requests.length > 0 ? (
               requests.map((request) => (
-                <article className="social-person-row" key={request.requestId}>
+                <ContentTransition collapse key={request.requestId}><article className="social-person-row">
                   <FriendIdentity user={request.from} meta={formatDateTime(request.createdAt) || '新的邀請'} />
                   <div className="friend-actions">
                     <button
@@ -735,20 +737,22 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
                       拒絕
                     </button>
                   </div>
-                </article>
+                </article></ContentTransition>
               ))
             ) : (
-              <div className="friends-empty-panel compact">
+              <ContentTransition collapse key="empty"><div className="friends-empty-panel compact">
                 <UserPlus size={18} />
                 <strong>目前沒有好友邀請</strong>
-              </div>
+              </div></ContentTransition>
             )}
+            </AnimatePresence>
           </ContentTransition>
         ) : (
           <ContentTransition className="social-invite-list" key="sent">
+            <AnimatePresence initial={false}>
             {sentRequests.length > 0 ? (
               sentRequests.map((request) => (
-                <article className="social-person-row" key={request.requestId}>
+                <ContentTransition collapse key={request.requestId}><article className="social-person-row">
                   <FriendIdentity user={request.to} meta={formatDateTime(request.createdAt) || '等待回覆'} />
                   <div className="friend-actions">
                     <span className="friend-status-pill">等待回覆</span>
@@ -762,14 +766,15 @@ function InvitesPanel({ inviteTab, requests, sentRequests, busyAction, compact =
                       收回
                     </button>
                   </div>
-                </article>
+                </article></ContentTransition>
               ))
             ) : (
-              <div className="friends-empty-panel compact">
+              <ContentTransition collapse key="empty"><div className="friends-empty-panel compact">
                 <Undo2 size={18} />
                 <strong>尚未送出好友邀請</strong>
-              </div>
+              </div></ContentTransition>
             )}
+            </AnimatePresence>
           </ContentTransition>
         )}
       </AnimatePresence>
@@ -821,13 +826,12 @@ function FriendsDirectory({
           </label>
         </div>
         <div className="social-friend-list">
+          <AnimatePresence initial={false}>
           {friends.length > 0 ? (
             filteredFriends.length > 0 ? (
-              filteredFriends.map((friend, index) => (
-                <motion.article
+              filteredFriends.map((friend) => (
+                <ContentTransition collapse key={friend._id}><article
                   className={`social-friend-item ${sameId(selectedFriend?._id, friend._id) ? 'selected' : ''}`}
-                  key={friend._id}
-                  {...listItemMotion(index)}
                 >
                   <FriendIdentity user={friend} compact />
                   <div className="friend-row-actions">
@@ -853,21 +857,22 @@ function FriendsDirectory({
                       </div>
                     )}
                   </div>
-                </motion.article>
+                </article></ContentTransition>
               ))
             ) : (
-              <div className="friends-empty-panel compact">
+              <ContentTransition collapse key="no-match"><div className="friends-empty-panel compact">
                 <Search size={18} />
                 <strong>找不到符合條件的好友</strong>
-              </div>
+              </div></ContentTransition>
             )
           ) : (
-            <div className="friends-empty-panel">
+            <ContentTransition collapse key="empty"><div className="friends-empty-panel">
               <Users size={20} />
               <strong>還沒有好友</strong>
               <p>搜尋使用者 ID，開始建立你的 Adrift 連結。</p>
-            </div>
+            </div></ContentTransition>
           )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -910,18 +915,18 @@ function FriendProfileCard({ profile, profileError, onViewDiary, onDeleteFriend 
         <article>
           <Eye size={15} />
           <span>公開日記</span>
-          <strong>{profile.diaryStats?.publicCount ?? 0}</strong>
+          <strong><AnimatedNumber value={profile.diaryStats?.publicCount ?? 0} /></strong>
         </article>
         <article>
           <Users size={15} />
           <span>好友可見</span>
-          <strong>{profile.diaryStats?.friendsCount ?? 0}</strong>
+          <strong><AnimatedNumber value={profile.diaryStats?.friendsCount ?? 0} /></strong>
         </article>
         {'mutualFriendsCount' in profile && (
           <article>
             <UserRound size={15} />
             <span>共同好友</span>
-            <strong>{profile.mutualFriendsCount ?? 0}</strong>
+            <strong><AnimatedNumber value={profile.mutualFriendsCount ?? 0} /></strong>
           </article>
         )}
       </div>

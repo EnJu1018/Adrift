@@ -281,3 +281,44 @@ At 500 fixture markers, grouping measured 4.4ms median and frame intervals were
 Existing bundle-size warnings and the missing lint configuration remain visible
 limitations. No API, iOS, authentication contract or SEO metadata changes are
 required for this motion release.
+
+## Micro-interaction stability
+
+- Busy action labels occupy overlapping grid cells sized for both states. Auth,
+  diary saving and settings saving no longer insert an extra-width spinner.
+  Button press uses the independent scale property instead of stacking it with
+  another transform scale. Navigation copy feedback reserves its text width.
+- Numeric cells use tabular figures and reserved character slots. Only changed
+  cells receive a finite 250ms/4px Anime.js transition; mounting, theme changes
+  and unchanged values do not replay it. Rapid updates revert the previous scope.
+  Live reduced motion restores styles and bypasses movement. Counts reserve
+  context-specific capacity; numbers exceeding that capacity remain fully
+  readable and may require more space, rather than silently truncating totals.
+  Marker and notification badges cap their visible text while retaining the real
+  count in their accessible trigger label or surrounding content.
+- Numbers cover reactions, Feed totals, friend/invitation/profile counts, map
+  list counts, stack children, admin statistics/pagination, Intelligence intensity
+  and presentation page indication. Timestamps, IDs and static explanatory text
+  remain static. Intelligence progress now uses scaleX rather than width.
+- Diary photos reserve a 16:9 frame through loading, success and failure. Images
+  fade in without changing the frame; avatars retain initials while loading and
+  on failure, and keep their fixed circular dimensions.
+- Feed and friend lists retain outgoing rows with an inert fade/collapse before
+  removal. Collapse deliberately uses a grid track, so this bounded operation
+  performs layout; it is not claimed to be compositor-only. Surviving keyed items
+  stay mounted, including during filter changes. Nav popovers now have real exits.
+- Admin refresh retains existing statistics and rows instead of replacing them
+  with a loading paragraph. Busy tables prevent actions on stale data. Per-resource
+  request versions prevent a late response from replacing newer results and are
+  invalidated on unmount, including StrictMode cleanup.
+- Existing directional Auth transitions, native modal focus isolation, single
+  tooltips, bounded once-only landing reveals, CSS tokens, reduced-motion policy
+  and scoped SVG paths are retained. No new parallax, background particles or
+  scroll-driven React render loop is added. No remote web font is introduced.
+
+`tests/micro-browser.mjs` measures fixed button/neighbor geometry across rapid
+99/100 and 1,999/2,000 updates, changed-digit isolation, live reduced motion,
+photo/avatar failure and recovery, row collapse/inertness and both themes.
+Workspace regression additionally checks retained admin rows and out-of-order
+responses. Tests use local fixtures, not production mutations. Browser coverage
+is macOS Chrome, not a substitute for Safari/Edge or real mobile-device testing.
