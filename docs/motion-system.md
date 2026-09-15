@@ -288,13 +288,15 @@ required for this motion release.
   diary saving and settings saving no longer insert an extra-width spinner.
   Button press uses the independent scale property instead of stacking it with
   another transform scale. Navigation copy feedback reserves its text width.
-- Numeric cells use tabular figures and reserved character slots. Only changed
-  cells receive a finite 250ms/4px Anime.js transition; mounting, theme changes
-  and unchanged values do not replay it. Rapid updates revert the previous scope.
+- Numbers use tabular figures and a minimum inline size, not leading blank
+  digit cells. One current text layer receives a finite 150ms Anime.js transition:
+  fade for statistics/page numbers, 2px for reactions, scale .94 for badges.
+  Mounting, theme changes and unchanged values do not replay it. Rapid updates
+  revert the previous scope; completion removes temporary styles.
   Live reduced motion restores styles and bypasses movement. Counts reserve
   context-specific capacity; numbers exceeding that capacity remain fully
   readable and may require more space, rather than silently truncating totals.
-  Marker and notification badges cap their visible text while retaining the real
+  Marker and notification badges cap visible text at 99+ while retaining the real
   count in their accessible trigger label or surrounding content.
 - Numbers cover reactions, Feed totals, friend/invitation/profile counts, map
   list counts, stack children, admin statistics/pagination, Intelligence intensity
@@ -317,8 +319,34 @@ required for this motion release.
   scroll-driven React render loop is added. No remote web font is introduced.
 
 `tests/micro-browser.mjs` measures fixed button/neighbor geometry across rapid
-99/100 and 1,999/2,000 updates, changed-digit isolation, live reduced motion,
+updates, decimal/negative/comma/percentage text, single-value rendering, clean
+resting styles and live reduced motion,
 photo/avatar failure and recovery, row collapse/inertness and both themes.
 Workspace regression additionally checks retained admin rows and out-of-order
 responses. Tests use local fixtures, not production mutations. Browser coverage
 is macOS Chrome, not a substitute for Safari/Edge or real mobile-device testing.
+
+## Auth layout stability
+
+The auth route uses one dynamic-viewport scroll container. Its card and brand
+have no positioning transforms or viewport-dependent top margins. The step alone
+owns the reversible horizontal transition. Header/account rows, two-field space
+and validation slots reserve the current flow's dimensions, with explicit label
+line height to avoid Latin/CJK metric differences. Longer content can still grow
+and scroll; no error is clipped to preserve a measurement.
+
+Fields are 16px to avoid small-input focus zoom, and password controls use insets
+instead of transform-based centering. Step focus uses preventScroll so mounting
+an entering field doesn't reposition the scroll container. Native scrolling to
+reach controls in a short viewport remains available.
+
+Email checks use a request version invalidated on edits and unmount. Late results
+cannot advance a different email; synchronous submit guards reject duplicates.
+Composition confirmation does not submit the form. No per-step browser history,
+extra progress UI or new dependency is introduced.
+
+`tests/auth-stability-browser.mjs` exercises the actual App auth shell at nine
+desktop/tablet/mobile sizes in both themes. It compares content anchors through
+all steps, validation and server errors, checks loading geometry, keyboard/IME,
+stale responses, reduced motion and scrolling in a 390x420 viewport. This is
+viewport simulation, not real iOS/Android keyboard or password-manager testing.

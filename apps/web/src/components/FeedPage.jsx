@@ -99,7 +99,7 @@ export default function FeedPage({ diaries = [], user, onOpenDiary, onNewDiary }
                 </span>
                 <span>
                   <Heart size={14} />
-                  <AnimatedNumber value={(diary.reactions?.understand || 0) + (diary.reactions?.hug || 0) + (diary.reactions?.relate || 0)} />
+                  <AnimatedNumber value={(diary.reactions?.understand || 0) + (diary.reactions?.hug || 0) + (diary.reactions?.relate || 0)} variant="reaction" />
                 </span>
                 <span>
                   <MessageCircle size={14} />

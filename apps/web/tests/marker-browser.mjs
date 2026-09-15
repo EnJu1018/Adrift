@@ -157,6 +157,18 @@ try {
   });
   const stack = page.locator('.diary-node-anchor:visible .dn-hit');
   await page.getByRole('button', { name: '5 篇日記', exact: true }).waitFor();
+  for (const count of [9, 10, 99, 100, 1000, 5]) {
+    await page.evaluate(count => window.markerTest.render({ diaries: window.markerTest.makeStack(count) }), count);
+    await page.getByRole('button', { name: `${count} 篇日記`, exact: true }).waitFor();
+    await page.waitForTimeout(180);
+    const number = page.locator('.diary-node-anchor:visible .motion-number-value');
+    assert.equal(await number.textContent(), count > 99 ? '99+' : String(count));
+    assert.equal(await number.evaluate(el => {
+      const text = el.getBoundingClientRect(), core = el.closest('.dn-core').getBoundingClientRect();
+      return Math.abs(text.x + text.width / 2 - core.x - core.width / 2) < 0.6
+        && text.left >= core.left && text.right <= core.right && text.top >= core.top && text.bottom <= core.bottom;
+    }), true, `${count}: count centered and unclipped inside actual marker`);
+  }
   await stack.click();
   await page.locator('.dn-arc-item .dn-hit').first().waitFor();
   assert.equal(await page.locator('.dn-arc-item').count(), 5);

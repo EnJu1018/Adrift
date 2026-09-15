@@ -10,9 +10,9 @@ import {
   Mail,
   UserPlus
 } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
-import { motionTokens, pageFadeUp } from '../constants/animations.js';
+import { motionTokens } from '../constants/animations.js';
 import { EMAIL_PATTERN, USER_CODE_PATTERN } from '../constants/app.js';
 import ButtonFeedback from './ui/ButtonFeedback.jsx';
 
@@ -28,6 +28,8 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
   const [direction, setDirection] = useState(1);
   const formRef = useRef(null);
   const requestPending = useRef(false);
+  const requestVersion = useRef(0);
+  const composing = useRef(false);
   const [mode, setMode] = useState(null);
   const [form, setForm] = useState({ name: '', userCode: '', email: '', password: '', confirmPassword: '' });
   const [touched, setTouched] = useState({});
@@ -39,6 +41,8 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const visibleMessage = stepError || error || (step === STEP.EMAIL ? notice : '');
+
+  useEffect(() => () => { requestVersion.current++; }, []);
 
   function validateField(field, values = form) {
     const email = values.email.trim();
@@ -74,6 +78,11 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
   }
 
   function updateField(field, value) {
+    if (field === 'email') {
+      requestVersion.current++;
+      requestPending.current = false;
+      setIsCheckingEmail(false);
+    }
     const nextForm = { ...form, [field]: value };
     setForm(nextForm);
     setStepError('');
@@ -82,6 +91,8 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
 
     if (field === 'email' && mode) {
       setMode(null);
+      setShowPassword(false);
+      setShowConfirmPassword(false);
       setForm({ ...nextForm, password: '', confirmPassword: '' });
     }
 
@@ -116,7 +127,7 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
 
   async function submit(event) {
     event.preventDefault();
-    if (loading || requestPending.current) return;
+    if (composing.current || loading || requestPending.current) return;
     setSubmitted(true);
     setStepError('');
     onClearError?.();
@@ -128,17 +139,21 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
       setForm((current) => ({ ...current, email }));
       setIsCheckingEmail(true);
       requestPending.current = true;
+      const version = ++requestVersion.current;
 
       try {
         const payload = await api.checkEmail(email);
+        if (version !== requestVersion.current) return;
         const nextMode = payload.exists ? 'login' : 'register';
         setMode(nextMode);
         moveTo(nextMode === 'login' ? STEP.LOGIN_PASSWORD : STEP.REGISTER_PROFILE);
       } catch (requestError) {
-        setStepError(requestError.message || '無法確認 Email，請稍後再試');
+        if (version === requestVersion.current) setStepError(requestError.message || '無法確認 Email，請稍後再試');
       } finally {
-        requestPending.current = false;
-        setIsCheckingEmail(false);
+        if (version === requestVersion.current) {
+          requestPending.current = false;
+          setIsCheckingEmail(false);
+        }
       }
       return;
     }
@@ -191,14 +206,20 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
           <p>{copy.subtitle}</p>
         </div>
 
+        <div className="auth-account-slot">
         {step !== STEP.EMAIL && (
           <div className="auth-selected-email">
             <Mail size={16} />
             <span>{form.email}</span>
           </div>
         )}
+        </div>
 
-        <form ref={formRef} className="auth-form new-auth-form" onSubmit={submit} noValidate aria-busy={loading || isCheckingEmail}>
+        <form ref={formRef} className="auth-form new-auth-form" onSubmit={submit} noValidate aria-busy={loading || isCheckingEmail}
+          onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
+          onKeyDown={event => {
+            if (event.key === 'Enter' && (composing.current || event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault();
+          }}>
             <div className="auth-step-fields">
               {step === STEP.EMAIL && (
                 <AuthInput label="Email" type="email" value={form.email} onChange={(value) => updateField('email', value)} onBlur={() => blurField('email')} placeholder="you@example.com" invalid={Boolean(errors.email && (touched.email || submitted))} error={errors.email} autoComplete="email" autoFocus />
@@ -236,12 +257,14 @@ export default function AuthPanel({ onAuth, onClearError, onClearNotice, loading
             </button>
           </div>
 
+            <div className="auth-message-slot">
             {visibleMessage && (
               <p className={`auth-inline-message ${stepError || error ? 'error' : 'success'}`} role={stepError || error ? 'alert' : 'status'}>
                 {stepError || error ? <AlertCircle size={16} /> : <CheckCircle2 size={16} />}
                 {visibleMessage}
               </p>
             )}
+            </div>
         </form>
         </AuthStep>
         </AnimatePresence>
@@ -259,18 +282,22 @@ function getStepCopy(step) {
 
 function AuthBrand() {
   return (
-    <motion.section className="auth-brand-panel" {...pageFadeUp}>
+    <section className="auth-brand-panel">
       <p className="eyebrow">Adrift 漂流足跡</p>
       <h2>把生活，<br /><span className="auth-brand-line">留在發生的地方。</span></h2>
       <p className="auth-brand-body">在地圖上記錄地點、心情與故事，讓每段生活軌跡慢慢成為自己的城市記憶。</p>
-    </motion.section>
+    </section>
   );
 }
 
 function AuthStep({ children, direction }) {
   const present = useIsPresent();
   const reduced = useReducedMotion();
-  return <motion.div className="auth-step" inert={!present ? true : undefined}
+  const root = useRef(null);
+  useLayoutEffect(() => {
+    root.current?.querySelector('[data-auth-focus]')?.focus({ preventScroll: true });
+  }, []);
+  return <motion.div ref={root} className="auth-step" inert={!present ? true : undefined}
     custom={direction} initial={reduced ? false : 'enter'} animate="active" exit="exit"
     variants={{
       enter: direction => ({ opacity: 0, x: reduced ? 0 : direction * motionTokens.distance.base }),
@@ -288,9 +315,8 @@ function AuthInput({ label, type = 'text', value, onChange, onBlur, placeholder,
   return (
     <label className="auth-input">
       <span>{label}</span>
-      <input name={name} type={type} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid ? `${id}-error` : hint ? `${id}-hint` : undefined} autoComplete={autoComplete} autoFocus={autoFocus} />
-      {hint && <small id={`${id}-hint`} className="field-hint">{hint}</small>}
-      {invalid && <span id={`${id}-error`} className="field-error">{error}</span>}
+      <input name={name} type={type} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid || hint ? `${id}-message` : undefined} autoComplete={autoComplete} data-auth-focus={autoFocus || undefined} />
+      <span id={`${id}-message`} className="auth-validation" data-invalid={invalid} aria-live="polite">{invalid ? error : hint}</span>
     </label>
   );
 }
@@ -301,12 +327,12 @@ function PasswordInput({ label, value, visible, onToggle, onChange, onBlur, plac
     <label className="auth-input">
       <span>{label}</span>
       <span className="password-control">
-        <input name={label === '確認密碼' ? 'confirmPassword' : 'password'} type={visible ? 'text' : 'password'} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid ? `${id}-error` : undefined} autoComplete={autoComplete} autoFocus={autoFocus} />
+        <input name={label === '確認密碼' ? 'confirmPassword' : 'password'} type={visible ? 'text' : 'password'} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid ? `${id}-message` : undefined} autoComplete={autoComplete} data-auth-focus={autoFocus || undefined} />
         <button className="motion-soft-press" type="button" onClick={onToggle} aria-pressed={visible} aria-label={visible ? '隱藏密碼' : '顯示密碼'}>
           {visible ? <EyeOff size={17} /> : <Eye size={17} />}
         </button>
       </span>
-      {invalid && <span id={`${id}-error`} className="field-error">{error}</span>}
+      <span id={`${id}-message`} className="auth-validation" data-invalid={invalid} aria-live="polite">{invalid ? error : ''}</span>
     </label>
   );
 }

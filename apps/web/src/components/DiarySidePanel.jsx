@@ -174,7 +174,7 @@ export default function DiarySidePanel({ diary, currentUser, currentLocation, on
                       type="button"
                     >
                       <span>{reaction.icon}</span>
-                      <strong><AnimatedNumber value={reactionCounts[reaction.type]} /></strong>
+                      <strong><AnimatedNumber value={reactionCounts[reaction.type]} variant="reaction" /></strong>
                     </button>
                     </Tooltip>
                   ))}

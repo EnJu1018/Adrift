@@ -568,7 +568,18 @@ button {
 
 .app-layout.auth-mode {
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   padding: 0;
+}
+
+body:has(.auth-mode),
+#root:has(.auth-mode),
+.app-frame:has(> .auth-mode),
+.app-layout.auth-mode {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .app-layout.admin-mode {
@@ -4246,16 +4257,19 @@ select option {
 .auth-page {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(320px, 1fr) minmax(360px, 460px);
-  align-items: center;
-  gap: clamp(28px, 6vw, 84px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  align-items: start;
+  align-content: start;
+  gap: 48px;
   width: min(1180px, 100%);
-  min-height: 100vh;
-  max-height: 100vh;
+  height: 100%;
+  min-height: 0;
   margin: 0 auto;
-  padding: clamp(22px, 5vw, 56px);
+  padding: 48px 40px;
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  scroll-padding-block: 24px;
 }
 
 .auth-brand-panel {
@@ -4263,7 +4277,8 @@ select option {
   display: grid;
   align-content: center;
   gap: 16px;
-  min-height: min(680px, calc(100vh - 112px));
+  min-width: 0;
+  padding-block: 48px;
   isolation: isolate;
 }
 
@@ -4282,7 +4297,7 @@ select option {
 }
 
 .auth-brand-line {
-  white-space: nowrap;
+  text-wrap: balance;
 }
 
 .auth-brand-body {
@@ -4303,7 +4318,7 @@ select option {
   width: min(440px, 100%);
   justify-self: end;
   align-self: start;
-  margin-top: clamp(36px, 10vh, 100px);
+  min-width: 0;
   padding: 28px;
   border-radius: 22px;
   background: linear-gradient(145deg, rgba(14, 30, 48, 0.78), rgba(5, 17, 29, 0.62));
@@ -4311,14 +4326,21 @@ select option {
   box-shadow: var(--shadow-soft);
 }
 
-.auth-step { display: grid; gap: 20px; min-width: 0; }
-.auth-card .password-control button { min-width: 44px; min-height: 44px; color: var(--text-secondary); }
+.auth-step { display: grid; gap: 16px; min-width: 0; }
+.auth-card .password-control button {
+  inset: 1px 2px 1px auto;
+  width: 44px;
+  height: 44px;
+  transform: none;
+  color: var(--text-secondary);
+}
 .auth-card .password-control input { padding-right: 54px; }
 .auth-brand-body, .auth-card-header p { text-wrap: pretty; }
 .auth-inline-message { animation: adriftMotionFadeIn var(--duration-quick) var(--ease-out); }
 
 .auth-card-header {
   display: block;
+  min-height: 76px;
 }
 
 .auth-card-header h1 {
@@ -4336,25 +4358,45 @@ select option {
 }
 
 .new-auth-form {
-  gap: 18px;
+  gap: 12px;
 }
 
 .auth-step-fields {
   display: grid;
   align-content: start;
-  gap: 16px;
+  gap: 12px;
+  min-height: 240px;
 }
 
 .auth-input {
-  gap: 8px;
+  display: grid;
+  grid-template-rows: auto 46px minmax(36px, auto);
+  gap: 6px;
+  min-width: 0;
   color: #cfe6f3;
   font-size: 0.84rem;
   font-weight: 750;
+  line-height: 20px;
 }
+
+.auth-validation {
+  min-height: 36px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+.auth-validation[data-invalid="true"] { color: var(--danger, #ffb7c3); }
+.auth-message-slot { min-height: 36px; }
+.auth-account-slot { min-height: 32px; min-width: 0; }
 
 .auth-input input,
 .auth-card .password-control input {
   height: 46px;
+  font-size: 16px;
+  font-weight: 500;
+  color-scheme: dark;
   border-color: rgba(196, 235, 255, 0.18);
   border-radius: 14px;
   background: rgba(0, 10, 20, 0.48);
@@ -4380,7 +4422,7 @@ select option {
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 9px;
-  min-height: 42px;
+  min-height: 32px;
   padding: 0 12px;
   border: 1px solid rgba(196, 235, 255, 0.14);
   border-radius: 13px;
@@ -8927,6 +8969,7 @@ select option {
 :root[data-theme="bright"] .diary-modal textarea,
 :root[data-theme="bright"] .auth-input input,
 :root[data-theme="bright"] .auth-card .password-control input {
+  color-scheme: light;
   -webkit-text-fill-color: var(--text-primary);
   color: var(--text-primary) !important;
   caret-color: var(--accent);
@@ -10317,20 +10360,21 @@ select option {
 
   .app-layout.auth-mode {
     padding: 0;
+    height: 100dvh;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .auth-page {
     grid-template-columns: 1fr;
     align-content: start;
     gap: 22px;
-    max-height: none;
     padding: 24px;
   }
 
   .auth-brand-panel {
-    min-height: auto;
     gap: 10px;
-    padding-top: 18px;
+    padding-block: 0;
   }
 
   .auth-brand-panel h2 {
@@ -10339,7 +10383,6 @@ select option {
 
   .auth-card {
     width: min(440px, 100%);
-    margin-top: 0;
     justify-self: center;
     padding: 22px;
   }
@@ -16233,10 +16276,13 @@ input.mood-intensity-slider {
 }
 
 .motion-number {
-  display: inline-flex;
+  display: inline-grid;
+  place-items: center;
   flex: 0 0 auto;
-  white-space: pre;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  line-height: 1.2;
   vertical-align: baseline;
 }
 
@@ -16249,10 +16295,10 @@ input.mood-intensity-slider {
 .motion-collapse[data-collapsed="true"] { grid-template-rows: 0fr; }
 .motion-collapse-inner { min-height: 0; overflow: hidden; }
 
-.motion-number > i {
+.motion-number > .motion-number-value {
   display: inline-block;
-  inline-size: 1ch;
   font: inherit;
+  color: inherit;
   text-align: center;
 }
 

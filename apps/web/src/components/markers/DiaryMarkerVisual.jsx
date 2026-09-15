@@ -54,7 +54,7 @@ export default function DiaryMarkerVisual({ diary, count = 1, selected = false, 
         {stack && <><span className="dn-layer dn-layer-back" aria-hidden="true" /><span className="dn-layer dn-layer-front" aria-hidden="true" /></>}
         <span className="dn-core" aria-hidden="true">
           <span className="dn-glass" />
-          {stack ? <span className="dn-count"><AnimatedNumber value={count > 999 ? '999+' : count} digits={3} /></span> : <Sparkles className="dn-symbol" size={14} strokeWidth={1.7} />}
+          {stack ? <span className="dn-count"><AnimatedNumber value={count > 99 ? '99+' : count} digits={3} variant="badge" /></span> : <Sparkles className="dn-symbol" size={14} strokeWidth={1.7} />}
           <span className="dn-mood-cue" />
         </span>
       </button>

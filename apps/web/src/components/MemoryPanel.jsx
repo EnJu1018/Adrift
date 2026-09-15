@@ -636,9 +636,9 @@ export default function MemoryPanel({
                           >
                             <strong>{title}</strong>
                             <span className="memory-reactions-row">
-                              <span>❤️ <AnimatedNumber value={diary.reactions?.understand || 0} digits={3} /></span>
-                              <span>🤗 <AnimatedNumber value={diary.reactions?.hug || 0} digits={3} /></span>
-                              <span>🌧 <AnimatedNumber value={diary.reactions?.relate || 0} digits={3} /></span>
+                              <span>❤️ <AnimatedNumber value={diary.reactions?.understand || 0} digits={3} variant="reaction" /></span>
+                              <span>🤗 <AnimatedNumber value={diary.reactions?.hug || 0} digits={3} variant="reaction" /></span>
+                              <span>🌧 <AnimatedNumber value={diary.reactions?.relate || 0} digits={3} variant="reaction" /></span>
                             </span>
                             <span className="memory-item-meta">
                               <span className="memory-author-line">

@@ -1098,11 +1098,11 @@ export default function App() {
                       setNotificationsOpen((open) => !open);
                       setUserMenuOpen(false);
                     }}
-                    aria-label="通知"
+                    aria-label={`通知${friendRequests.length ? `，${friendRequests.length} 則邀請` : ''}`}
                     aria-expanded={notificationsOpen}
                   >
                     <Bell size={18} />
-                    {friendRequests.length > 0 && <span className="nav-badge"><AnimatedNumber value={friendRequests.length > 99 ? '99+' : friendRequests.length} digits={3} /></span>}
+                    {friendRequests.length > 0 && <span className="nav-badge"><AnimatedNumber value={friendRequests.length > 99 ? '99+' : friendRequests.length} digits={3} variant="badge" /></span>}
                   </button>
                   <AnimatePresence initial={false}>{notificationsOpen && (
                     <ContentTransition className="nav-dropdown notifications-dropdown glass">

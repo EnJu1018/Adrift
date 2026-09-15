@@ -33,7 +33,7 @@ try {
       const [items, setItems] = React.useState(['one', 'two']);
       window.micro = { setValue, setBusy, setSrc, setItems };
       return h('main', { style: { padding: 24, width: 390 } },
-        h('div', { id: 'counter', style: { fontSize: 24 } }, h(Number, { value, digits: 7 }), h('span', { id: 'neighbor' }, '篇')),
+        h('div', { id: 'counter', style: { fontSize: 24 } }, h(Number, { value, digits: 8, variant: 'reaction' }), h('span', { id: 'neighbor' }, '篇')),
         h('button', { id: 'save', className: 'primary-button', disabled: busy }, h(Feedback, { busy, label: '儲存', busyLabel: '儲存中...' })),
         h(Photo, { src, alt: '記憶照片', className: 'feed-card-image' }),
         h(Avatar, { src, name: 'River' }),
@@ -42,12 +42,20 @@ try {
     createRoot(document.getElementById('root')).render(h(React.StrictMode, null, h(Harness)));
   });
   await page.locator('#save').waitFor();
+  assert.equal(await page.locator('.motion-number').textContent(), '128');
+  assert.equal(await page.locator('.motion-number-value').getAttribute('style'), null, 'mount is static');
   const initial = await page.locator('#neighbor').boundingBox();
-  for (const value of [129, 99, 100, '1,999', '2,000', 12, 13]) {
+  for (const value of [1, 2, 3, 4, 9, 10, 99, 100, 999, '1,000', '9,999', '10,000', '9%', '10%', 1.4, 1.5, -12.5, '$1,000']) {
     await page.evaluate(value => window.micro.setValue(value), value);
     await page.waitForTimeout(32);
     assert.equal((await page.locator('#neighbor').boundingBox()).x, initial.x);
-    assert.equal(await page.locator('.motion-number > .visually-hidden').textContent(), String(value));
+    assert.equal(await page.locator('.motion-number').textContent(), String(value));
+    assert.equal(await page.locator('.motion-number > *').count(), 1, 'only one current value exists');
+    const centered = await page.locator('.motion-number').evaluate(el => {
+      const a = el.getBoundingClientRect(), b = el.firstElementChild.getBoundingClientRect();
+      return Math.abs(a.x + a.width / 2 - b.x - b.width / 2) < 0.5;
+    });
+    assert.equal(centered, true, 'no leading blank digit cells');
   }
   await page.waitForTimeout(350);
   await page.evaluate(() => window.micro.setValue(128));
@@ -55,15 +63,16 @@ try {
   const beforeMotion = (await performance.send('Performance.getMetrics')).metrics.find(m => m.name === 'LayoutCount').value;
   await page.evaluate(() => window.micro.setValue(129));
   await page.waitForTimeout(32);
-  const changed = await page.locator('.motion-number > i').evaluateAll(nodes => nodes.map(n => n.style.transform).filter(Boolean));
-  assert.equal(changed.length, 1, 'only the changed digit should move');
+  const changed = await page.locator('.motion-number-value').evaluateAll(nodes => nodes.map(n => n.style.transform).filter(Boolean));
+  assert.equal(changed.length, 1, 'only the current value layer should move');
   await page.waitForTimeout(280);
   const afterMotion = (await performance.send('Performance.getMetrics')).metrics.find(m => m.name === 'LayoutCount').value;
   assert.ok(afterMotion - beforeMotion <= 2, 'digit animation must not trigger layout every frame');
+  assert.equal(await page.locator('.motion-number-value').evaluate(n => !n.style.transform && !n.style.opacity), true, 'resting styles are clean');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.evaluate(() => window.micro.setValue(999));
   await page.waitForTimeout(50);
-  assert.equal(await page.locator('.motion-number > i').evaluateAll(nodes => nodes.every(n => !n.style.transform && !n.style.opacity)), true);
+  assert.equal(await page.locator('.motion-number-value').evaluateAll(nodes => nodes.every(n => !n.style.transform && !n.style.opacity)), true);
 
   for (const theme of ['bright', 'dark']) {
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
@@ -105,5 +114,5 @@ try {
   assert.equal(await page.locator('[data-id="one"]').count(), 0);
   assert.equal(await page.locator('#rows').evaluate(n => n.scrollHeight), 60);
   assert.deepEqual(errors, []);
-  console.log('PASS: rapid/changed-digit counters, fixed neighbor/button geometry, live reduced motion, photo recovery/reserved space, inert row collapse, themes and StrictMode.');
+  console.log('PASS: single-layer formatted counters, stable centered geometry, rapid cancellation/clean resting state, reduced motion, photos, rows, themes and StrictMode.');
 } finally { await browser.close(); }
