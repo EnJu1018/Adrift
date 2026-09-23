@@ -51,6 +51,9 @@ try {
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
       await settled('email');
       const initial = await geometry();
+      if (width > 920) {
+        assert.ok(Math.abs(initial.card.y + initial.card.height / 2 - height / 2) < 2, 'desktop auth card must be vertically centered');
+      }
       assert.ok(initial.card.height < 400, 'email form must not reserve a second field');
       assert.ok(initial.button.y + initial.scroll - initial.field.y - initial.field.height <= 60, 'submit stays close to the input');
       await submit().click();

@@ -4258,8 +4258,9 @@ select option {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
+  grid-template-rows: 345px;
   align-items: start;
-  align-content: start;
+  align-content: center;
   gap: 48px;
   width: min(1180px, 100%);
   height: 100%;
@@ -4278,6 +4279,7 @@ select option {
   align-content: center;
   gap: 16px;
   min-width: 0;
+  align-self: center;
   padding-block: 48px;
   isolation: isolate;
 }
@@ -10456,6 +10458,7 @@ select option {
 
   .auth-page {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
     align-content: start;
     gap: 22px;
     padding: 24px;
