@@ -329,7 +329,9 @@ function PasswordInput({ label, value, visible, onToggle, onChange, onBlur, plac
       <span className="password-control">
         <input name={label === '確認密碼' ? 'confirmPassword' : 'password'} type={visible ? 'text' : 'password'} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} placeholder={placeholder} aria-invalid={invalid} aria-describedby={invalid ? `${id}-message` : undefined} autoComplete={autoComplete} data-auth-focus={autoFocus || undefined} />
         <button className="motion-soft-press" type="button" onClick={onToggle} aria-pressed={visible} aria-label={visible ? '隱藏密碼' : '顯示密碼'}>
-          {visible ? <EyeOff size={17} /> : <Eye size={17} />}
+          <span className="auth-password-icon" data-visible={visible} aria-hidden="true">
+            <Eye size={17} /><EyeOff size={17} />
+          </span>
         </button>
       </span>
       <span id={`${id}-message`} className="auth-validation" data-invalid={invalid} aria-live="polite">{invalid ? error : ''}</span>

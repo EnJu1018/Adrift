@@ -330,10 +330,12 @@ is macOS Chrome, not a substitute for Safari/Edge or real mobile-device testing.
 
 The auth route uses one dynamic-viewport scroll container. Its card and brand
 have no positioning transforms or viewport-dependent top margins. The step alone
-owns the reversible horizontal transition. Header/account rows, two-field space
-and validation slots reserve the current flow's dimensions, with explicit label
-line height to avoid Latin/CJK metric differences. Longer content can still grow
-and scroll; no error is clipped to preserve a measurement.
+owns the reversible horizontal transition. Each step sizes to its actual fields;
+there is no two-field minimum or empty account row in the email step. Card top,
+width and field geometry stay fixed within a step, while registration grows
+downward to accommodate a second field. Validation slots reserve two text lines,
+with explicit label line height to avoid Latin/CJK metric differences. Longer
+content can still grow and scroll; no error is clipped to preserve a measurement.
 
 Fields are 16px to avoid small-input focus zoom, and password controls use insets
 instead of transform-based centering. Step focus uses preventScroll so mounting
@@ -350,3 +352,10 @@ desktop/tablet/mobile sizes in both themes. It compares content anchors through
 all steps, validation and server errors, checks loading geometry, keyboard/IME,
 stale responses, reduced motion and scrolling in a 390x420 viewport. This is
 viewport simulation, not real iOS/Android keyboard or password-manager testing.
+Set `BROWSER=webkit` to run the same checks in WebKit. The email step must remain
+under 400px tall, with no more than 60px between its input and submit button;
+equal heights across different steps are not a substitute for usable spacing.
+
+Password eye icons cross-fade in one fixed slot. Shared busy feedback disables
+actions immediately and changes the label without resizing; only the decorative
+spinner waits 180ms, avoiding a flash on fast requests without delaying results.

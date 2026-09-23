@@ -74,6 +74,14 @@ try {
   await page.waitForTimeout(50);
   assert.equal(await page.locator('.motion-number-value').evaluateAll(nodes => nodes.every(n => !n.style.transform && !n.style.opacity)), true);
 
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.evaluate(() => window.micro.setBusy(true));
+  await page.waitForTimeout(50);
+  assert.equal(await page.locator('#save .button-spinner').evaluate(el => getComputedStyle(el).opacity), '0', 'short requests do not flash a spinner');
+  await page.waitForTimeout(350);
+  assert.equal(await page.locator('#save .button-spinner').evaluate(el => getComputedStyle(el).opacity), '1', 'longer requests show the spinner');
+  await page.evaluate(() => window.micro.setBusy(false));
+
   for (const theme of ['bright', 'dark']) {
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
     const before = await page.locator('#save').boundingBox();

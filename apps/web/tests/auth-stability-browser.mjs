@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const browser = await (process.env.BROWSER === 'webkit' ? webkit.launch({ headless: true }) : chromium.launch({ channel: 'chrome', headless: true }));
 const page = await browser.newPage();
 const base = process.env.PREVIEW_URL || 'http://127.0.0.1:5178';
 const errors = [];
@@ -38,34 +38,38 @@ async function geometry() {
       pageOverflow: document.querySelector('.auth-page').scrollWidth > document.querySelector('.auth-page').clientWidth };
   });
 }
-function stable(a, b, label) {
-  for (const key of ['x', 'y', 'width', 'height']) assert.ok(Math.abs(a.card[key] - b.card[key]) < 1, `${label}: card ${key} ${a.card[key]} -> ${b.card[key]}`);
-  assert.ok(Math.abs(a.field.y - b.field.y) < 1, `${label}: field origin moved`);
+function stable(a, b, label, sameStep = true) {
+  for (const key of sameStep ? ['x', 'y', 'width', 'height'] : ['x', 'y', 'width']) assert.ok(Math.abs(a.card[key] - b.card[key]) < 1, `${label}: card ${key} ${a.card[key]} -> ${b.card[key]}`);
+  if (sameStep) assert.ok(Math.abs(a.field.y - b.field.y) < 1, `${label}: field origin moved`);
   assert.equal(b.overflow || b.pageOverflow, false, `${label}: horizontal overflow`);
 }
 try {
   for (const [width, height] of [[1920,1080], [1440,900], [1366,768], [1280,800], [1024,768], [768,1024], [430,932], [390,844], [375,667]]) {
     await page.setViewportSize({ width, height });
     for (const theme of ['bright', 'dark']) {
-      await page.goto(`${base}/auth`);
+      await page.goto(`${base}/auth`, { waitUntil: 'domcontentloaded' });
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
       await settled('email');
       const initial = await geometry();
+      assert.ok(initial.card.height < 400, 'email form must not reserve a second field');
+      assert.ok(initial.button.y + initial.scroll - initial.field.y - initial.field.height <= 60, 'submit stays close to the input');
       await submit().click();
       stable(initial, await geometry(), 'email validation');
       await field('email').fill('new@example.com');
       await field('email').press('Enter');
       await settled('name');
-      stable(initial, await geometry(), 'registration step');
+      const profile = await geometry();
+      stable(initial, profile, 'registration step', false);
       await submit().click();
-      stable(initial, await geometry(), 'two validation messages');
+      stable(profile, await geometry(), 'two validation messages');
       await field('name').fill('Memory Keeper');
       await field('userCode').fill('keeper');
       await field('userCode').press('Enter');
       await settled('confirmPassword');
-      stable(initial, await geometry(), 'password step');
+      const password = await geometry();
+      stable(initial, password, 'password step', false);
       await submit().click();
-      stable(initial, await geometry(), 'password validation');
+      stable(password, await geometry(), 'password validation');
       await field('password').fill('valid-password');
       await field('confirmPassword').fill('valid-password');
       const beforeEye = await field('password').boundingBox();
@@ -74,22 +78,23 @@ try {
       assert.ok((await page.getByRole('button', { name: '隱藏密碼', exact: true }).boundingBox()).height >= 44);
       await submit().click();
       await page.getByRole('alert').waitFor();
-      stable(initial, await geometry(), 'server error');
+      stable(password, await geometry(), 'server error');
       await back().click();
       await settled('name');
-      stable(initial, await geometry(), 'back');
+      stable(profile, await geometry(), 'back');
       await back().click();
       await settled('email');
       await field('email').fill('member@example.com');
       await submit().click();
       await settled('password');
-      stable(initial, await geometry(), 'login');
+      const login = await geometry();
+      stable(initial, login, 'login', false);
       assert.equal(await field('password').getAttribute('type'), 'password', 'new email resets password visibility');
       assert.equal(await field('password').evaluate(el => document.activeElement === el), true);
       await field('password').fill('wrong');
       await field('password').press('Enter');
       await page.getByRole('alert').waitFor();
-      stable(initial, await geometry(), 'login error');
+      stable(login, await geometry(), 'login error');
       await page.waitForTimeout(300);
       assert.ok(await field('password').evaluate(el => parseFloat(getComputedStyle(el).fontSize) >= 16), 'mobile-safe input size');
       await page.screenshot({ path: `/tmp/adrift-auth-stable-${width}-${theme}.png` });
@@ -126,7 +131,7 @@ try {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await submit().click();
   await settled('name');
-  stable(before, await geometry(), 'reduced motion');
+  stable(before, await geometry(), 'reduced motion', false);
   await page.setViewportSize({ width: 390, height: 420 });
   await field('userCode').focus();
   await page.locator('.auth-submit').scrollIntoViewIfNeeded();

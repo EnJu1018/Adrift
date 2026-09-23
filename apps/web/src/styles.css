@@ -4340,7 +4340,6 @@ select option {
 
 .auth-card-header {
   display: block;
-  min-height: 76px;
 }
 
 .auth-card-header h1 {
@@ -4365,7 +4364,6 @@ select option {
   display: grid;
   align-content: start;
   gap: 12px;
-  min-height: 240px;
 }
 
 .auth-input {
@@ -4390,6 +4388,18 @@ select option {
 .auth-validation[data-invalid="true"] { color: var(--danger, #ffb7c3); }
 .auth-message-slot { min-height: 36px; }
 .auth-account-slot { min-height: 32px; min-width: 0; }
+.auth-account-slot:empty { display: none; }
+
+.auth-password-icon {
+  display: grid;
+  place-items: center;
+}
+.auth-password-icon > svg {
+  grid-area: 1 / 1;
+  transition: opacity var(--duration-quick) var(--ease-out);
+}
+.auth-password-icon[data-visible="false"] > .lucide-eye-off,
+.auth-password-icon[data-visible="true"] > .lucide-eye { opacity: 0; }
 
 .auth-input input,
 .auth-card .password-control input {
@@ -16325,6 +16335,11 @@ input.mood-intensity-slider {
 .button-feedback .button-spinner {
   border-color: currentColor;
   border-right-color: transparent;
+}
+
+.button-feedback[data-busy="true"] .button-feedback-busy .button-spinner {
+  animation: adriftMotionFadeIn var(--duration-quick) var(--ease-out) 180ms both,
+    spin 800ms linear infinite;
 }
 
 .button-feedback[data-busy="false"] .button-feedback-busy,
