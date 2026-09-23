@@ -16,6 +16,11 @@ npm run build
 
 Set `VITE_API_URL` in the web deployment environment.
 
+The production Nginx configuration is versioned at
+`deploy/nginx/adrift.conf`. It prevents the SPA document from retaining an old
+asset manifest while allowing content-hashed files under `/assets/` to be
+cached safely.
+
 ## API
 
 ```bash
