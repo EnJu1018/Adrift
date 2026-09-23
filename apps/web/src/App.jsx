@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion';
-import { Activity, Bell, Brain, Copy, Home, LogOut, MapPin, Settings, Shield, UserRound, Users } from 'lucide-react';
+import { Activity, Bell, Brain, Check, Copy, Home, LogOut, MapPin, Settings, Shield, UserRound, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearStoredAuth, getDiaryEventsUrl, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
@@ -1157,10 +1157,17 @@ export default function App() {
                             className="copy-mini-button nav-copy-button"
                             type="button"
                             onClick={copyUserCode}
-                            aria-label="複製使用者 ID"
+                            aria-label={userCodeCopyError ? '複製使用者 ID 失敗' : userCodeCopied ? '已複製使用者 ID' : '複製使用者 ID'}
+                            data-state={userCodeCopyError ? 'error' : userCodeCopied ? 'copied' : 'idle'}
                           >
-                            <Copy size={13} />
-                            {userCodeCopyError ? '失敗' : userCodeCopied ? '已複製' : '複製'}
+                            <span className="copy-feedback-icon" aria-hidden="true">
+                              <Copy size={13} />
+                              <Check size={13} />
+                            </span>
+                            <span className="copy-feedback-label" aria-hidden="true">
+                              <span>複製</span>
+                              <span>{userCodeCopyError ? '失敗' : '已複製'}</span>
+                            </span>
                           </button>
                         </div>
                       </div>

@@ -64,6 +64,7 @@ export default function AccountSettings({
   const [submitted, setSubmitted] = useState({});
   const [errors, setErrors] = useState({});
   const [toast, setToast] = useState(null);
+  const [copyState, setCopyState] = useState('idle');
   const [loadingAction, setLoadingAction] = useState('');
   const [visiblePasswords, setVisiblePasswords] = useState(emptyPasswords);
   const avatarInputRef = useRef(null);
@@ -90,6 +91,12 @@ export default function AccountSettings({
     const timer = window.setTimeout(() => setToast(null), toast.type === 'error' ? 3200 : 2200);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (copyState === 'idle') return undefined;
+    const timer = window.setTimeout(() => setCopyState('idle'), 1800);
+    return () => window.clearTimeout(timer);
+  }, [copyState]);
 
   useEffect(() => () => {
     if (avatarDraft.url) URL.revokeObjectURL(avatarDraft.url);
@@ -185,9 +192,9 @@ export default function AccountSettings({
 
     try {
       await navigator.clipboard.writeText(user.userCode);
-      showToast('已複製使用者 ID');
+      setCopyState('copied');
     } catch {
-      showToast('無法複製使用者 ID', 'error');
+      setCopyState('error');
     }
   }
 
@@ -568,9 +575,9 @@ export default function AccountSettings({
                   label="使用者 ID"
                   value={`@${user?.userCode || '尚未設定'}`}
                   actionLabel="複製"
-                  actionIcon={<Copy size={14} />}
                   onAction={copyUserCode}
                   actionDisabled={!user?.userCode}
+                  actionState={copyState}
                 />
                 <SettingsRow label="角色" value={roleLabel} />
                 <SettingsRow label="加入日期" value={joinedAt} />
@@ -829,7 +836,7 @@ function SettingsCard({ id, icon, title, description, visible, danger = false, c
   );
 }
 
-function SettingsRow({ label, value, actionLabel, actionIcon, onAction, actionDisabled, isEditing, children }) {
+function SettingsRow({ label, value, actionLabel, actionIcon, onAction, actionDisabled, actionState, isEditing, children }) {
   const rowRef = useRef(null);
   const wasEditing = useRef(false);
   useEffect(() => {
@@ -847,9 +854,12 @@ function SettingsRow({ label, value, actionLabel, actionIcon, onAction, actionDi
         {isEditing ? children : <strong title={typeof value === 'string' ? value : undefined}>{value}</strong>}
       </div>
       {!isEditing && actionLabel && (
-        <button className="settings-row-action motion-soft-press" type="button" onClick={onAction} disabled={actionDisabled}>
-          {actionIcon}
-          {actionLabel}
+        <button className="settings-row-action motion-soft-press" type="button" onClick={onAction} disabled={actionDisabled} data-state={actionState}
+          aria-label={actionState ? actionState === 'copied' ? '已複製使用者 ID' : actionState === 'error' ? '複製使用者 ID 失敗' : '複製使用者 ID' : undefined}>
+          {actionState ? <>
+            <span className="copy-feedback-icon" aria-hidden="true"><Copy size={14} /><Check size={14} /></span>
+            <span className="copy-feedback-label" aria-hidden="true"><span>{actionLabel}</span><span>{actionState === 'error' ? '失敗' : '已複製'}</span></span>
+          </> : <>{actionIcon}{actionLabel}</>}
         </button>
       )}
     </div>

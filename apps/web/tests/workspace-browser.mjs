@@ -99,8 +99,30 @@ try {
   await page.locator('.settings-sidebar').getByRole('button', { name: '帳號安全' }).click();
   assert.equal(await row.isVisible(), false);
   await page.locator('.settings-sidebar').getByRole('button', { name: '個人檔案' }).click();
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText: async value => { window.copiedUserCode = value; } }
+  }));
+  const copyAction = page.locator('.settings-row-action[data-state]');
+  await copyAction.click();
+  await page.waitForFunction(() => window.copiedUserCode === 'keeper');
+  await page.waitForTimeout(180);
+  assert.equal(await copyAction.getAttribute('data-state'), 'copied');
+  assert.equal(await copyAction.getAttribute('aria-label'), '已複製使用者 ID');
+  assert.equal(await copyAction.locator('.lucide-copy').evaluate(el => getComputedStyle(el).opacity), '0');
+  assert.equal(await copyAction.locator('.lucide-check').evaluate(el => getComputedStyle(el).opacity), '1');
 
   await view('FriendsPage', '.friends-hub');
+  const userSearch = page.getByPlaceholder('輸入 userCode，例如 arren1088');
+  const emptySearchBox = await userSearch.boundingBox();
+  await userSearch.fill('river');
+  assert.deepEqual(await userSearch.boundingBox(), emptySearchBox, 'clear control must not resize the search input');
+  await page.getByRole('button', { name: '清除使用者搜尋' }).click();
+  assert.equal(await userSearch.inputValue(), '');
+  const friendSearch = page.getByPlaceholder('搜尋好友名稱或 ID');
+  await friendSearch.fill('river');
+  await page.getByRole('button', { name: '清除好友篩選' }).click();
+  assert.equal(await friendSearch.inputValue(), '');
   await page.getByRole('button', { name: /已送出/ }).evaluate(el => el.click());
   await page.waitForFunction(() => document.querySelector('.social-invite-list')?.inert);
   await page.getByRole('button', { name: '收回', exact: true }).waitFor();

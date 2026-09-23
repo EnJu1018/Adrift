@@ -208,6 +208,12 @@ export default function FriendsPage({
     setMessageType(type);
   }
 
+  function changeSearchCode(value) {
+    setSearchCode(value);
+    setSearchResult(null);
+    setSearchError('');
+  }
+
   function updateSearchResultStatus(userId, status) {
     setSearchResult((current) => {
       if (!current || (userId && !sameId(current._id, userId))) return current;
@@ -458,7 +464,7 @@ export default function FriendsPage({
             sentRequest={sentRequestForSearchResult}
             receivedRequest={receivedRequestForSearchResult}
             busyAction={busyAction}
-            onSearchCodeChange={setSearchCode}
+            onSearchCodeChange={changeSearchCode}
             onSearch={searchUser}
             onViewFriend={viewSearchFriend}
             onSend={sendRequest}
@@ -556,6 +562,9 @@ function SearchCard({
             onChange={(event) => onSearchCodeChange(event.target.value)}
             placeholder="輸入 userCode，例如 arren1088"
           />
+          <button className="search-clear-button" type="button" aria-label="清除使用者搜尋" data-visible={Boolean(searchCode)} disabled={!searchCode} onClick={() => onSearchCodeChange('')}>
+            <X size={15} />
+          </button>
         </label>
         <button className="friend-primary-button" type="submit" disabled={busyAction === 'search'}>
           {busyAction === 'search' ? <span className="button-spinner dark" /> : <Search size={15} />}
@@ -815,6 +824,9 @@ function FriendsDirectory({
               onChange={(event) => onFriendQueryChange(event.target.value)}
               placeholder="搜尋好友名稱或 ID"
             />
+            <button className="search-clear-button" type="button" aria-label="清除好友篩選" data-visible={Boolean(friendQuery)} disabled={!friendQuery} onClick={() => onFriendQueryChange('')}>
+              <X size={15} />
+            </button>
           </label>
           <label className="friend-sort-control">
             <span>排序</span>

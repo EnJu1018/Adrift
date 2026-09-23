@@ -2391,7 +2391,7 @@ select option {
 
 .friend-list-search {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) 32px;
   align-items: center;
   gap: 8px;
   min-height: 42px;
@@ -2559,7 +2559,7 @@ select option {
 
 .friends-quick-search label {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) 32px;
   align-items: center;
   gap: 10px;
   min-height: 44px;
@@ -5102,6 +5102,85 @@ select option {
 .copy-mini-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.copy-feedback-icon,
+.copy-feedback-label {
+  display: inline-grid;
+  place-items: center;
+}
+
+.copy-feedback-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.copy-feedback-icon > *,
+.copy-feedback-label > * {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--duration-quick) var(--ease-out),
+    scale var(--duration-quick) var(--ease-out);
+}
+
+.copy-feedback-label > span:last-child,
+:where(.copy-mini-button, .settings-row-action)[data-state="idle"] .copy-feedback-icon > .lucide-check,
+:where(.copy-mini-button, .settings-row-action):not([data-state="copied"]):not([data-state="error"]) .copy-feedback-label > span:last-child {
+  opacity: 0;
+  scale: 0.96;
+}
+
+:where(.copy-mini-button, .settings-row-action)[data-state="copied"] .copy-feedback-icon > .lucide-copy,
+:where(.copy-mini-button, .settings-row-action)[data-state="copied"] .copy-feedback-label > span:first-child,
+:where(.copy-mini-button, .settings-row-action)[data-state="error"] .copy-feedback-label > span:first-child {
+  opacity: 0;
+  scale: 0.96;
+}
+
+:where(.copy-mini-button, .settings-row-action)[data-state="copied"] .copy-feedback-label > span:last-child,
+:where(.copy-mini-button, .settings-row-action)[data-state="error"] .copy-feedback-label > span:last-child {
+  opacity: 1;
+  scale: 1;
+}
+
+:where(.copy-mini-button, .settings-row-action)[data-state="error"] .copy-feedback-icon > .lucide-check {
+  opacity: 0;
+}
+
+.search-clear-button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  scale: 0.96;
+  pointer-events: none;
+  transition:
+    opacity var(--duration-quick) var(--ease-out),
+    scale var(--duration-quick) var(--ease-out),
+    color var(--duration-quick) var(--ease-out),
+    background-color var(--duration-quick) var(--ease-out);
+}
+
+.search-clear-button[data-visible="true"] {
+  opacity: 1;
+  scale: 1;
+  pointer-events: auto;
+}
+
+.search-clear-button:disabled {
+  cursor: default;
+}
+
+.search-clear-button:hover {
+  color: var(--text-primary);
+  background: var(--accent-soft);
 }
 
 .profile-settings-button {
@@ -15953,6 +16032,14 @@ input.mood-intensity-slider {
   transform: translateY(-1px);
   border-color: var(--border-medium);
   background: var(--accent-medium);
+}
+
+.settings-row-action[data-state="copied"] {
+  color: var(--success);
+}
+
+.settings-row-action[data-state="error"] {
+  color: var(--danger);
 }
 
 .settings-inline-edit {
