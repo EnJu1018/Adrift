@@ -4258,7 +4258,7 @@ select option {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 440px);
-  grid-template-rows: 345px;
+  grid-template-rows: 312px;
   align-items: start;
   align-content: center;
   gap: 48px;
@@ -4370,7 +4370,7 @@ select option {
 
 .auth-input {
   display: grid;
-  grid-template-rows: auto 46px minmax(36px, auto);
+  grid-template-rows: auto 46px minmax(18px, auto);
   gap: 6px;
   min-width: 0;
   color: #cfe6f3;
@@ -4380,7 +4380,7 @@ select option {
 }
 
 .auth-validation {
-  min-height: 36px;
+  min-height: 18px;
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 400;
@@ -4388,7 +4388,7 @@ select option {
   overflow-wrap: anywhere;
 }
 .auth-validation[data-invalid="true"] { color: var(--danger, #ffb7c3); }
-.auth-message-slot { min-height: 36px; }
+.auth-message-slot { min-height: 18px; }
 .auth-account-slot { min-height: 32px; min-width: 0; }
 .auth-account-slot:empty { display: none; }
 
