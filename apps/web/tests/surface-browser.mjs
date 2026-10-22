@@ -45,7 +45,7 @@ try {
         h(AnimatePresence, null, open && h(DiaryModal, {
           location: { lat: 24, lng: 120, source: 'ip' }, loading: busy,
           onClose: () => setOpen(false),
-          onSubmit: data => { window.submitted = Object.fromEntries(data); setOpen(false); setToast({ message: 'Saved', type: 'success' }); }
+          onSubmit: async data => { window.diarySubmits = (window.diarySubmits || 0) + 1; window.submitted = Object.fromEntries(data); await Promise.resolve(); setOpen(false); setToast({ message: 'Saved', type: 'success' }); }
         })),
         h(AnimatePresence, null, failure && h(Modal, {
           label: 'Failed action', error: 'Please try again', className: 'confirm-modal', onClose: () => setFailure(false)
@@ -114,13 +114,14 @@ try {
   await page.locator('#diary-content').fill('A quiet afternoon.');
   await page.getByRole('button', { name: '可見性', exact: true }).click();
   await page.getByRole('option', { name: /私人/ }).click();
-  await page.locator('.diary-modal button[type="submit"]').click();
+  await page.locator('.diary-modal').evaluate(form => { form.requestSubmit(); form.requestSubmit(); });
   await dialog.waitFor({ state: 'detached' });
   const submitted = await page.evaluate(() => window.submitted);
   assert.equal(submitted.title, 'Memory');
   assert.equal(submitted.text, 'A quiet afternoon.');
   assert.equal(submitted.visibility, 'private');
   assert.equal(submitted.lng, '120');
+  assert.equal(await page.evaluate(() => window.diarySubmits), 1, 'rapid duplicate submit creates only one diary');
   await page.getByRole('status').waitFor();
   await page.waitForTimeout(450);
   const dismiss = page.getByRole('button', { name: '關閉提示' });

@@ -225,10 +225,16 @@ export default function App() {
   const navbarActionsRef = useRef(null);
   const diaryRequestVersion = useRef(0);
   const exploreRequestVersion = useRef(0);
+  const socialRequestVersion = useRef(0);
+  const aiSessionToken = getStoredAuth().token;
+  const updateLifeMapState = useCallback(update => {
+    if (aiSessionToken && getStoredAuth().token === aiSessionToken) setLifeMapState(update);
+  }, [aiSessionToken]);
 
   useEffect(() => () => {
     diaryRequestVersion.current++;
     exploreRequestVersion.current++;
+    socialRequestVersion.current++;
   }, []);
 
   const setTheme = useCallback((nextTheme) => {
@@ -284,6 +290,8 @@ export default function App() {
   const logout = useCallback((message = '') => {
     diaryRequestVersion.current++;
     exploreRequestVersion.current++;
+    socialRequestVersion.current++;
+    setLifeMapState({ status: 'idle', insight: null, dataWarmup: null });
     autoLocateRequestedRef.current = false;
     clearStoredAuth();
     setUser(null);
@@ -362,7 +370,9 @@ export default function App() {
   }, []);
 
   const loadSocial = useCallback(async () => {
-    if (!getStoredAuth().token) return;
+    const { token } = getStoredAuth();
+    if (!token) return;
+    const version = ++socialRequestVersion.current;
 
     try {
       const [friendsPayload, requestsPayload, sentRequestsPayload] = await Promise.all([
@@ -373,6 +383,7 @@ export default function App() {
       const nextFriends = asArray(friendsPayload.data);
       const nextRequests = asArray(requestsPayload.data);
       const nextSentRequests = asArray(sentRequestsPayload.data);
+      if (version !== socialRequestVersion.current || getStoredAuth().token !== token) return;
 
       setFriends(nextFriends);
       setFriendRequests(nextRequests);
@@ -385,7 +396,7 @@ export default function App() {
         sentFriendRequests: nextSentRequests
       };
     } catch (error) {
-      if (error.status !== 401) setDiaryError(error.message);
+      if (version === socialRequestVersion.current && getStoredAuth().token === token && error.status !== 401) setDiaryError(error.message);
     }
   }, []);
 
@@ -539,14 +550,15 @@ export default function App() {
 
   useEffect(() => {
     if (!user?.id) return;
+    const { token } = getStoredAuth();
 
     api
       .getMe()
       .then((payload) => {
-        if (payload.data) syncUser(payload.data);
+        if (payload.data && getStoredAuth().token === token) syncUser(payload.data);
       })
       .catch((error) => {
-        if (error.status !== 401) setDiaryError(error.message);
+        if (getStoredAuth().token === token && error.status !== 401) setDiaryError(error.message);
       });
   }, [syncUser, user?.id]);
 
@@ -1068,6 +1080,16 @@ export default function App() {
     navigate('/');
   }
 
+  async function openMemoryDiary(id, signal) {
+    const { token } = getStoredAuth();
+    const payload = await api.getDiary(id, signal);
+    if (signal?.aborted || token !== getStoredAuth().token) return;
+    const diary = payload.data?.diary;
+    if (!diary?._id) throw new Error('這篇日記目前無法開啟。');
+    setDiaries(current => current.some(item => item._id === diary._id) ? current : [...current, diary]);
+    openDiaryFromFeed(diary);
+  }
+
   return (
     <main
       className={`app-frame ${performanceMode.lowPerformance ? 'low-performance' : ''} ${performanceMode.reducedMotion ? 'reduced-motion' : ''}`}
@@ -1301,8 +1323,10 @@ export default function App() {
         ) : user && isAiPage ? (
           <LifeMapAI
             state={lifeMapState}
-            onStateChange={setLifeMapState}
+            onStateChange={updateLifeMapState}
             onBack={() => navigate('/')}
+            onOpenDiary={openMemoryDiary}
+            onNewDiary={openNewDiary}
           />
         ) : (
         <>

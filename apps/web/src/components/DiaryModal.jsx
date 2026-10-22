@@ -62,6 +62,7 @@ export default function DiaryModal({
   error
 }) {
   const isEditMode = mode === 'edit';
+  const submitting = useRef(false);
   const [form, setForm] = useState({
     title: diary?.title || '',
     text: diary?.text || diary?.content || '',
@@ -285,6 +286,7 @@ export default function DiaryModal({
 
   async function submit(event) {
     event.preventDefault();
+    if (submitting.current || loading) return;
 
     if (!validate()) return;
 
@@ -327,6 +329,7 @@ export default function DiaryModal({
       }
     }
 
+    submitting.current = true;
     try {
       await onSubmit(data);
       setForm({
@@ -341,6 +344,8 @@ export default function DiaryModal({
       if (imageInputRef.current) imageInputRef.current.value = '';
     } catch {
       // The parent renders API errors inside the modal.
+    } finally {
+      submitting.current = false;
     }
   }
 

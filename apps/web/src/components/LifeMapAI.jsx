@@ -5,13 +5,14 @@ import {
   Compass,
   Lightbulb,
   MapPin,
+  MessageCircle,
   RefreshCw,
   ShieldCheck,
   Sparkles,
   Target,
   TrendingUp
 } from 'lucide-react';
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { api } from '../api/client.js';
 import { motionTokens } from '../constants/animations.js';
 import ContentTransition from './ui/ContentTransition.jsx';
@@ -20,6 +21,7 @@ import ButtonFeedback from './ui/ButtonFeedback.jsx';
 import { createInsightReveal } from '../lib/motion/animeMotion.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
+import MemoryChat from './MemoryChat.jsx';
 
 const previewFeatures = [
   {
@@ -51,8 +53,25 @@ const emptyInsight = {
   suggestions: []
 };
 
-export default function LifeMapAI({ state, onStateChange, onBack }) {
+export default function LifeMapAI({ state, onStateChange, onBack, onOpenDiary, onNewDiary }) {
   const pending = useRef(false);
+  const request = useRef(null);
+  const panel = useRef(null);
+  const tab = state?.tab || 'insights';
+  useEffect(() => () => { request.current?.abort(); }, []);
+  useEffect(() => {
+    if (tab !== 'chat') return;
+    const viewport = window.visualViewport;
+    const resize = () => {
+      const top = panel.current?.getBoundingClientRect().top || 0;
+      panel.current?.style.setProperty('--memory-chat-available', `${Math.max(220, (viewport?.height || innerHeight) + (viewport?.offsetTop || 0) - top - 16)}px`);
+      if (panel.current) panel.current.dataset.compactViewport = String((viewport?.height || innerHeight) < 520);
+    };
+    resize();
+    viewport?.addEventListener('resize', resize);
+    window.addEventListener('resize', resize);
+    return () => { viewport?.removeEventListener('resize', resize); window.removeEventListener('resize', resize); panel.current?.style.removeProperty('--memory-chat-available'); if (panel.current) delete panel.current.dataset.compactViewport; };
+  }, [tab]);
   const status = state?.status || 'idle';
   const insight = state?.insight || null;
   const dataWarmup = state?.dataWarmup || null;
@@ -70,9 +89,12 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
   async function generateInsight() {
     if (pending.current || status === 'loading') return;
     pending.current = true;
+    const controller = new AbortController();
+    request.current = controller;
     try {
       updateLifeMapState({ status: 'loading', dataWarmup: null });
-      const payload = await api.getLifeMapInsight();
+      const payload = await api.getLifeMapInsight(controller.signal);
+      if (controller.signal.aborted) { updateLifeMapState({ status: insight ? 'success' : 'idle' }); return; }
       const data = payload?.data || null;
 
       if (data?.notEnoughData) {
@@ -87,9 +109,10 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
 
       updateLifeMapState({ status: 'success', insight: normalizeInsight(data), dataWarmup: null });
     } catch {
-      updateLifeMapState({ status: 'error', dataWarmup: null });
+      updateLifeMapState({ status: controller.signal.aborted ? (insight ? 'success' : 'idle') : 'error', dataWarmup: null });
     } finally {
       pending.current = false;
+      if (request.current === controller) request.current = null;
     }
   }
 
@@ -97,7 +120,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
   const hasResult = Boolean(insight) && ['success', 'loading', 'error'].includes(status);
 
   return (
-    <main className="life-map-panel glass">
+    <main ref={panel} className="life-map-panel glass" data-tab={tab}>
       <section className="life-map-hero">
         <button className="icon-button life-map-back motion-soft-press" type="button" onClick={onBack} aria-label="返回地圖">
           <ArrowLeft size={17} />
@@ -121,6 +144,19 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
 
       </section>
 
+      <nav className="intelligence-tabs" role="tablist" aria-label="Adrift Intelligence 功能"
+        onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const next = event.key === 'Home' ? 'insights' : event.key === 'End' ? 'chat' : tab === 'chat' ? 'insights' : 'chat';
+          updateLifeMapState({ tab: next });
+          event.currentTarget.querySelector(`#intelligence-${next}-tab`)?.focus({ preventScroll: true });
+        }}>
+        {[['insights', '智慧洞察', Sparkles], ['chat', '記憶對話', MessageCircle]].map(([id, label, Icon]) => <button type="button" key={id}
+          id={`intelligence-${id}-tab`} role="tab" aria-selected={tab === id} aria-controls={`intelligence-${id}`} tabIndex={tab === id ? 0 : -1}
+          onClick={() => updateLifeMapState({ tab: id })}><Icon size={16} />{label}</button>)}
+      </nav>
+      <div id="intelligence-insights" className="intelligence-tab" role="tabpanel" aria-labelledby="intelligence-insights-tab" hidden={tab !== 'insights'}>
       <section className="life-map-state-stage">
         {hasResult && (
           <p className="life-map-refresh-status" role={status === 'error' ? 'alert' : 'status'}>
@@ -181,10 +217,15 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
           )}
 
           {hasResult && (
-            <LifeMapDashboard key="result" insight={insight} onRegenerate={generateInsight} refreshing={isLoading} />
+            <LifeMapDashboard key="result" insight={insight} onRegenerate={generateInsight} refreshing={isLoading}
+              onAsk={() => onStateChange?.(current => ({ ...current, tab: 'chat', chat: { ...(current.chat || {}), draft: '幫我深入回顧最近一個月的心情變化' } }))} />
           )}
         </AnimatePresence>
       </section>
+      </div>
+      <div id="intelligence-chat" className="intelligence-tab" role="tabpanel" aria-labelledby="intelligence-chat-tab" hidden={tab !== 'chat'}>
+        <MemoryChat state={state?.chat} onStateChange={onStateChange} onOpenDiary={onOpenDiary} onNewDiary={onNewDiary || onBack} active={tab === 'chat'} />
+      </div>
 
       <section className="life-map-privacy-card">
         <ShieldCheck size={17} />
@@ -194,7 +235,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
   );
 }
 
-function LifeMapDashboard({ insight, onRegenerate, refreshing }) {
+function LifeMapDashboard({ insight, onRegenerate, refreshing, onAsk }) {
   const safeInsight = normalizeInsight(insight);
   const rootRef = useRef(null);
   const present = useIsPresent();
@@ -229,6 +270,7 @@ function LifeMapDashboard({ insight, onRegenerate, refreshing }) {
           <div className="life-map-progress" aria-label={`平均強度 ${formatIntensity(averageIntensity)} / 5`}>
             <span style={{ transform: `scaleX(${Math.min(1, Math.max(0, averageIntensity / 5))})` }} />
           </div>
+          <button type="button" className="ghost-button motion-soft-press" onClick={onAsk}><MessageCircle size={15} />深入詢問這段期間</button>
         </article>
 
         <article className="life-map-insight-card suggestion">

@@ -4,8 +4,12 @@ export async function connectDb() {
   const uri = resolveMongoUri();
 
   mongoose.set('strictQuery', true);
+  mongoose.set('bufferCommands', false);
+  mongoose.set('maxTimeMS', 10000);
   await mongoose.connect(uri, {
-    serverSelectionTimeoutMS: 10000
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 30000,
+    maxPoolSize: 10
   });
   console.log(`MongoDB connected: ${maskMongoUri(uri)}`);
 }

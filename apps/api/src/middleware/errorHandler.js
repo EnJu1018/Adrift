@@ -6,7 +6,11 @@ export function notFound(req, res) {
 }
 
 export function errorHandler(error, _req, res, _next) {
-  console.error(error);
+  console.error('API request failed', { name: error.name, code: error.code, status: error.statusCode || error.status });
+
+  if (error.type === 'entity.parse.failed' || error.type === 'entity.too.large') {
+    return res.status(400).json({ success: false, message: '請求格式不正確或內容過大' });
+  }
 
   if (error.name === 'ValidationError') {
     return res.status(400).json({
@@ -38,8 +42,9 @@ export function errorHandler(error, _req, res, _next) {
     });
   }
 
-  res.status(error.statusCode || 500).json({
+  const status = Number(error.statusCode) >= 400 && Number(error.statusCode) < 500 ? Number(error.statusCode) : 500;
+  res.status(status).json({
     success: false,
-    message: error.message || '伺服器發生錯誤'
+    message: status < 500 ? error.message : '伺服器暫時無法完成，請稍後重試'
   });
 }

@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import mongoose from 'mongoose';
 
 export async function requireAuth(req, res, next) {
+  let payload;
   try {
     const header = req.headers.authorization;
     const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
@@ -13,8 +15,13 @@ export async function requireAuth(req, res, next) {
       });
     }
 
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(payload.sub).select('-passwordHash');
+    payload = jwt.verify(token, process.env.JWT_SECRET);
+    if (!mongoose.isValidObjectId(payload.sub)) throw new Error('Invalid subject');
+  } catch {
+    return res.status(401).json({ success: false, message: '登入狀態已失效，請重新登入' });
+  }
+  try {
+    const user = await User.findById(payload.sub).select('-passwordHash').maxTimeMS(5000);
 
     if (!user) {
       return res.status(401).json({
@@ -26,9 +33,9 @@ export async function requireAuth(req, res, next) {
     req.user = user;
     next();
   } catch {
-    return res.status(401).json({
+    return res.status(503).json({
       success: false,
-      message: '登入狀態已失效，請重新登入'
+      message: '帳號服務暫時無法使用，請稍後重試'
     });
   }
 }

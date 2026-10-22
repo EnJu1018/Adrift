@@ -35,6 +35,10 @@ Important variables:
 - `GET /friends/requests`
 - `GET /users/search?userCode=...`
 - `GET /ai/life-map`
+- `POST /ai/chat`
+
+Memory Chat authorization, retrieval limits, quotas, and tests are documented
+in [memory-chat.md](memory-chat.md).
 
 All protected routes require:
 

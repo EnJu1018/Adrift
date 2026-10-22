@@ -89,7 +89,7 @@ async function request(path, options = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
+  const response = await fetchWithDeadline(`${API_URL}${path}`, {
     ...options,
     headers
   });
@@ -102,12 +102,16 @@ async function request(path, options = {}) {
     payload = null;
   }
 
+  if (!path.startsWith('/auth/') && token !== localStorage.getItem(TOKEN_KEY)) {
+    throw new DOMException('登入狀態已變更，請重新操作。', 'AbortError');
+  }
+
   if (!response.ok || payload?.success === false) {
     const error = new Error(payload?.message || response.statusText || 'Request failed');
     error.status = response.status;
     error.payload = payload;
 
-    if (response.status === 401 && !path.startsWith('/auth/')) {
+    if (response.status === 401 && !path.startsWith('/auth/') && token === localStorage.getItem(TOKEN_KEY)) {
       clearStoredAuth();
       window.dispatchEvent(new CustomEvent('adrift:auth-expired', { detail: { message: error.message } }));
     }
@@ -124,6 +128,23 @@ async function request(path, options = {}) {
   }
 
   return payload;
+}
+
+async function fetchWithDeadline(url, options) {
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  options.signal?.addEventListener('abort', cancel, { once: true });
+  if (options.signal?.aborted) cancel();
+  const timer = setTimeout(cancel, 30000);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (error) {
+    if (controller.signal.aborted && !options.signal?.aborted) throw new Error('連線逾時，請稍後重試。');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', cancel);
+  }
 }
 
 export const api = {
@@ -221,8 +242,14 @@ export const api = {
   deleteFriend(friendId) {
     return request(`/friends/${friendId}`, { method: 'DELETE' });
   },
-  getLifeMapInsight() {
-    return request('/ai/life-map');
+  getLifeMapInsight(signal) {
+    return request('/ai/life-map', { signal });
+  },
+  chatMemory(message, history, signal) {
+    return request('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal });
+  },
+  getDiary(id, signal) {
+    return request(`/diaries/${encodeURIComponent(id)}`, { signal });
   },
   getAdminStats() {
     return request('/admin/stats');
