@@ -70,6 +70,8 @@ not psychological diagnoses. Users should check the original cited diaries.
   requests have a thirty-second client connection deadline.
 - HTTP 429 includes Retry-After; unavailable providers return 503 with a
   retry action. Database failures during authentication return 503, not 401.
+- HTTP access logs omit query strings, including event-stream credentials.
+  Provider errors log only status/type metadata, not request content or keys.
 
 ## Interface
 

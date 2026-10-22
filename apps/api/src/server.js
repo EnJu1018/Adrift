@@ -57,7 +57,9 @@ app.use(
     credentials: true
   })
 );
-app.use(morgan('dev'));
+// Query strings may contain event-stream credentials; never write them to logs.
+morgan.token('request-path', req => req.path);
+app.use(morgan(':method :request-path :status :response-time ms'));
 app.use(express.json({ limit: '1mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
