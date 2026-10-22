@@ -1,4 +1,3 @@
-import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   BookOpen,
@@ -12,7 +11,7 @@ import {
   Sparkles,
   Users
 } from 'lucide-react';
-import { pageFadeUp } from '../constants/animations.js';
+import ContentTransition from './ui/ContentTransition.jsx';
 
 const aboutFeatures = [
   ['地圖日記', '在真實地點留下文字、心情與生活片段。', <MapPinned size={22} />],
@@ -58,7 +57,7 @@ export default function PublicInfoPage({ type = 'about', onNavigate }) {
   const isPrivacyPage = type === 'privacy';
 
   return (
-    <motion.section className="public-info-page" {...pageFadeUp}>
+    <section className="public-info-page">
       <header className="landing-nav public-info-nav">
         <button className="landing-brand" type="button" onClick={() => onNavigate('/')}>
           <img src="/adrift-icon.png" alt="" aria-hidden="true" />
@@ -71,13 +70,13 @@ export default function PublicInfoPage({ type = 'about', onNavigate }) {
       </header>
 
       {isPrivacyPage ? <PrivacyContent onNavigate={onNavigate} /> : <AboutContent onNavigate={onNavigate} />}
-    </motion.section>
+    </section>
   );
 }
 
 function AboutContent({ onNavigate }) {
   return (
-    <main className="public-info-main public-info-main-wide">
+    <ContentTransition as="main" className="public-info-main public-info-main-wide">
       <section className="public-info-hero">
         <p className="eyebrow">About Adrift</p>
         <h1>什麼是 Adrift 漂流足跡？</h1>
@@ -204,13 +203,13 @@ function AboutContent({ onNavigate }) {
           了解隱私設計
         </button>
       </div>
-    </main>
+    </ContentTransition>
   );
 }
 
 function PrivacyContent({ onNavigate }) {
   return (
-    <main className="public-info-main public-info-main-wide">
+    <ContentTransition as="main" className="public-info-main public-info-main-wide">
       <section className="public-info-hero">
         <p className="eyebrow">Privacy by Design</p>
         <h1>你的足跡，由你決定誰能看見。</h1>
@@ -265,6 +264,6 @@ function PrivacyContent({ onNavigate }) {
           認識 Adrift
         </button>
       </div>
-    </main>
+    </ContentTransition>
   );
 }

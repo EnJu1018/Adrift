@@ -223,6 +223,13 @@ export default function App() {
   const locating = userLocation.loading;
   const autoLocateRequestedRef = useRef(false);
   const navbarActionsRef = useRef(null);
+  const diaryRequestVersion = useRef(0);
+  const exploreRequestVersion = useRef(0);
+
+  useEffect(() => () => {
+    diaryRequestVersion.current++;
+    exploreRequestVersion.current++;
+  }, []);
 
   const setTheme = useCallback((nextTheme) => {
     setThemeState(themes.includes(nextTheme) ? nextTheme : 'dark');
@@ -275,6 +282,8 @@ export default function App() {
   }, []);
 
   const logout = useCallback((message = '') => {
+    diaryRequestVersion.current++;
+    exploreRequestVersion.current++;
     autoLocateRequestedRef.current = false;
     clearStoredAuth();
     setUser(null);
@@ -283,6 +292,7 @@ export default function App() {
     setSentFriendRequests([]);
     setSocialRefreshToken(0);
     setDiaries([]);
+    setDiaryLoading(false);
     setSelectedDiary(null);
     setDraftLocation(null);
     setEditingDiary(null);
@@ -309,7 +319,10 @@ export default function App() {
   }, []);
 
   const loadDiaries = useCallback(async (params = {}, options = {}) => {
-    if (!getStoredAuth().token) return;
+    const { token } = getStoredAuth();
+    if (!token) return;
+    const version = ++diaryRequestVersion.current;
+    const isCurrent = () => version === diaryRequestVersion.current && token === getStoredAuth().token;
 
     const silent = options.silent ?? true;
 
@@ -317,16 +330,20 @@ export default function App() {
       if (!silent) setDiaryLoading(true);
       setDiaryError('');
       const payload = await api.getDiaries(params);
+      if (!isCurrent()) return;
       setDiaries(asArray(payload.data?.diaries || payload.diaries));
     } catch (error) {
-      if (error.status !== 401) setDiaryError(error.message);
+      if (isCurrent() && error.status !== 401) setDiaryError(error.message);
     } finally {
-      if (!silent) setDiaryLoading(false);
+      if (isCurrent()) setDiaryLoading(false);
     }
   }, []);
 
   const loadExploreDiaries = useCallback(async (params, options = {}) => {
-    if (!getStoredAuth().token) return;
+    const { token } = getStoredAuth();
+    if (!token) return;
+    const version = ++diaryRequestVersion.current;
+    const isCurrent = () => version === diaryRequestVersion.current && token === getStoredAuth().token;
 
     const silent = options.silent ?? true;
 
@@ -334,12 +351,13 @@ export default function App() {
       if (!silent) setDiaryLoading(true);
       setDiaryError('');
       const payload = await api.getExploreDiaries(params);
+      if (!isCurrent()) return;
       const exploreDiaries = Array.isArray(payload.data) ? payload.data : asArray(payload.data?.diaries);
       setDiaries(exploreDiaries.map((diary) => ({ ...diary, isExplore: true })));
     } catch (error) {
-      if (error.status !== 401) setDiaryError(error.message || '無法取得附近日記，請稍後再試');
+      if (isCurrent() && error.status !== 401) setDiaryError(error.message || '無法取得附近日記，請稍後再試');
     } finally {
-      if (!silent) setDiaryLoading(false);
+      if (isCurrent()) setDiaryLoading(false);
     }
   }, []);
 
@@ -440,8 +458,11 @@ export default function App() {
 
   useEffect(() => {
     if (!notificationsOpen && !userMenuOpen) return undefined;
+    const trigger = navbarActionsRef.current?.querySelector('[aria-expanded="true"]');
+    const dropdown = document.getElementById(trigger?.getAttribute('aria-controls'));
+    dropdown?.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
 
-    function closePopoversOnOutsideClick(event) {
+    function closePopoversOutside(event) {
       if (navbarActionsRef.current?.contains(event.target)) return;
       setNotificationsOpen(false);
       setUserMenuOpen(false);
@@ -449,18 +470,33 @@ export default function App() {
 
     function closePopoversOnEscape(event) {
       if (event.key !== 'Escape') return;
+      event.preventDefault();
       setNotificationsOpen(false);
       setUserMenuOpen(false);
+      trigger?.focus({ preventScroll: true });
     }
 
-    document.addEventListener('pointerdown', closePopoversOnOutsideClick);
+    document.addEventListener('pointerdown', closePopoversOutside);
+    document.addEventListener('focusin', closePopoversOutside);
     document.addEventListener('keydown', closePopoversOnEscape);
 
     return () => {
-      document.removeEventListener('pointerdown', closePopoversOnOutsideClick);
+      document.removeEventListener('pointerdown', closePopoversOutside);
+      document.removeEventListener('focusin', closePopoversOutside);
       document.removeEventListener('keydown', closePopoversOnEscape);
     };
   }, [notificationsOpen, userMenuOpen]);
+
+  function handlePopoverKeyDown(event) {
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    const items = [...event.currentTarget.querySelectorAll('button:not(:disabled)')];
+    if (!items.length) return;
+    event.preventDefault();
+    const current = items.indexOf(document.activeElement);
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1
+      : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    items[next].focus({ preventScroll: true });
+  }
 
   function showActionToast(message, type = 'success') {
     setActionToast({
@@ -861,6 +897,7 @@ export default function App() {
   }, [exploreRadius, loadExploreDiaries, mapMode, user]);
 
   async function activateMineMode() {
+    exploreRequestVersion.current++;
     setMapMode('mine');
     setExploreCenter(null);
     setSelectedDiary(null);
@@ -874,6 +911,9 @@ export default function App() {
       return;
     }
 
+    const version = ++exploreRequestVersion.current;
+    diaryRequestVersion.current++;
+
     try {
       setMapMode('explore');
       setVisibilityFilter('all');
@@ -881,6 +921,7 @@ export default function App() {
       setDiaryLoading(true);
       setDiaryError('');
       const location = await userLocation.getLocation();
+      if (version !== exploreRequestVersion.current) return;
       const center = {
         lat: location.lat,
         lng: location.lng
@@ -889,9 +930,10 @@ export default function App() {
       setExploreCenter(center);
       await loadExploreDiaries({ ...center, radius }, { silent: true });
     } catch (error) {
-      setDiaryError(error.message || '無法取得位置，請稍後再試');
-    } finally {
-      setDiaryLoading(false);
+      if (version === exploreRequestVersion.current) {
+        setDiaryError(error.message || '無法取得位置，請稍後再試');
+        setDiaryLoading(false);
+      }
     }
   }
 
@@ -1100,12 +1142,13 @@ export default function App() {
                     }}
                     aria-label={`通知${friendRequests.length ? `，${friendRequests.length} 則邀請` : ''}`}
                     aria-expanded={notificationsOpen}
+                    aria-controls="nav-notifications"
                   >
                     <Bell size={18} />
                     {friendRequests.length > 0 && <span className="nav-badge"><AnimatedNumber value={friendRequests.length > 99 ? '99+' : friendRequests.length} digits={3} variant="badge" /></span>}
                   </button>
                   <AnimatePresence initial={false}>{notificationsOpen && (
-                    <ContentTransition className="nav-dropdown notifications-dropdown glass">
+                    <ContentTransition id="nav-notifications" className="nav-dropdown notifications-dropdown glass" onKeyDown={handlePopoverKeyDown}>
                       <div className="nav-dropdown-header">
                         <strong>通知</strong>
                         <span>{friendRequests.length > 0 ? `${friendRequests.length} 則好友邀請` : '目前沒有新通知'}</span>
@@ -1137,12 +1180,13 @@ export default function App() {
                     }}
                     aria-label="使用者選單"
                     aria-expanded={userMenuOpen}
+                    aria-controls="nav-user-menu"
                   >
                     <UserAvatar user={user} size="sm" />
                     <small>{user.name || '使用者'}</small>
                   </button>
                   <AnimatePresence initial={false}>{userMenuOpen && (
-                    <ContentTransition className="nav-dropdown user-dropdown glass">
+                    <ContentTransition id="nav-user-menu" className="nav-dropdown user-dropdown glass" onKeyDown={handlePopoverKeyDown}>
                       <div className="nav-dropdown-header">
                         <div className="nav-dropdown-avatar-row">
                           <UserAvatar user={user} size="md" />

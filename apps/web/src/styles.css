@@ -695,7 +695,7 @@ body:has(.auth-mode),
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
+  min-height: 44px;
   border: 1px solid rgba(196, 235, 255, 0.14);
   color: #ecfbff;
   transition:
@@ -709,7 +709,6 @@ body:has(.auth-mode),
 .nav-avatar-button:hover,
 .nav-icon-button.active,
 .nav-avatar-button.active {
-  transform: translateY(-1px);
   border-color: rgba(196, 235, 255, 0.28);
   background: rgba(121, 241, 220, 0.1);
 }
@@ -720,7 +719,7 @@ body:has(.auth-mode),
 
 .nav-icon-button {
   position: relative;
-  width: 40px;
+  width: 44px;
   border-radius: 999px;
   background: rgba(2, 13, 24, 0.34);
 }
@@ -742,7 +741,7 @@ body:has(.auth-mode),
 
 .nav-avatar-button {
   gap: 8px;
-  min-width: 0;
+  min-width: 44px;
   padding: 2px 9px 2px 3px;
   border-radius: 999px;
   background: rgba(2, 13, 24, 0.34);
@@ -11444,6 +11443,22 @@ select option {
 
 .life-map-loading-state p {
   min-height: 1.7em;
+}
+
+.life-map-refresh-status {
+  min-height: 1.4em;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.life-map-refresh-status[role="alert"] {
+  color: var(--danger);
+}
+
+@media (max-width: 600px) {
+  .life-map-refresh-status { min-height: 2.8em; }
 }
 
 :root[data-theme="bright"] .life-map-panel {

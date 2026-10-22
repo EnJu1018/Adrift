@@ -16,6 +16,7 @@ import { api } from '../api/client.js';
 import { motionTokens } from '../constants/animations.js';
 import ContentTransition from './ui/ContentTransition.jsx';
 import AnimatedNumber from './ui/AnimatedNumber.jsx';
+import ButtonFeedback from './ui/ButtonFeedback.jsx';
 import { createInsightReveal } from '../lib/motion/animeMotion.js';
 import { MOOD_LABELS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
@@ -67,10 +68,10 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
   }
 
   async function generateInsight() {
-    if (pending.current) return;
+    if (pending.current || status === 'loading') return;
     pending.current = true;
     try {
-      updateLifeMapState({ status: 'loading', insight: null, dataWarmup: null });
+      updateLifeMapState({ status: 'loading', dataWarmup: null });
       const payload = await api.getLifeMapInsight();
       const data = payload?.data || null;
 
@@ -80,20 +81,20 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
       }
 
       if (!data || typeof data !== 'object') {
-        updateLifeMapState({ status: 'error', insight: null, dataWarmup: null });
+        updateLifeMapState({ status: 'error', dataWarmup: null });
         return;
       }
 
       updateLifeMapState({ status: 'success', insight: normalizeInsight(data), dataWarmup: null });
     } catch {
-      updateLifeMapState({ status: 'error', insight: null, dataWarmup: null });
+      updateLifeMapState({ status: 'error', dataWarmup: null });
     } finally {
       pending.current = false;
     }
   }
 
   const isLoading = status === 'loading';
-  const hasResult = status === 'success' && insight;
+  const hasResult = Boolean(insight) && ['success', 'loading', 'error'].includes(status);
 
   return (
     <main className="life-map-panel glass">
@@ -110,8 +111,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
 
           <div className="life-map-hero-actions">
             <button className="life-map-cta motion-soft-press" type="button" onClick={generateInsight} disabled={isLoading}>
-              {isLoading ? <span className="button-spinner dark" /> : <Sparkles size={17} />}
-              {hasResult ? '重新產生洞察' : '產生智慧洞察'}
+              <ButtonFeedback busy={isLoading} label={hasResult ? '重新產生洞察' : '產生智慧洞察'} busyLabel="正在整理洞察" icon={<Sparkles size={17} />} />
             </button>
             <button className="life-map-secondary-action motion-soft-press" type="button" onClick={onBack}>
               回到地圖
@@ -122,6 +122,11 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
       </section>
 
       <section className="life-map-state-stage">
+        {hasResult && (
+          <p className="life-map-refresh-status" role={status === 'error' ? 'alert' : 'status'}>
+            {isLoading ? '正在更新洞察，仍可閱讀上次的結果。' : status === 'error' ? '更新未完成，已保留上次的結果，請再試一次。' : ''}
+          </p>
+        )}
         <AnimatePresence mode="wait" initial={false}>
           {status === 'idle' && (
             <ContentTransition as="section" className="life-map-prep-grid" key="idle">
@@ -135,7 +140,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
             </ContentTransition>
           )}
 
-          {status === 'loading' && (
+          {status === 'loading' && !hasResult && (
             <ContentTransition as="section" className="life-map-loading-state" key="loading">
               <div className="life-map-loading-visual" aria-hidden="true">
                 <span className="loading-node center" />
@@ -163,7 +168,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
             </ContentTransition>
           )}
 
-          {status === 'error' && (
+          {status === 'error' && !hasResult && (
             <ContentTransition as="section" className="life-map-empty-state error" key="error">
               <Brain size={22} />
               <h2>Adrift Intelligence 暫時無法使用</h2>
@@ -176,7 +181,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
           )}
 
           {hasResult && (
-            <LifeMapDashboard key="result" insight={insight} onRegenerate={generateInsight} />
+            <LifeMapDashboard key="result" insight={insight} onRegenerate={generateInsight} refreshing={isLoading} />
           )}
         </AnimatePresence>
       </section>
@@ -189,7 +194,7 @@ export default function LifeMapAI({ state, onStateChange, onBack }) {
   );
 }
 
-function LifeMapDashboard({ insight, onRegenerate }) {
+function LifeMapDashboard({ insight, onRegenerate, refreshing }) {
   const safeInsight = normalizeInsight(insight);
   const rootRef = useRef(null);
   const present = useIsPresent();
@@ -204,9 +209,8 @@ function LifeMapDashboard({ insight, onRegenerate }) {
       <article className="life-map-summary-card" data-insight-reveal>
         <div className="life-map-card-heading">
           <span><Sparkles size={17} /> 整體摘要</span>
-          <button className="life-map-secondary-action compact motion-soft-press" type="button" onClick={onRegenerate}>
-            <RefreshCw size={15} />
-            重新產生洞察
+          <button className="life-map-secondary-action compact motion-soft-press" type="button" onClick={onRegenerate} disabled={refreshing}>
+            <ButtonFeedback busy={refreshing} label="重新產生洞察" busyLabel="正在更新洞察" icon={<RefreshCw size={15} />} />
           </button>
         </div>
         <p>{safeInsight.summary || '目前沒有足夠摘要內容。'}</p>

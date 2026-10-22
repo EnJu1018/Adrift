@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const browser = await (process.env.BROWSER === 'webkit' ? webkit.launch({ headless: true }) : chromium.launch({ channel: 'chrome', headless: true }));
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
@@ -109,6 +109,7 @@ try {
   await page.waitForTimeout(180);
   assert.equal(await copyAction.getAttribute('data-state'), 'copied');
   assert.equal(await copyAction.getAttribute('aria-label'), '已複製使用者 ID');
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('.settings-row-action[data-state] .lucide-copy')).opacity === '0');
   assert.equal(await copyAction.locator('.lucide-copy').evaluate(el => getComputedStyle(el).opacity), '0');
   assert.equal(await copyAction.locator('.lucide-check').evaluate(el => getComputedStyle(el).opacity), '1');
 
@@ -177,13 +178,26 @@ try {
   await page.locator('.life-map-dashboard').waitFor();
   assert.equal(await page.locator('[data-insight-reveal]').count(), 4);
   await page.waitForTimeout(750);
-  assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => getComputedStyle(el).opacity === '1')), true);
+  assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => !el.style.transform && !el.style.opacity)), true, 'finished reveal restores resting styles');
+  await page.locator('.life-map-dashboard').evaluate(el => { window.retainedInsight = el; });
+  const resultBeforeRefresh = await page.locator('.life-map-dashboard').boundingBox();
+  const regenerate = page.locator('.life-map-dashboard .life-map-secondary-action');
+  const buttonBeforeRefresh = await regenerate.boundingBox();
   await page.locator('.life-map-dashboard .life-map-secondary-action').evaluate(el => el.click());
-  await page.waitForFunction(() => document.querySelector('.life-map-dashboard')?.inert);
-  await page.locator('.life-map-loading-state').waitFor();
+  await page.getByRole('status').filter({ hasText: '正在更新洞察' }).waitFor();
+  assert.equal(await regenerate.isDisabled(), true);
+  assert.equal(await page.locator('.life-map-loading-state').count(), 0, 'refresh preserves the previous result');
+  assert.equal(await page.locator('.life-map-dashboard').evaluate(el => el === window.retainedInsight && !el.inert), true);
+  assert.deepEqual(await page.locator('.life-map-dashboard').boundingBox(), resultBeforeRefresh);
+  assert.deepEqual(await regenerate.boundingBox(), buttonBeforeRefresh, 'busy label does not resize the button');
+  await page.evaluate(() => window.finishInsight({ data: null }));
+  await page.getByRole('alert').filter({ hasText: '已保留上次的結果' }).waitFor();
+  assert.equal(await page.getByText('Your city memories', { exact: true }).count(), 1);
+  await regenerate.click();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.evaluate(() => window.finishInsight({ data: { summary: 'Reduced motion result' } }));
   await page.locator('.life-map-dashboard').waitFor();
+  await page.getByText('Reduced motion result', { exact: true }).waitFor();
   assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => !el.style.transform && !el.style.opacity)), true);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.waitForTimeout(80);

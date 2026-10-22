@@ -359,3 +359,46 @@ equal heights across different steps are not a substitute for usable spacing.
 Password eye icons cross-fade in one fixed slot. Shared busy feedback disables
 actions immediately and changes the label without resizing; only the decorative
 spinner waits 180ms, avoiding a flash on fast requests without delaying results.
+
+## Refresh and interaction stability
+
+Diary and nearby-feed requests share a latest-request counter. Responses and
+errors from superseded requests cannot replace the current map data or clear
+its loading state. Logout invalidates pending work. Cancelling nearby discovery
+also invalidates its pending location lookup, so late GPS results cannot reopen
+the previous mode. These guards affect data updates, not geographic coordinates
+or marker instances.
+
+Intelligence keeps the last successful result mounted during regeneration and
+on request failure. Both regenerate actions use the shared fixed-size busy-label
+slots. A reserved status line communicates progress or failure without moving the
+result. Successful updates replace the content in place. The finite Anime.js
+reveal reverts its temporary styles on completion as well as on scope cleanup.
+
+Navigation disclosures link their triggers and content with `aria-controls`.
+Opening focuses the first action; arrows and Home/End navigate actions; Escape
+closes and returns focus to the trigger. Pointer or focus movement outside closes
+the disclosure. Trigger hit targets are at least 44px high and use surface/press
+feedback without hover travel. Exiting toast messages become inert and hidden
+from assistive technology before removal.
+
+About, privacy and feature pages keep their navigation and page roots static.
+Only main content fades through the shared content transition; no extra motion
+engine or page-scale animation is involved.
+
+`tests/app-stability-browser.mjs` exercises the real App with deferred local API
+responses and a stub map renderer. It checks request ordering, source changes,
+cancelled geolocation, logout isolation and navigation focus. Map projection and
+performance remain covered separately by `tests/marker-browser.mjs`.
+The workspace, surface and entry suites also support `BROWSER=webkit`.
+Tests wait for settled animation state instead of assuming exact timer delivery.
+Modal focus-return coverage opens the dialog by keyboard, including in WebKit,
+where a pointer click does not necessarily focus a button.
+
+Release checks: production build, ten marker unit tests, and the micro, surface,
+entry, workspace, marker, presentation-motion and App-stability browser suites
+pass in local Chrome. App-stability, workspace, surface and entry also pass in
+local WebKit. The real navbar is checked at 390, 768, 1366 and 1920px, including
+44px targets and horizontal containment. No lint script/configuration is
+installed. Windows/Edge and physical mobile keyboard behavior still require
+device testing; WebKit automation is not a claim of physical Safari coverage.

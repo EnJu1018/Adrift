@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const browser = await (process.env.BROWSER === 'webkit' ? webkit.launch({ headless: true }) : chromium.launch({ channel: 'chrome', headless: true }));
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
@@ -44,6 +44,24 @@ try {
     await page.setViewportSize({ width, height: 900 });
     assert.equal(await page.locator('.landing-page').evaluate(el => el.scrollWidth <= el.clientWidth), true, `landing overflow at ${width}`);
   }
+  for (const path of ['/about', '/privacy', '/features/map-diary', '/features/emotion', '/features/memories']) {
+    await page.goto(`${base}${path}`);
+    for (const theme of ['bright', 'dark']) {
+      await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+      for (const width of [390, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        const geometry = await page.locator('.public-info-page').evaluate(el => ({
+          transform: getComputedStyle(el).transform, width: el.clientWidth, scrollWidth: el.scrollWidth,
+          contentTransform: getComputedStyle(el.querySelector('main')).transform
+        }));
+        assert.equal(geometry.transform, 'none', `${path}: page root stays fixed`);
+        assert.equal(geometry.contentTransform, 'none', `${path}: content fades without travel`);
+        assert.ok(geometry.scrollWidth <= geometry.width, `${path}: no horizontal overflow at ${width}`);
+        assert.equal(await page.locator('h1').count(), 1);
+      }
+    }
+  }
+  await page.goto(base);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole('button', { name: '開始漂流', exact: true }).click();
   await page.locator('.auth-page input[type="email"]').waitFor();

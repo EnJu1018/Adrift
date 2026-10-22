@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const browser = await (process.env.BROWSER === 'webkit' ? webkit.launch({ headless: true }) : chromium.launch({ channel: 'chrome', headless: true }));
 const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
@@ -32,7 +32,7 @@ try {
       const [value, setValue] = React.useState('b');
       const [toast, setToast] = React.useState(null);
       const [failure, setFailure] = React.useState(false);
-      window.surfaceTest = { setBusy, setOpen, setFailure };
+      window.surfaceTest = { setBusy, setOpen, setFailure, setToast };
       return h(MotionConfig, { reducedMotion: 'user' },
         h('main', { style: { padding: '80px', maxWidth: '500px' } },
           h('button', { id: 'open-diary', onClick: () => setOpen(true) }, 'Open diary'),
@@ -68,7 +68,8 @@ try {
   assert.equal(await select.evaluate(el => el === document.activeElement), true);
   await page.waitForTimeout(250);
 
-  await open.click();
+  await open.focus();
+  await page.keyboard.press('Enter');
   await dialog.waitFor();
   await page.waitForTimeout(350);
   assert.equal(await dialog.evaluate(el => el.matches(':modal') && el.contains(document.activeElement)), true);
@@ -124,6 +125,11 @@ try {
   await page.waitForTimeout(450);
   const dismiss = page.getByRole('button', { name: '關閉提示' });
   assert.ok((await dismiss.boundingBox()).width >= 44);
+  await page.evaluate(() => window.surfaceTest.setToast({ message: 'Latest update', type: 'info' }));
+  await page.waitForFunction(() => document.querySelector('.app-toast[inert]'));
+  assert.equal(await page.locator('.app-toast[inert]').getAttribute('aria-hidden'), 'true');
+  await page.getByRole('status').filter({ hasText: 'Latest update' }).waitFor();
+  await page.waitForFunction(() => document.querySelectorAll('.app-toast').length === 1);
   await dismiss.click();
   await page.getByRole('status').waitFor({ state: 'detached' });
 

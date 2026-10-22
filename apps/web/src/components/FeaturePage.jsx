@@ -1,6 +1,5 @@
-import { motion } from 'framer-motion';
 import { ArrowLeft, Brain, Clock3, HeartPulse, MapPinned, Route, Sparkles, Users } from 'lucide-react';
-import { pageFadeUp } from '../constants/animations.js';
+import ContentTransition from './ui/ContentTransition.jsx';
 
 const featureContent = {
   'map-diary': {
@@ -54,7 +53,7 @@ export default function FeaturePage({ slug = 'map-diary', onNavigate }) {
   const feature = featureContent[slug] || featureContent['map-diary'];
 
   return (
-    <motion.section className="public-info-page feature-page" {...pageFadeUp}>
+    <section className="public-info-page feature-page">
       <header className="landing-nav public-info-nav">
         <button className="landing-brand" type="button" onClick={() => onNavigate('/')}>
           <img src="/adrift-icon.png" alt="" aria-hidden="true" />
@@ -66,7 +65,7 @@ export default function FeaturePage({ slug = 'map-diary', onNavigate }) {
         </button>
       </header>
 
-      <main className="public-info-main public-info-main-wide feature-main">
+      <ContentTransition as="main" key={slug} className="public-info-main public-info-main-wide feature-main">
         <section className="feature-hero">
           <div className="feature-hero-icon">{feature.icon}</div>
           <div>
@@ -123,7 +122,7 @@ export default function FeaturePage({ slug = 'map-diary', onNavigate }) {
             了解完整概念
           </button>
         </div>
-      </main>
-    </motion.section>
+      </ContentTransition>
+    </section>
   );
 }

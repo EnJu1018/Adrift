@@ -8,7 +8,8 @@ export function createInsightReveal(root) {
     if (matches.reduce) return;
     animate(root.querySelectorAll('[data-insight-reveal]'), {
       opacity: [0, 1], translateY: [motionTokens.distance.small, 0],
-      duration: motionMs.slow, delay: stagger(motionMs.stagger), ease: 'out(3)'
+      duration: motionMs.slow, delay: stagger(motionMs.stagger), ease: 'out(3)',
+      onComplete: animation => animation.revert()
     });
   });
   return () => scope.revert();

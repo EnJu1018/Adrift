@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useIsPresent } from 'framer-motion';
 import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { toastMotion } from '../constants/animations.js';
@@ -20,21 +20,26 @@ export default function ToastViewport({ toast, onDismiss, className = '' }) {
     <div className={`toast-viewport ${className}`.trim()} aria-live={isError ? 'assertive' : 'polite'}>
       <AnimatePresence>
         {toast?.message && (
-          <motion.div
+          <ToastMessage
             key={toast.id || toast.message}
-            className={`app-toast ${type}`}
-            role={isError ? 'alert' : 'status'}
-            {...toastMotion}
-          >
-            <span className="app-toast-icon">{icons[type] || icons.info}</span>
-            <p>{toast.message}</p>
-            <button className="motion-soft-press" type="button" onClick={onDismiss} aria-label="關閉提示">
-              <X size={14} />
-            </button>
-          </motion.div>
+            toast={toast} onDismiss={onDismiss}
+          />
         )}
       </AnimatePresence>
     </div>,
     document.body
   );
+}
+
+function ToastMessage({ toast, onDismiss }) {
+  const present = useIsPresent();
+  const type = toast.type || 'info';
+  return <motion.div className={`app-toast ${type}`} role={type === 'error' ? 'alert' : 'status'}
+    inert={!present ? true : undefined} aria-hidden={!present || undefined} {...toastMotion}>
+    <span className="app-toast-icon">{icons[type] || icons.info}</span>
+    <p>{toast.message}</p>
+    <button className="motion-soft-press" type="button" onClick={onDismiss} aria-label="關閉提示">
+      <X size={14} />
+    </button>
+  </motion.div>;
 }
