@@ -1,8 +1,8 @@
-import { ArrowUp, BookOpen, MapPin, MessageCircle, Plus, RefreshCw } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ArrowDown, ArrowUp, BookOpen, MessageCircle, Plus } from 'lucide-react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api } from '../api/client.js';
-import { MOOD_LABELS } from '../constants/app.js';
 import ButtonFeedback from './ui/ButtonFeedback.jsx';
+import ChatMessage from './intelligence/ChatMessage.jsx';
 import './memoryChat.css';
 
 const suggestions = ['回顧我最近的心情', '哪個地方留下最多回憶？', '我最近有哪些快樂的時刻？', '幫我回顧上個月的生活'];
@@ -19,10 +19,16 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
   const [hasNew, setHasNew] = useState(false);
   const [opening, setOpening] = useState('');
   const [citationError, setCitationError] = useState('');
+  const [unavailable, setUnavailable] = useState(new Set());
   const busy = messages.some(item => item.status === 'pending');
 
   const update = updater => onStateChange(current => ({ ...current, chat: updater({ messages: [], draft: '', ...current.chat }) }));
   useEffect(() => () => { request.current?.abort(); citationRequest.current?.abort(); }, []);
+  useLayoutEffect(() => {
+    if (!active || !input.current) return;
+    input.current.style.height = 'auto';
+    input.current.style.height = `${Math.min(128, input.current.scrollHeight)}px`;
+  }, [draft, active]);
   useEffect(() => {
     if (!active) return;
     if (nearBottom.current) {
@@ -69,6 +75,8 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
     setOpening('');
     update(() => ({ messages: [], draft: '' }));
     setCitationError('');
+    setUnavailable(new Set());
+    nearBottom.current = true; setHasNew(false);
     if (input.current) input.current.style.height = '';
     input.current?.focus({ preventScroll: true });
   }
@@ -80,7 +88,10 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
     setOpening(id);
     setCitationError('');
     try { await onOpenDiary(id, controller.signal); }
-    catch (error) { if (!controller.signal.aborted) setCitationError(error.message || '日記目前無法開啟，請再試一次。'); }
+    catch (error) { if (!controller.signal.aborted) {
+      if ([403, 404].includes(error.status)) { setUnavailable(current => new Set([...current, id])); setCitationError('這則記憶已移除或目前無法查看。'); }
+      else setCitationError(error.message || '日記目前無法開啟，請再試一次。');
+    } }
     finally {
       if (citationRequest.current === controller) {
         citationRequest.current = null;
@@ -91,45 +102,30 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
 
   return <section className="memory-chat" aria-label="Adrift Memory Chat">
     <header className="memory-chat-header">
-      <span><MessageCircle size={18} /> Adrift Memory Chat</span>
-      <button type="button" className="ghost-button motion-soft-press" onClick={startOver} disabled={!messages.length && !draft}><Plus size={16} />新對話</button>
+      <div><span><MessageCircle size={17} />Memory Chat</span><small>探索你留下的生活片段</small></div>
+      <button type="button" className="intel-text-button motion-soft-press" onClick={startOver} disabled={!messages.length && !draft}><Plus size={16} />新對話</button>
     </header>
     <div className="memory-chat-transcript" ref={transcript} role="log" aria-label="記憶對話紀錄" aria-live="polite" aria-relevant="additions text"
       onScroll={event => { const el = event.currentTarget; nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; if (nearBottom.current) setHasNew(false); }}>
       {!messages.length && <div className="memory-chat-intro">
         <BookOpen size={28} aria-hidden="true" />
-        <h2>和你的記憶聊聊</h2>
-        <p>問問 Adrift，你在哪裡留下過快樂、難忘或值得重新回顧的時刻。</p>
+        <h2>和你的記憶聊聊。</h2>
+        <p>從你的日記、情緒與足跡中，<br className="memory-chat-welcome-break" />找回值得重新回顧的時刻。</p>
         <div className="memory-chat-suggestions">{suggestions.map(text => <button type="button" key={text} onClick={() => send(text)} className="motion-soft-press">{text}<ArrowUp size={15} /></button>)}</div>
       </div>}
-      {messages.map(item => <article key={item.id} className={`memory-chat-message ${item.role} motion-fade-in`}>
-        <span className="memory-chat-speaker">{item.role === 'user' ? '你' : 'Adrift'}</span>
-        {item.status === 'pending' ? <p className="memory-chat-thinking"><span className="button-spinner" aria-hidden="true" />正在尋找你的記憶…</p>
-          : item.status === 'error' ? <div className="memory-chat-error"><p role="alert">{item.error}</p><button type="button" className="ghost-button motion-soft-press" onClick={() => send(item.question, item.id)} disabled={busy}><RefreshCw size={15} />重試</button></div>
-          : <p className="memory-chat-answer">{item.content}</p>}
-        {item.relatedDiaries?.length > 0 && <div className="memory-chat-citations" aria-label="相關記憶">
-          <strong>相關記憶</strong>
-          {item.relatedDiaries.map((diary, index) => <button type="button" key={diary.id} onClick={() => openDiary(diary.id)} disabled={Boolean(opening)} className="memory-chat-citation motion-soft-press">
-            <span className="memory-chat-citation-index">{index + 1}</span>
-            <span><strong>{diary.title || '未命名日記'}</strong><small>{new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium' }).format(new Date(diary.createdAt))} · {MOOD_LABELS[diary.mood?.type] || '心情'}</small><small><MapPin size={12} />{diary.place || '未命名地點'}</small></span>
-            {opening === diary.id && <span className="button-spinner" />}
-          </button>)}
-        </div>}
-        {item.resultStatus === 'empty' && <button type="button" className="chip-button" onClick={onNewDiary}><Plus size={15} />新增第一篇日記</button>}
-      </article>)}
+      {messages.map(item => <ChatMessage key={item.id} item={item} busy={busy} opening={opening} unavailable={unavailable} onRetry={send} onOpenDiary={openDiary} onNewDiary={onNewDiary} />)}
     </div>
-    {hasNew && <button type="button" className="memory-chat-latest ghost-button" onClick={() => { nearBottom.current = true; transcript.current?.scrollTo({ top: transcript.current.scrollHeight, behavior: 'auto' }); setHasNew(false); }}>查看最新回覆</button>}
+    {hasNew && <button type="button" className="memory-chat-latest intel-button" onClick={() => { nearBottom.current = true; transcript.current?.scrollTo({ top: transcript.current.scrollHeight, behavior: 'auto' }); setHasNew(false); }}><ArrowDown size={15} />查看最新回覆</button>}
     <form className="memory-chat-composer" onSubmit={event => { event.preventDefault(); send(); }} aria-busy={busy}>
       {citationError && <p role="alert">{citationError}</p>}
       <label className="memory-chat-input"><span className="sr-only">詢問你的記憶</span>
-        <textarea ref={input} value={draft} rows={2} maxLength={1000} placeholder="問問你的城市記憶…" disabled={busy}
+        <textarea ref={input} value={draft} rows={1} maxLength={1000} placeholder="問問 Adrift，你留下過哪些記憶……" disabled={busy}
           onChange={event => { const value = event.target.value; update(current => ({ ...current, draft: value })); }}
-          onInput={event => { event.currentTarget.style.height = 'auto'; event.currentTarget.style.height = `${Math.min(128, event.currentTarget.scrollHeight)}px`; }}
           onCompositionStart={() => { composing.current = true; }} onCompositionEnd={() => { composing.current = false; }}
           onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !composing.current && !event.nativeEvent.isComposing && event.keyCode !== 229) { event.preventDefault(); send(); } }} />
-        <button className="primary-button motion-soft-press" type="submit" aria-label="送出記憶問題" disabled={busy || !draft.trim()}><ButtonFeedback busy={busy} label="" icon={<ArrowUp size={18} />} /></button>
+        <button className="memory-chat-send motion-soft-press" type="submit" aria-label="送出記憶問題" disabled={busy || !draft.trim()}><ButtonFeedback busy={busy} label="" icon={<ArrowUp size={18} />} /></button>
       </label>
-      <p className="memory-chat-note">只回顧你的日記。提問會將相關日記片段交由 Gemini 整理；回答可能有誤，請對照引用，並非心理診斷。</p>
+      <p className="memory-chat-note">僅回顧你的日記、情緒與足跡。<span> 相關片段交由 Gemini 整理，請對照引用。</span></p>
     </form>
   </section>;
 }

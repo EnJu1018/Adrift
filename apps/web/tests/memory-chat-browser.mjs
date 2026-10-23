@@ -20,6 +20,7 @@ try {
     const chatSource = await (await fetch('/src/components/MemoryChat.jsx')).text();
     const { api } = await import(chatSource.match(/from "([^"]*\/api\/client\.js[^"]*)"/)[1]);
     const { default: Intelligence } = await import('/src/components/LifeMapAI.jsx');
+    api.getIntelligenceOverview = async days => ({ data: { days, count: 3, start: '2026-09-01', end: '2026-10-01', moods: [{ type: 'calm', count: 3 }], daily: [], placeCount: 0, places: [] } });
     window.chatCalls = [];
     api.chatMemory = (message, history, signal) => new Promise((resolve, reject) => {
       window.chatCalls.push({ message, history, resolve, reject, signal });
@@ -40,7 +41,7 @@ try {
   await page.getByText('Original insight', { exact: true }).waitFor();
   await page.getByRole('button', { name: '深入詢問這段期間' }).click();
   const input = page.getByRole('textbox', { name: '詢問你的記憶' });
-  assert.equal(await input.inputValue(), '幫我深入回顧最近一個月的心情變化');
+  assert.equal(await input.inputValue(), '幫我回顧最近 30 天的心情變化');
   await input.fill('我上個月的心情如何？');
   await input.dispatchEvent('compositionstart');
   await input.press('Enter');
@@ -85,7 +86,7 @@ try {
     }
   }
   await page.setViewportSize({ width: 390, height: 420 });
-  await page.waitForFunction(() => document.querySelector('.life-map-panel').dataset.compactViewport === 'true');
+  await page.waitForFunction(() => document.querySelector('.intelligence-page').dataset.compactViewport === 'true');
   const compactComposer = await page.locator('.memory-chat-composer').boundingBox();
   assert.ok(compactComposer.y + compactComposer.height <= 420, 'composer remains visible in a keyboard-sized viewport');
   await page.setViewportSize({ width: 1440, height: 1000 });

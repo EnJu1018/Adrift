@@ -43,6 +43,9 @@ in [memory-chat.md](memory-chat.md).
 Social Hub endpoints, transaction requirements, visibility rules and integration
 tests are documented in [social-hub.md](social-hub.md).
 
+The read-only `GET /ai/overview?days=30` statistics and Intelligence interface
+boundaries are documented in [intelligence.md](intelligence.md).
+
 All protected routes require:
 
 ```txt

@@ -33,6 +33,7 @@ try {
     }));
     window.opened = [];
     window.insightCalls = 0;
+    api.getIntelligenceOverview = async days => ({ data: { days, count: 2, start: '2026-09-01', end: '2026-10-01', moods: [{ type: 'calm', count: 2 }], daily: [], placeCount: 0, places: [] } });
     api.getAdminStats = async () => ({ data: { totalUsers: 2 } });
     api.getAdminUsers = async () => ({ data: { items: [owner, friend] } });
     api.getAdminDiaries = async () => ({ data: { items: [] } });
@@ -167,25 +168,25 @@ try {
     api.getAdminUsers = async () => ({ data: { items: [] } });
   });
 
-  await view('LifeMapAI', '.life-map-panel');
-  await page.locator('.life-map-hero .life-map-cta').evaluate(el => { el.click(); el.click(); });
-  await page.locator('.life-map-loading-state').waitFor();
+  await view('LifeMapAI', '.intelligence-page');
+  await page.locator('.intel-review > .intel-section-heading .intel-button').evaluate(el => { el.click(); el.click(); });
+  await page.locator('.intel-review-placeholder.is-loading').waitFor();
   assert.equal(await page.evaluate(() => window.insightCalls), 1);
   await page.evaluate(() => window.finishInsight({ data: { summary: 'Your city memories', moodTrend: { description: 'A calm week', dominantMood: '平靜', averageIntensity: 3 }, locationInsights: [], behaviorPatterns: ['Afternoon walks'], suggestions: ['Keep recording'] } }));
-  await page.locator('.life-map-dashboard').waitFor();
+  await page.locator('.intel-review-result').waitFor();
   assert.equal(await page.locator('[data-insight-reveal]').count(), 4);
   await page.waitForTimeout(750);
   assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => !el.style.transform && !el.style.opacity)), true, 'finished reveal restores resting styles');
-  await page.locator('.life-map-dashboard').evaluate(el => { window.retainedInsight = el; });
-  const resultBeforeRefresh = await page.locator('.life-map-dashboard').boundingBox();
-  const regenerate = page.locator('.life-map-dashboard .life-map-secondary-action');
+  await page.locator('.intel-review-result').evaluate(el => { window.retainedInsight = el; });
+  const resultBeforeRefresh = await page.locator('.intel-review-result').boundingBox();
+  const regenerate = page.locator('.intel-review > .intel-section-heading .intel-button');
   const buttonBeforeRefresh = await regenerate.boundingBox();
-  await page.locator('.life-map-dashboard .life-map-secondary-action').evaluate(el => el.click());
+  await page.locator('.intel-review > .intel-section-heading .intel-button').evaluate(el => el.click());
   await page.getByRole('status').filter({ hasText: '正在更新洞察' }).waitFor();
   assert.equal(await regenerate.isDisabled(), true);
-  assert.equal(await page.locator('.life-map-loading-state').count(), 0, 'refresh preserves the previous result');
-  assert.equal(await page.locator('.life-map-dashboard').evaluate(el => el === window.retainedInsight && !el.inert), true);
-  assert.deepEqual(await page.locator('.life-map-dashboard').boundingBox(), resultBeforeRefresh);
+  assert.equal(await page.locator('.intel-review-placeholder.is-loading').count(), 0, 'refresh preserves the previous result');
+  assert.equal(await page.locator('.intel-review-result').evaluate(el => el === window.retainedInsight && !el.inert), true);
+  assert.deepEqual(await page.locator('.intel-review-result').boundingBox(), resultBeforeRefresh);
   assert.deepEqual(await regenerate.boundingBox(), buttonBeforeRefresh, 'busy label does not resize the button');
   await page.evaluate(() => window.finishInsight({ data: null }));
   await page.getByRole('alert').filter({ hasText: '已保留上次的結果' }).waitFor();
@@ -193,7 +194,7 @@ try {
   await regenerate.click();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.evaluate(() => window.finishInsight({ data: { summary: 'Reduced motion result' } }));
-  await page.locator('.life-map-dashboard').waitFor();
+  await page.locator('.intel-review-result').waitFor();
   await page.getByText('Reduced motion result', { exact: true }).waitFor();
   assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => !el.style.transform && !el.style.opacity)), true);
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -202,7 +203,7 @@ try {
   await page.waitForTimeout(150);
   assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => !el.style.transform && !el.style.opacity)), true, 'live reduced motion restores styles');
 
-  for (const [name, selector] of [['FeedPage', '.feed-page'], ['FriendsPage', '.friends-hub'], ['AccountSettings', '.settings-page'], ['LifeMapAI', '.life-map-panel'], ['AdminDashboard', '.admin-page']]) {
+  for (const [name, selector] of [['FeedPage', '.feed-page'], ['FriendsPage', '.friends-hub'], ['AccountSettings', '.settings-page'], ['LifeMapAI', '.intelligence-page'], ['AdminDashboard', '.admin-page']]) {
     await view(name, selector);
     for (const theme of ['bright', 'dark']) {
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
@@ -214,7 +215,7 @@ try {
         assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true, name + ' does not overflow at ' + width);
         assert.equal(await page.locator(selector).evaluate(el => el.scrollWidth <= el.clientWidth), true, name + ' content does not overflow at ' + width);
         if (name === 'LifeMapAI') {
-          assert.equal(await page.locator('.life-map-hero').evaluate(el => {
+          assert.equal(await page.locator('.intel-header').evaluate(el => {
             const hero = el.getBoundingClientRect();
             return [...el.querySelectorAll('button')].every(button => {
               const rect = button.getBoundingClientRect();

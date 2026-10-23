@@ -478,7 +478,6 @@ body,
 .memory-panel,
 .friends-hub,
 .feed-page,
-.life-map-panel,
 .presentation-page,
 .presentation-nav,
 .presentation-controls,
@@ -925,8 +924,7 @@ body:has(.auth-mode),
 .app-layout.authenticated .friends-page-shell,
 .app-layout.authenticated .friends-hub,
 .app-layout.authenticated .feed-page,
-.app-layout.authenticated .settings-panel,
-.app-layout.authenticated .life-map-panel {
+.app-layout.authenticated .settings-panel {
   height: 100%;
   min-height: 0;
 }
@@ -3617,7 +3615,6 @@ select option {
 
 .memory-item,
 .person-card,
-.life-map-card,
 .admin-stat,
 .settings-section,
 .profile-popover,
@@ -3634,7 +3631,6 @@ select option {
 
 @media (hover: hover) {
   .person-card:hover,
-  .life-map-card:hover,
   .admin-stat:hover,
   .settings-section:hover {
     transform: translateY(-2px);
@@ -3645,14 +3641,12 @@ select option {
 
 .app-frame.low-performance .memory-item,
 .app-frame.low-performance .person-card,
-.app-frame.low-performance .life-map-card,
 .app-frame.low-performance .admin-stat,
 .app-frame.low-performance .settings-section {
   transition-duration: 80ms;
 }
 
 .app-frame.low-performance .person-card:hover,
-.app-frame.low-performance .life-map-card:hover,
 .app-frame.low-performance .admin-stat:hover,
 .app-frame.low-performance .settings-section:hover {
   transform: none;
@@ -5566,8 +5560,7 @@ select option {
 .app-frame.reduced-motion .ambient-bg,
 .app-frame.reduced-motion .presentation-page::before,
 .app-frame.reduced-motion .presentation-orb,
-.app-frame.reduced-motion .presentation-dot,
-.app-frame.reduced-motion .loading-node {
+.app-frame.reduced-motion .presentation-dot {
   animation: none !important;
 }
 
@@ -5576,10 +5569,6 @@ select option {
 .app-frame.reduced-motion .modal-card,
 .app-frame.reduced-motion .memory-item,
 .app-frame.reduced-motion .person-card,
-.app-frame.reduced-motion .life-map-card,
-.app-frame.reduced-motion .life-map-feature-card,
-.app-frame.reduced-motion .life-map-insight-card,
-.app-frame.reduced-motion .life-map-location-card,
 .app-frame.reduced-motion .admin-stat,
 .app-frame.reduced-motion .settings-section {
   transition-duration: 0.01ms !important;
@@ -5600,7 +5589,6 @@ select option {
   .motion-soft-press:active { scale: 1; }
 
 .ambient-bg,
-.loading-node,
 .presentation-map-visual,
 .memory-drift-path,
 .drifting-memory-dot,
@@ -5942,141 +5930,6 @@ select option {
   }
 }
 
-.life-map-panel {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: 18px;
-  width: min(1240px, 100%);
-  min-width: 0;
-  height: 100%;
-  min-height: 0;
-  justify-self: center;
-  overflow: auto;
-  padding: 22px;
-  border-radius: var(--panel-radius);
-  scrollbar-gutter: stable;
-}
-
-.life-map-hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 18px;
-  align-items: stretch;
-  flex: 0 0 auto;
-  min-height: 0;
-  padding: 22px;
-  overflow: hidden;
-  border: 1px solid rgba(140, 220, 255, 0.16);
-  border-radius: 24px;
-  background:
-    radial-gradient(circle at 80% 18%, rgba(121, 241, 220, 0.14), transparent 34%),
-    radial-gradient(circle at 35% 80%, rgba(128, 179, 255, 0.16), transparent 42%),
-    rgba(8, 18, 32, 0.66);
-}
-
-.life-map-back {
-  align-self: start;
-}
-
-.life-map-hero-copy {
-  display: grid;
-  align-content: center;
-  justify-items: start;
-  gap: 10px;
-  min-width: 0;
-}
-
-.life-map-hero-copy h1,
-.life-map-hero-copy p,
-.life-map-hero-copy span {
-  margin: 0;
-}
-
-.life-map-hero-copy h1 {
-  max-width: 100%;
-  color: #ffffff;
-  font-size: 2rem;
-  line-height: 1.2;
-  letter-spacing: 0;
-}
-
-.life-map-hero-copy p {
-  color: #eafdff;
-  font-size: 1.06rem;
-  font-weight: 600;
-}
-
-.life-map-hero-copy p.eyebrow {
-  font-size: 0.8rem;
-}
-
-.life-map-hero-copy span {
-  max-width: 580px;
-  color: #a9c7d7;
-  line-height: 1.65;
-}
-
-.life-map-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.life-map-cta,
-.life-map-secondary-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  font-size: 0.86rem;
-  font-weight: 900;
-  transition: transform var(--duration-quick) var(--ease-smooth-out), border-color var(--duration-quick) var(--ease-smooth-out), background var(--duration-quick) var(--ease-smooth-out);
-}
-
-.life-map-cta {
-  color: #04131b;
-  border-color: rgba(121, 241, 220, 0.38);
-  background: linear-gradient(135deg, rgba(151, 255, 234, 0.96), rgba(99, 211, 255, 0.94));
-  box-shadow: 0 0 28px rgba(121, 241, 220, 0.18);
-}
-
-.life-map-cta.compact {
-  width: fit-content;
-}
-
-.life-map-secondary-action {
-  color: #d6eff9;
-  border-color: rgba(196, 235, 255, 0.15);
-  background: rgba(137, 215, 255, 0.08);
-}
-
-.life-map-secondary-action.compact {
-  min-height: 44px;
-  padding: 0 11px;
-  font-size: 0.78rem;
-}
-
-.life-map-cta:hover:not(:disabled),
-.life-map-secondary-action:hover:not(:disabled) {
-  border-color: rgba(140, 220, 255, 0.26);
-}
-
-.life-map-cta:active:not(:disabled),
-.life-map-secondary-action:active:not(:disabled) {
-  scale: 0.98;
-}
-
-.life-map-cta:disabled {
-  cursor: wait;
-  opacity: 0.7;
-}
-
 .dot-one {
   top: 23%;
   left: 22%;
@@ -6092,117 +5945,6 @@ select option {
   right: 22%;
   bottom: 21%;
   animation-delay: 1s;
-}
-
-.life-map-prep-grid,
-.life-map-dashboard-grid,
-.life-map-location-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.life-map-feature-card,
-.life-map-insight-card,
-.life-map-wide-section,
-.life-map-summary-card,
-.life-map-empty-state,
-.life-map-loading-state,
-.life-map-privacy-card {
-  border: 1px solid rgba(140, 220, 255, 0.14);
-  border-radius: 20px;
-  background:
-    linear-gradient(145deg, rgba(8, 18, 32, 0.68), rgba(4, 14, 26, 0.54)),
-    radial-gradient(circle at 0% 0%, rgba(121, 241, 220, 0.045), transparent 46%);
-  backdrop-filter: blur(14px);
-}
-
-.life-map-feature-card,
-.life-map-insight-card,
-.life-map-wide-section,
-.life-map-summary-card {
-  display: grid;
-  align-content: start;
-  gap: 12px;
-  padding: 18px;
-  transition: transform var(--duration-quick) var(--ease-smooth-out), border-color var(--duration-quick) var(--ease-smooth-out), background var(--duration-quick) var(--ease-smooth-out);
-}
-
-.life-map-feature-icon {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid rgba(121, 241, 220, 0.2);
-  border-radius: 14px;
-  color: #dffff6;
-  background: rgba(121, 241, 220, 0.08);
-}
-
-.life-map-feature-card h3,
-.life-map-feature-card p,
-.life-map-insight-card p,
-.life-map-summary-card p,
-.life-map-wide-section p,
-.life-map-empty-state h2,
-.life-map-empty-state p,
-.life-map-loading-state h2,
-.life-map-loading-state p {
-  margin: 0;
-}
-
-.life-map-feature-card h3 {
-  color: #ffffff;
-  font-size: 1rem;
-}
-
-.life-map-feature-card p,
-.life-map-insight-card p,
-.life-map-wide-section p,
-.life-map-empty-state p,
-.life-map-loading-state p,
-.life-map-muted {
-  color: #a9c7d7;
-  line-height: 1.65;
-}
-
-.life-map-loading-state {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: 18px;
-  padding: 22px;
-}
-
-.life-map-loading-visual {
-  position: relative;
-  width: 128px;
-  height: 128px;
-  border: 1px solid rgba(140, 220, 255, 0.14);
-  border-radius: 34px;
-  background: rgba(2, 13, 24, 0.28);
-}
-
-.loading-node,
-.loading-path {
-  position: absolute;
-  display: block;
-}
-
-.loading-node {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: #8effdc;
-  box-shadow: 0 0 20px rgba(121, 241, 220, 0.55);
-  animation: adriftMotionMemoryPulse var(--motion-breathe) var(--ease-in-out) infinite;
-}
-
-.loading-node.center {
-  top: 58px;
-  left: 58px;
-  width: 16px;
-  height: 16px;
 }
 
 .node-a {
@@ -6222,13 +5964,6 @@ select option {
   animation-delay: 0.8s;
 }
 
-.loading-path {
-  height: 2px;
-  border-radius: 999px;
-  background: rgba(121, 241, 220, 0.42);
-  transform-origin: left center;
-}
-
 .path-a {
   top: 47px;
   left: 40px;
@@ -6241,167 +5976,6 @@ select option {
   left: 64px;
   width: 42px;
   transform: rotate(42deg);
-}
-
-.life-map-empty-state {
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 32px 20px;
-  color: #dff7ff;
-  text-align: center;
-}
-
-.life-map-empty-state.error {
-  border-color: rgba(255, 110, 137, 0.18);
-}
-
-.life-map-empty-state h2,
-.life-map-loading-state h2 {
-  color: #ffffff;
-  font-size: 1.2rem;
-}
-
-.life-map-dashboard {
-  display: grid;
-  gap: 14px;
-}
-
-.life-map-summary-card {
-  grid-column: 1 / -1;
-  padding: 22px;
-}
-
-.life-map-summary-card p {
-  color: #e7f8ff;
-  font-size: 1rem;
-  line-height: 1.75;
-}
-
-.life-map-dashboard-grid {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-}
-
-.life-map-card-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.life-map-card-heading span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  color: #ffffff;
-  font-weight: 900;
-}
-
-.life-map-card-heading svg {
-  color: #9cefe1;
-}
-
-.life-map-mood-metrics {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.life-map-mood-metrics span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 0 10px;
-  border-radius: 999px;
-  color: #bde4f4;
-  background: rgba(137, 215, 255, 0.1);
-  font-size: 0.78rem;
-}
-
-.life-map-mood-metrics strong {
-  margin-left: 4px;
-  color: #ffffff;
-}
-
-.life-map-progress {
-  height: 8px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(137, 215, 255, 0.1);
-}
-
-.life-map-progress span {
-  display: block;
-  width: 100%;
-  height: 100%;
-  transform-origin: left center;
-  transition: transform var(--duration-slow) var(--ease-smooth-out);
-  border-radius: inherit;
-  background: linear-gradient(90deg, #8effdc, #63d3ff);
-}
-
-.life-map-soft-list,
-.life-map-pattern-list {
-  display: grid;
-  gap: 10px;
-}
-
-.life-map-soft-list p,
-.life-map-pattern-list p {
-  padding-left: 12px;
-  border-left: 2px solid rgba(120, 243, 220, 0.42);
-}
-
-.life-map-location-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.life-map-location-card {
-  display: grid;
-  gap: 8px;
-  padding: 14px;
-  border: 1px solid rgba(191, 232, 255, 0.12);
-  border-radius: 16px;
-  background: rgba(2, 13, 24, 0.32);
-  transition: transform var(--duration-quick) var(--ease-smooth-out), border-color var(--duration-quick) var(--ease-smooth-out), background var(--duration-quick) var(--ease-smooth-out);
-}
-
-.life-map-location-card strong {
-  overflow: hidden;
-  color: #ffffff;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.life-map-location-card span {
-  width: fit-content;
-  min-height: 28px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: #cffff4;
-  background: rgba(121, 241, 220, 0.08);
-  font-size: 0.76rem;
-  font-weight: 850;
-}
-
-.life-map-privacy-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  gap: 10px;
-  padding: 14px 16px;
-  color: #8fb5c7;
-  font-size: 0.78rem;
-  line-height: 1.6;
-}
-
-.life-map-privacy-card p {
-  margin: 0;
-}
-
-.life-map-privacy-card svg {
-  color: #9cefe1;
 }
 
 .presentation-page {
@@ -8192,7 +7766,6 @@ select option {
 :root[data-theme="bright"] .admin-card h1,
 :root[data-theme="bright"] .admin-card h2,
 :root[data-theme="bright"] .diary-side-header h2,
-:root[data-theme="bright"] .life-map-hero-copy h1,
 :root[data-theme="bright"] .friends-page-hero h2,
 :root[data-theme="bright"] .feed-page-hero h2,
 :root[data-theme="bright"] .presentation-section-heading h2,
@@ -8210,8 +7783,6 @@ select option {
 :root[data-theme="bright"] .diary-side-text,
 :root[data-theme="bright"] .memory-item p,
 :root[data-theme="bright"] .person-card p,
-:root[data-theme="bright"] .life-map-hero-copy span,
-:root[data-theme="bright"] .life-map-privacy-card,
 :root[data-theme="bright"] .presentation-section-heading p,
 :root[data-theme="bright"] .presentation-lead {
   color: var(--text-secondary);
@@ -8247,7 +7818,6 @@ select option {
 :root[data-theme="bright"] .friends-hub,
 :root[data-theme="bright"] .feed-page,
 :root[data-theme="bright"] .settings-panel,
-:root[data-theme="bright"] .life-map-panel,
 :root[data-theme="bright"] .admin-card,
 :root[data-theme="bright"] .admin-hero,
 :root[data-theme="bright"] .diary-side-panel,
@@ -8267,7 +7837,6 @@ select option {
 :root[data-theme="bright"] .friends-page-shell,
 :root[data-theme="bright"] .friends-hub,
 :root[data-theme="bright"] .feed-page,
-:root[data-theme="bright"] .life-map-panel,
 :root[data-theme="bright"] .settings-panel {
   background: rgba(255, 255, 255, 0.82);
 }
@@ -8290,9 +7859,6 @@ select option {
 :root[data-theme="bright"] .friend-list-item,
 :root[data-theme="bright"] .recommendation-card,
 :root[data-theme="bright"] .feed-diary-card,
-:root[data-theme="bright"] .life-map-feature-card,
-:root[data-theme="bright"] .life-map-insight-card,
-:root[data-theme="bright"] .life-map-location-card,
 :root[data-theme="bright"] .admin-stat,
 :root[data-theme="bright"] .settings-section,
 :root[data-theme="bright"] .presentation-card,
@@ -8350,7 +7916,6 @@ select option {
 }
 
 :root[data-theme="bright"] .primary-button,
-:root[data-theme="bright"] .life-map-cta,
 :root[data-theme="bright"] .create-diary-button,
 :root[data-theme="bright"] .presentation-control-button.primary,
 :root[data-theme="bright"] .presentation-cta {
@@ -8361,7 +7926,6 @@ select option {
 }
 
 :root[data-theme="bright"] .ghost-button,
-:root[data-theme="bright"] .life-map-secondary-action,
 :root[data-theme="bright"] .presentation-control-button,
 :root[data-theme="bright"] .presentation-nav {
   border-color: var(--glass-border);
@@ -8376,15 +7940,6 @@ select option {
   color: var(--danger);
   border-color: rgba(220, 38, 38, 0.22);
   background: rgba(220, 38, 38, 0.1);
-}
-
-:root[data-theme="bright"] .life-map-hero {
-  border-color: rgba(8, 145, 178, 0.18);
-  background:
-    radial-gradient(circle at 80% 18%, rgba(20, 184, 166, 0.18), transparent 34%),
-    radial-gradient(circle at 32% 82%, rgba(125, 211, 252, 0.22), transparent 42%),
-    rgba(255, 255, 255, 0.72);
-  box-shadow: var(--shadow-soft);
 }
 
 :root[data-theme="bright"] .presentation-visual {
@@ -8462,10 +8017,6 @@ select option {
 :root[data-theme="bright"] .social-friend-item,
 :root[data-theme="bright"] .friend-activity-item,
 :root[data-theme="bright"] .feed-card,
-:root[data-theme="bright"] .life-map-card,
-:root[data-theme="bright"] .life-map-feature-card,
-:root[data-theme="bright"] .life-map-insight-card,
-:root[data-theme="bright"] .life-map-location-card,
 :root[data-theme="bright"] .admin-stat,
 :root[data-theme="bright"] .settings-section,
 :root[data-theme="bright"] .presentation-member-grid span,
@@ -8487,8 +8038,7 @@ select option {
 :root[data-theme="bright"] .friend-user-card:hover,
 :root[data-theme="bright"] .social-friend-item:hover,
 :root[data-theme="bright"] .friend-activity-item:hover,
-:root[data-theme="bright"] .feed-card:hover,
-:root[data-theme="bright"] .life-map-card:hover {
+:root[data-theme="bright"] .feed-card:hover {
   border-color: var(--accent-border, var(--border-strong));
   background: var(--card-bg-strong);
   box-shadow: var(--shadow-strong);
@@ -8516,7 +8066,6 @@ select option {
 :root[data-theme="bright"] .primary-button,
 :root[data-theme="bright"] .friend-primary-button,
 :root[data-theme="bright"] .new-diary-cta,
-:root[data-theme="bright"] .life-map-cta,
 :root[data-theme="bright"] .create-diary-button,
 :root[data-theme="bright"] .diary-modal .primary-button {
   color: #ffffff;
@@ -8585,7 +8134,6 @@ select option {
 :root[data-theme="bright"] .friend-empty-state p,
 :root[data-theme="bright"] .friends-empty-panel p,
 :root[data-theme="bright"] .feed-card p,
-:root[data-theme="bright"] .life-map-card p,
 :root[data-theme="bright"] .presentation-card p,
 :root[data-theme="bright"] .presentation-card li,
 :root[data-theme="bright"] .team-row span,
@@ -8599,8 +8147,7 @@ select option {
 :root[data-theme="bright"] .admin-badge,
 :root[data-theme="bright"] .diary-edited-pill,
 :root[data-theme="bright"] .diary-time-pill,
-:root[data-theme="bright"] .diary-place-pill,
-:root[data-theme="bright"] .life-map-mood-metrics span {
+:root[data-theme="bright"] .diary-place-pill {
   color: var(--accent);
   border-color: rgba(14, 116, 144, 0.18);
   background: rgba(14, 116, 144, 0.08);
@@ -8936,14 +8483,12 @@ select option {
 :root[data-theme="bright"] .friend-status-pill,
 :root[data-theme="bright"] .diary-edited-pill,
 :root[data-theme="bright"] .diary-time-pill,
-:root[data-theme="bright"] .diary-place-pill,
-:root[data-theme="bright"] .life-map-mood-metrics span {
+:root[data-theme="bright"] .diary-place-pill {
   color: var(--accent-hover);
   border-color: var(--accent-border);
   background: var(--accent-soft);
 }
 
-:root[data-theme="bright"] .life-map-hero,
 :root[data-theme="bright"] .presentation-page {
   background: var(--presentation-bg);
 }
@@ -9113,9 +8658,7 @@ select option {
 
 :root[data-theme="bright"] .admin-detail-content,
 :root[data-theme="bright"] .feed-card p,
-:root[data-theme="bright"] .feed-card-body,
-:root[data-theme="bright"] .life-map-soft-list p,
-:root[data-theme="bright"] .life-map-pattern-list p {
+:root[data-theme="bright"] .feed-card-body {
   color: var(--text-primary) !important;
 }
 
@@ -9913,8 +9456,7 @@ select option {
 
 .app-layout.authenticated.friends-mode .friends-hub,
 .app-layout.authenticated.feed-mode .feed-page,
-.app-layout.authenticated.settings-mode .settings-page,
-.app-layout.authenticated.ai-mode .life-map-panel {
+.app-layout.authenticated.settings-mode .settings-page {
   grid-column: 1 / -1;
   width: 100%;
   max-width: none;
@@ -9933,18 +9475,14 @@ select option {
 
 .app-layout.authenticated.friends-mode .friends-new-user-flow,
 .app-layout.authenticated.feed-mode .feed-list,
-.app-layout.authenticated.settings-mode .settings-page-content,
-.app-layout.authenticated.ai-mode .life-map-dashboard,
-.app-layout.authenticated.ai-mode .life-map-prep-grid,
-.app-layout.authenticated.ai-mode .life-map-location-grid {
+.app-layout.authenticated.settings-mode .settings-page-content {
   width: min(1440px, 100%);
   margin-inline: auto;
 }
 
 .app-layout.authenticated.friends-mode .friends-hub-header,
 .app-layout.authenticated.feed-mode .feed-page-hero,
-.app-layout.authenticated.settings-mode .settings-page-hero,
-.app-layout.authenticated.ai-mode .life-map-hero {
+.app-layout.authenticated.settings-mode .settings-page-hero {
   width: min(1440px, 100%);
   margin-inline: auto;
 }
@@ -9955,15 +9493,9 @@ select option {
   margin-inline: max(0px, calc((100% - 1440px) / 2));
 }
 
-.app-layout.authenticated.ai-mode .life-map-privacy-card {
-  width: min(1440px, 100%);
-  margin-inline: auto;
-}
-
 :root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub,
 :root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page,
-:root[data-theme="bright"] .app-layout.authenticated.settings-mode .settings-page,
-:root[data-theme="bright"] .app-layout.authenticated.ai-mode .life-map-panel {
+:root[data-theme="bright"] .app-layout.authenticated.settings-mode .settings-page {
   background:
     radial-gradient(circle at 16% 18%, rgba(56, 189, 248, 0.16), transparent 34%),
     radial-gradient(circle at 84% 12%, rgba(45, 212, 191, 0.12), transparent 30%),
@@ -9972,8 +9504,7 @@ select option {
 
 :root[data-theme="dark"] .app-layout.authenticated.friends-mode .friends-hub,
 :root[data-theme="dark"] .app-layout.authenticated.feed-mode .feed-page,
-:root[data-theme="dark"] .app-layout.authenticated.settings-mode .settings-page,
-:root[data-theme="dark"] .app-layout.authenticated.ai-mode .life-map-panel {
+:root[data-theme="dark"] .app-layout.authenticated.settings-mode .settings-page {
   background:
     radial-gradient(circle at 14% 18%, rgba(45, 183, 255, 0.14), transparent 32%),
     radial-gradient(circle at 82% 12%, rgba(121, 241, 220, 0.08), transparent 30%),
@@ -10384,44 +9915,6 @@ select option {
 }
 
 /* Bright Adrift Intelligence: daylight dashboard visuals instead of dark leftovers. */
-:root[data-theme="bright"] .life-map-hero {
-  border-color: rgba(14, 116, 144, 0.16) !important;
-  background:
-    radial-gradient(circle at 78% 18%, rgba(45, 212, 191, 0.16), transparent 34%),
-    radial-gradient(circle at 30% 82%, rgba(56, 189, 248, 0.18), transparent 42%),
-    rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 18px 45px rgba(14, 116, 144, 0.1) !important;
-}
-
-:root[data-theme="bright"] .life-map-loading-visual {
-  border-color: rgba(14, 116, 144, 0.14) !important;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.82), rgba(245, 252, 255, 0.72)),
-    radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.18), transparent 42%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
-}
-
-:root[data-theme="bright"] .loading-path {
-  background: linear-gradient(90deg, transparent, rgba(15, 127, 156, 0.52), transparent) !important;
-}
-
-:root[data-theme="bright"] .loading-node {
-  background: #0f7f9c !important;
-  box-shadow: 0 0 18px rgba(14, 116, 144, 0.28) !important;
-}
-
-:root[data-theme="bright"] .life-map-progress {
-  background: rgba(15, 127, 156, 0.12) !important;
-}
-
-:root[data-theme="bright"] .life-map-progress span {
-  background: linear-gradient(90deg, #0f7f9c, #14b8a6) !important;
-}
-
-:root[data-theme="bright"] .life-map-soft-list p,
-:root[data-theme="bright"] .life-map-pattern-list p {
-  border-left-color: rgba(15, 127, 156, 0.34) !important;
-}
 
 
 @media (max-width: 920px) {
@@ -10490,10 +9983,6 @@ select option {
     padding: 18px;
   }
 
-  .life-map-hero,
-  .life-map-dashboard-grid,
-  .life-map-location-grid,
-  .life-map-prep-grid,
   .presentation-cover,
   .presentation-cover-inner,
   .presentation-summary-grid,
@@ -10516,10 +10005,6 @@ select option {
   .future-grid,
   .ux-showcase {
     grid-template-columns: 1fr;
-  }
-
-  .life-map-hero {
-    min-height: auto;
   }
 
   .presentation-page {
@@ -10715,7 +10200,6 @@ select option {
   .friends-page-shell,
   .friends-hub,
   .feed-page,
-  .life-map-panel,
   .settings-panel {
     height: auto;
     min-height: auto;
@@ -10723,11 +10207,6 @@ select option {
 
   .memory-panel {
     max-height: none;
-  }
-
-  .life-map-panel {
-    height: auto;
-    min-height: auto;
   }
 
   .friends-page-content,
@@ -10871,30 +10350,6 @@ select option {
     display: inline;
   }
 
-  .life-map-panel {
-    padding: 16px;
-    border-radius: 18px;
-  }
-
-  .life-map-hero,
-  .life-map-summary-card,
-  .life-map-feature-card,
-  .life-map-insight-card,
-  .life-map-wide-section {
-    padding: 16px;
-    border-radius: 18px;
-  }
-
-  .life-map-hero-copy h1 {
-    font-size: 1.75rem;
-  }
-
-  .life-map-hero-actions,
-  .life-map-cta,
-  .life-map-secondary-action {
-    width: 100%;
-  }
-
   .presentation-page {
     padding: 0;
   }
@@ -10934,15 +10389,6 @@ select option {
 
   .presentation-cta {
     width: 100%;
-  }
-
-  .life-map-card-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .life-map-loading-state {
-    grid-template-columns: 1fr;
   }
 
   .friends-stat-grid {
@@ -11417,53 +10863,6 @@ select option {
 
 /* Adrift Intelligence stability and bright readability.
    The state stage keeps loading/result/error swaps from moving the whole page. */
-.life-map-state-stage {
-  display: grid;
-  min-height: clamp(300px, 34vh, 460px);
-  align-content: start;
-  overflow-anchor: none;
-}
-
-.life-map-state-stage > * {
-  min-width: 0;
-}
-
-.life-map-loading-state,
-.life-map-empty-state {
-  min-height: clamp(240px, 30vh, 360px);
-}
-
-.life-map-dashboard {
-  min-height: clamp(420px, 48vh, 620px);
-}
-
-.life-map-loading-state > div:last-child {
-  min-width: 0;
-}
-
-.life-map-loading-state p {
-  min-height: 1.7em;
-}
-
-.life-map-refresh-status {
-  min-height: 1.4em;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.4;
-}
-
-.life-map-refresh-status[role="alert"] {
-  color: var(--danger);
-}
-
-@media (max-width: 600px) {
-  .life-map-refresh-status { min-height: 2.8em; }
-}
-
-:root[data-theme="bright"] .life-map-panel {
-  color: var(--text-primary) !important;
-}
 
 :root[data-theme="bright"] :where(
   .life-map-hero-copy h1,
@@ -11518,145 +10917,7 @@ select option {
   box-shadow: 0 16px 38px rgba(14, 116, 144, 0.08) !important;
 }
 
-:root[data-theme="bright"] .life-map-card-heading {
-  min-height: 38px;
-}
-
-:root[data-theme="bright"] .life-map-card-heading svg,
-:root[data-theme="bright"] .life-map-feature-icon svg,
-:root[data-theme="bright"] .life-map-empty-state svg,
-:root[data-theme="bright"] .life-map-privacy-card svg {
-  color: var(--accent) !important;
-  stroke: currentColor;
-}
-
-:root[data-theme="bright"] .life-map-feature-icon {
-  color: var(--accent-hover) !important;
-  border-color: rgba(15, 127, 156, 0.2) !important;
-  background: rgba(15, 127, 156, 0.1) !important;
-  box-shadow: none !important;
-}
-
-:root[data-theme="bright"] .life-map-mood-metrics span,
-:root[data-theme="bright"] .life-map-location-card span {
-  color: var(--accent-hover) !important;
-  -webkit-text-fill-color: var(--accent-hover);
-  border: 1px solid rgba(15, 127, 156, 0.2) !important;
-  background: rgba(15, 127, 156, 0.1) !important;
-}
-
-:root[data-theme="bright"] .life-map-soft-list p,
-:root[data-theme="bright"] .life-map-pattern-list p {
-  border-left-color: rgba(15, 127, 156, 0.34) !important;
-  background: rgba(15, 127, 156, 0.055) !important;
-  border-radius: 0 12px 12px 0;
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-:root[data-theme="bright"] .life-map-progress {
-  background: rgba(15, 127, 156, 0.12) !important;
-}
-
-:root[data-theme="bright"] .life-map-progress span {
-  background: linear-gradient(90deg, #0f7f9c, #14b8a6) !important;
-}
-
-:root[data-theme="bright"] .life-map-loading-visual {
-  flex: 0 0 auto;
-  transform: translateZ(0);
-  will-change: auto;
-}
-
-:root[data-theme="bright"] .life-map-cta:disabled {
-  opacity: 0.78;
-}
-
-@media (prefers-reduced-motion: reduce) {
-.life-map-state-stage *,
-.life-map-loading-visual * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    animation-delay: 0ms !important;
-    transition-duration: 0.01ms !important;
-    transition-delay: 0ms !important;
-  }
-}
-
 /* Final layout pass: keep Adrift Intelligence states and presentation slides from stacking or becoming low-contrast. */
-.app-layout.authenticated.ai-mode .life-map-panel {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(22px, 3vw, 34px);
-  overflow-x: hidden;
-}
-
-.app-layout.authenticated.ai-mode .life-map-hero {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(18px, 3vw, 34px);
-}
-
-.app-layout.authenticated.ai-mode .life-map-hero-copy {
-  min-width: 0;
-}
-
-.app-layout.authenticated.ai-mode .life-map-hero-copy .eyebrow {
-  margin-bottom: 8px;
-}
-
-.app-layout.authenticated.ai-mode .life-map-state-stage,
-.app-layout.authenticated.ai-mode .life-map-dashboard,
-.app-layout.authenticated.ai-mode .life-map-prep-grid,
-.app-layout.authenticated.ai-mode .life-map-loading-state,
-.app-layout.authenticated.ai-mode .life-map-empty-state,
-.app-layout.authenticated.ai-mode .life-map-privacy-card {
-  position: relative;
-  width: min(1440px, 100%);
-  max-width: 100%;
-  margin-inline: auto;
-}
-
-.app-layout.authenticated.ai-mode .life-map-state-stage {
-  display: block;
-  min-height: 0;
-  overflow: visible;
-}
-
-.app-layout.authenticated.ai-mode .life-map-state-stage > * {
-  position: relative;
-  inset: auto;
-  width: 100%;
-  max-width: 100%;
-}
-
-.app-layout.authenticated.ai-mode .life-map-dashboard {
-  min-height: 0;
-}
-
-.app-layout.authenticated.ai-mode .life-map-location-grid {
-  width: 100%;
-  margin-inline: 0;
-}
-
-.app-layout.authenticated.ai-mode .life-map-card-heading,
-.app-layout.authenticated.ai-mode .life-map-summary-card,
-.app-layout.authenticated.ai-mode .life-map-insight-card,
-.app-layout.authenticated.ai-mode .life-map-wide-section,
-.app-layout.authenticated.ai-mode .life-map-location-card {
-  min-width: 0;
-}
-
-:root[data-theme="bright"] .app-layout.authenticated.ai-mode .life-map-hero-copy .eyebrow {
-  color: var(--accent-hover) !important;
-  -webkit-text-fill-color: var(--accent-hover);
-}
-
-:root[data-theme="dark"] .app-layout.authenticated.ai-mode .life-map-hero-copy .eyebrow {
-  color: #9bdaf4 !important;
-  -webkit-text-fill-color: #9bdaf4;
-}
 
 .presentation-page {
   background:
@@ -11953,13 +11214,6 @@ select option {
   opacity: 0.8;
 }
 
-@media (max-width: 1080px) {
-  .app-layout.authenticated.ai-mode .life-map-hero {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-}
-
 @media (max-width: 780px) {
   .presentation-section {
     padding: 60px 22px 112px;
@@ -11968,10 +11222,6 @@ select option {
   .presentation-section-inner,
   .presentation-cover-inner {
     width: 100%;
-  }
-
-  .app-layout.authenticated.ai-mode .life-map-hero {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -11986,9 +11236,7 @@ select option {
 .atmosphere-glow,
 .presentation-section::after,
 .presentation-visual,
-.presentation-visual *,
-.life-map-loading-visual,
-.life-map-loading-visual * {
+.presentation-visual * {
   pointer-events: none !important;
 }
 
@@ -12012,8 +11260,6 @@ select option {
 .admin-modal-backdrop *,
 .toast-viewport,
 .toast-viewport *,
-.life-map-panel,
-.life-map-panel *,
 .friends-hub,
 .friends-hub *,
 .feed-page,
@@ -12037,9 +11283,7 @@ select option {
 .presentation-atmosphere,
 .presentation-atmosphere *,
 .presentation-visual,
-.presentation-visual *,
-.life-map-loading-visual,
-.life-map-loading-visual * {
+.presentation-visual * {
   pointer-events: none !important;
 }
 
@@ -12093,7 +11337,6 @@ select option {
 .section-title svg,
 .friends-section-heading svg,
 .settings-section-header svg,
-.life-map-card-heading svg,
 .presentation-section-heading svg {
   width: var(--icon-md);
   height: var(--icon-md);
@@ -12109,15 +11352,12 @@ select option {
 .nav-dropdown button svg,
 .primary-nav button svg,
 .mobile-bottom-nav button svg,
-.life-map-cta svg,
-.life-map-secondary-action svg,
 .presentation-control-button svg {
   width: var(--icon-sm);
   height: var(--icon-sm);
   flex-shrink: 0;
 }
 
-.life-map-feature-icon,
 .app-toast-icon {
   display: inline-flex;
   align-items: center;
@@ -12130,17 +11370,14 @@ select option {
   box-shadow: none !important;
 }
 
-.life-map-feature-icon svg,
 .app-toast-icon svg {
   width: var(--icon-lg);
   height: var(--icon-lg);
 }
 
-:root[data-theme="dark"] .life-map-feature-icon,
 :root[data-theme="dark"] .app-toast-icon,
 :root[data-theme="dark"] .section-title svg,
-:root[data-theme="dark"] .friends-section-heading svg,
-:root[data-theme="dark"] .life-map-card-heading svg {
+:root[data-theme="dark"] .friends-section-heading svg {
   filter: drop-shadow(0 0 8px rgba(121, 241, 220, 0.18));
 }
 
@@ -12231,8 +11468,6 @@ select option {
 .friends-quick-search label > svg,
 .social-friend-item > svg,
 .friends-profile-stats svg,
-.life-map-card-heading svg,
-.life-map-privacy-card svg,
 .settings-section-header svg {
   color: var(--accent) !important;
   filter: none;
@@ -12647,7 +11882,6 @@ select option {
 
 .app-layout.authenticated.friends-mode .friends-hub,
 .app-layout.authenticated.feed-mode .feed-page,
-.app-layout.authenticated.ai-mode .life-map-panel,
 .admin-dashboard-container {
   width: 100%;
   max-width: none;
@@ -12873,35 +12107,6 @@ select option {
   background: rgba(180, 83, 9, 0.12) !important;
 }
 
-.life-map-state-stage {
-  min-height: clamp(360px, 42vh, 620px);
-}
-
-.life-map-state-stage > * {
-  width: 100%;
-}
-
-:root[data-theme="bright"] .life-map-panel {
-  background: var(--page-bg) !important;
-}
-
-:root[data-theme="bright"] .life-map-loading-visual {
-  border-color: rgba(15, 127, 156, 0.16) !important;
-  background:
-    radial-gradient(circle at 45% 45%, rgba(56, 189, 248, 0.18), transparent 45%),
-    rgba(255, 255, 255, 0.42) !important;
-  filter: none !important;
-}
-
-:root[data-theme="bright"] :where(.loading-path) {
-  background: linear-gradient(90deg, transparent, rgba(15, 127, 156, 0.38), transparent) !important;
-}
-
-:root[data-theme="bright"] :where(.loading-node) {
-  background: var(--accent) !important;
-  box-shadow: 0 0 0 5px rgba(15, 127, 156, 0.1) !important;
-}
-
 :root[data-theme="bright"] .feed-card {
   cursor: pointer;
 }
@@ -12963,13 +12168,8 @@ select option {
 @media (max-width: 760px) {
   .app-layout.authenticated.friends-mode .friends-hub,
   .app-layout.authenticated.feed-mode .feed-page,
-  .app-layout.authenticated.ai-mode .life-map-panel,
   .admin-dashboard-container {
     padding: 20px 16px !important;
-  }
-
-  .life-map-state-stage {
-    min-height: 320px;
   }
 }
 
@@ -13200,57 +12400,6 @@ input.mood-intensity-slider::-moz-range-thumb {
   cursor: pointer !important;
 }
 
-.app-layout.authenticated.ai-mode .life-map-panel {
-  isolation: isolate;
-  min-height: calc(100vh - 76px);
-}
-
-.app-layout.authenticated.ai-mode .life-map-hero {
-  position: relative;
-  z-index: 2;
-}
-
-.app-layout.authenticated.ai-mode .life-map-hero-actions {
-  position: relative;
-  z-index: 5;
-  align-items: center;
-}
-
-.app-layout.authenticated.ai-mode .life-map-hero-actions .life-map-cta {
-  min-width: 178px;
-  flex: 0 0 auto;
-  opacity: 1;
-  visibility: visible;
-}
-
-.app-layout.authenticated.ai-mode .life-map-cta:disabled {
-  opacity: 0.88 !important;
-  visibility: visible !important;
-}
-
-.app-layout.authenticated.ai-mode .life-map-state-stage {
-  display: block !important;
-  clear: both;
-  min-height: 0 !important;
-  overflow: visible !important;
-  position: relative;
-  z-index: 1;
-}
-
-.app-layout.authenticated.ai-mode .life-map-state-stage > * {
-  position: relative !important;
-  inset: auto !important;
-  transform-origin: center top;
-}
-
-.app-layout.authenticated.ai-mode .life-map-loading-state {
-  display: grid;
-  grid-template-columns: minmax(96px, 136px) minmax(0, 1fr);
-  align-items: center;
-  min-height: 0 !important;
-  gap: clamp(16px, 2.5vw, 24px);
-}
-
 :root[data-theme="bright"] :where(
   .life-map-panel,
   .life-map-hero,
@@ -13297,26 +12446,6 @@ input.mood-intensity-slider::-moz-range-thumb {
 ) {
   color: var(--text-secondary) !important;
   -webkit-text-fill-color: var(--text-secondary) !important;
-}
-
-:root[data-theme="bright"] .life-map-mood-metrics span,
-:root[data-theme="bright"] .life-map-location-card span {
-  color: var(--accent-hover) !important;
-  -webkit-text-fill-color: var(--accent-hover) !important;
-  background: rgba(0, 143, 199, 0.1) !important;
-}
-
-@media (max-width: 760px) {
-  .app-layout.authenticated.ai-mode .life-map-loading-state {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    text-align: center;
-  }
-
-  .app-layout.authenticated.ai-mode .life-map-hero-actions .life-map-cta,
-  .app-layout.authenticated.ai-mode .life-map-hero-actions .life-map-secondary-action {
-    width: 100%;
-  }
 }
 
 /* Diary composer polish: roomier form, aligned mood controls, stable theme-aware inputs. */

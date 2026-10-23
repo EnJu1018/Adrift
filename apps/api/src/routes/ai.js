@@ -4,10 +4,22 @@ import { requireAuth } from '../middleware/auth.js';
 import { generateLifeMapInsight, getRequiredDiaryCount } from '../services/lifeMapAi.js';
 import { limitAiRequests, reserveAiUsage } from '../services/aiLimits.js';
 import { answerMemoryQuestion, validateChatInput } from '../services/memoryChat.js';
+import { getIntelligenceOverview } from '../services/intelligenceOverview.js';
+import { createSocialLimiter } from '../services/friendRelationships.js';
 
 export function createAiRouter({ DiaryModel = Diary, reserve = reserveAiUsage, generate, auth = requireAuth } = {}) {
 const router = express.Router();
-router.use(auth, limitAiRequests);
+router.use(auth);
+
+router.get('/overview', createSocialLimiter(60), async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  try { res.json({ success: true, data: await getIntelligenceOverview(DiaryModel, req.user._id, req.query.days) }); }
+  catch (error) {
+    res.status(error.status === 400 ? 400 : 503).json({ success: false, message: error.status === 400 ? error.message : '記錄統計暫時無法載入，請稍後重試。' });
+  }
+});
+
+router.use(limitAiRequests);
 
 router.post('/chat', async (req, res) => {
   const controller = new AbortController();

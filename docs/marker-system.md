@@ -120,6 +120,10 @@ Changes to selected/hovered/theme state update existing children, not innerHTML.
 Geographic groups and projected collision groups are separate: do not persist
 screen offsets in diary coordinates or recompute geography on camera movement.
 
+List offsets use React-owned CSS `translate`, separate from the animated scale.
+Even a zero-duration animation can defer its transform to the next frame; keeping
+these channels separate prevents a moving list from briefly crossing map bounds.
+
 Phase 4 uses a 120-180 degree arc for 2-6 entries and a scrollable list for 7+.
 Position both against the usable map rectangle, excluding panels and controls.
 Retain child keys, scroll position and focus during selection and theme updates.

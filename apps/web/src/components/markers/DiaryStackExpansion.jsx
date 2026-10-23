@@ -45,9 +45,9 @@ export default function DiaryStackExpansion({ group, layout, selectedId, onSelec
         transition={{ ...transition, delay: quiet || !present ? 0 : index * motionTokens.duration.stagger }}>
         <DiaryMarkerVisual diary={diary} selected={String(diary._id) === String(selectedId)} onSelect={() => onSelect(diary)} />
       </motion.div>)}
-    </> : <motion.div className="dn-stack-list" style={{ width: layout.width, maxHeight: layout.height }}
-      initial={quiet ? false : { x: layout.x, y: layout.y, scale: motionTokens.scale.small }} animate={{ x: layout.x, y: layout.y, scale: 1 }} exit={{ scale: motionTokens.scale.small }}
-      transition={{ ...transition, x: { duration: 0 }, y: { duration: 0 } }}>
+    </> : <motion.div className="dn-stack-list" style={{ width: layout.width, maxHeight: layout.height, translate: `${layout.x}px ${layout.y}px` }}
+      initial={quiet ? false : { scale: motionTokens.scale.small }} animate={{ scale: 1 }} exit={{ scale: motionTokens.scale.small }}
+      transition={transition}>
       <header><strong>{group.count} 篇記憶</strong><button type="button" onClick={() => onClose(true)} aria-label="收合記憶清單"><X size={18}/></button></header>
       <div className="dn-stack-scroll">
         {group.diaries.map((diary) => <button type="button" key={diary._id} data-stack-choice={diary._id}

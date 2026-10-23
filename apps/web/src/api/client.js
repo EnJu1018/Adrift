@@ -254,6 +254,9 @@ export const api = {
   getLifeMapInsight(signal) {
     return request('/ai/life-map', { signal });
   },
+  getIntelligenceOverview(days = 30, signal) {
+    return request(`/ai/overview?${new URLSearchParams({ days })}`, { signal });
+  },
   chatMemory(message, history, signal) {
     return request('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal });
   },
