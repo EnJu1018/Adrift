@@ -4,7 +4,7 @@ import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import ModerationAction from '../models/ModerationAction.js';
-import { broadcastDiaryEvent, notifyContentChange } from './diaries.js';
+import { broadcastDiaryEvent, notifyContentChange, notifyNotificationChange } from './diaries.js';
 import { deleteAccountData } from '../services/deleteAccount.js';
 import { getDbStatus } from '../config/db.js';
 import { removeUpload } from '../utils/removeUpload.js';
@@ -322,6 +322,7 @@ router.delete('/diaries/:id', requireAdminOrOwner, async (req, res, next) => {
       await ModerationAction.create([{ actor: req.user._id, targetId: diary._id, action: 'delete_diary', reason }], { session });
     });
     broadcastDiaryEvent('diary:deleted', diary);
+    notifyNotificationChange([diary.user]);
     await removeUpload(diary.imageUrl);
 
     res.json({

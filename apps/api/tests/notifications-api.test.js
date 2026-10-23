@@ -102,8 +102,18 @@ integration('admin authorization, owner protection, confirmed moderation audit a
   assert.equal((await call(`/admin/users/${secondOwner._id}/role`, owner, 'PATCH', { role: 'user' })).status, 403);
   assert.equal((await call(`/admin/users/${secondOwner._id}`, owner, 'DELETE')).status, 403);
   const target = await Diary.findOne({ user: b._id });
+  await call(`/diaries/${target._id}/react`, a, 'POST', { type: 'hug' });
+  const controller = new AbortController();
+  const stream = await fetch(`${base}/diaries/events?token=${jwt.sign({ sub: String(b._id) }, process.env.JWT_SECRET, { expiresIn: '5m' })}`, { signal: controller.signal });
+  const reader = stream.body.getReader(); await reader.read();
   assert.equal((await call(`/admin/diaries/${target._id}`, administrator, 'DELETE')).status, 400);
-  assert.equal((await call(`/admin/diaries/${target._id}`, administrator, 'DELETE', { reason: '測試違規內容移除' })).status, 200);
+  const timer = setTimeout(() => controller.abort(), 3000);
+  try {
+    assert.equal((await call(`/admin/diaries/${target._id}`, administrator, 'DELETE', { reason: '測試違規內容移除' })).status, 200);
+    let events = '';
+    while (!events.includes('notifications:changed')) events += new TextDecoder().decode((await reader.read()).value);
+    assert.equal((await call('/notifications', b)).data.unreadCount, 0);
+  } finally { clearTimeout(timer); controller.abort(); }
   assert.equal(await ModerationAction.countDocuments({ targetId: target._id, actor: administrator._id }), 1);
   assert.equal((await call('/admin/status', owner)).data.database.status, 'connected');
   assert.ok((await call('/admin/stats', owner)).data.recentUsers.length);

@@ -647,7 +647,7 @@ export default function App() {
     const notificationChanged = () => { if (getStoredAuth().token === token) window.dispatchEvent(new Event('adrift:notifications-changed')); };
     events.addEventListener('notifications:changed', notificationChanged);
     events.addEventListener('open', notificationChanged);
-    const contentChanged = () => { if (getStoredAuth().token === token) { setSelectedDiary(null); socialChanged(); } };
+    const contentChanged = () => { if (getStoredAuth().token === token) { setSelectedDiary(null); socialChanged(); notificationChanged(); } };
     events.addEventListener('content:changed', contentChanged);
 
     return () => {

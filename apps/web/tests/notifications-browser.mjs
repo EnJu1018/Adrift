@@ -181,14 +181,18 @@ try {
     }
   }
   await pa.setViewportSize({ width: 1440, height: 900 });
+  const moderationDiary = await Diary.create({ user: b._id, title: '通知同步驗證', text: '只用於本地的管理流程驗證。', mood: { type: 'calm', intensity: 2 }, visibility: 'public', location: { type: 'Point', coordinates: [120.5, 24.2] } });
+  await pa.evaluate(async id => { const { api } = await import('/src/api/client.js'); await api.reactToDiary(id, 'hug'); }, String(moderationDiary._id));
+  await pb.getByRole('button', { name: '通知，1 則未讀', exact: true }).waitFor();
   await pa.getByRole('button', { name: 'Diaries', exact: true }).click();
-  await pa.getByRole('button', { name: '刪除日記', exact: true }).click();
+  await pa.locator('.admin-diary-row').filter({ hasText: moderationDiary.title }).getByRole('button', { name: '刪除日記', exact: true }).click();
   const confirm = pa.getByRole('dialog', { name: '刪除日記確認', exact: true }); await confirm.waitFor();
   assert.equal(await confirm.getByRole('button', { name: '永久刪除', exact: true }).isDisabled(), true);
   await confirm.getByRole('textbox').fill('僅限本地測試的管理原因');
   await confirm.getByRole('button', { name: '永久刪除', exact: true }).click();
   await confirm.waitFor({ state: 'detached' });
-  assert.equal(await Diary.countDocuments({ _id: secondDiary._id }), 0);
+  assert.equal(await Diary.countDocuments({ _id: moderationDiary._id }), 0);
+  await pb.getByRole('button', { name: '通知', exact: true }).waitFor();
   await pa.emulateMedia({ reducedMotion: 'reduce' });
   await pa.goto(web + '/feed'); await pa.locator('.mf-tabs').waitFor();
   assert.ok(await pa.locator('.mf-tabs>span').evaluate(el => parseFloat(getComputedStyle(el).transitionDuration) <= 0.00001));
