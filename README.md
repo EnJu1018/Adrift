@@ -2,7 +2,7 @@
 
 Adrift 是一個結合地圖、情緒日記、好友社交與 Adrift Intelligence 的情緒地圖平台。
 
-這個 repository 採用 monorepo 結構，網站前端、後端 API 與 iOS App 彼此分開管理，避免 Web 與 iOS 檔案混在一起。
+這個 repository 管理網站前端與共用後端 API。原生 iOS App 已拆分至獨立的 Private repository：[Adrift-iOS](https://github.com/EnJu1018/Adrift-iOS)，兩個專案各自開發與發佈，仍共用同一套 Backend API。
 
 ## 專案結構
 
@@ -10,9 +10,8 @@ Adrift 是一個結合地圖、情緒日記、好友社交與 Adrift Intelligenc
 Adrift/
 ├─ apps/
 │  ├─ web/      # React / Vite 網站前端
-│  ├─ api/      # Node.js / Express / MongoDB 後端 API
-│  └─ ios/      # SwiftUI 原生 iOS App
-├─ docs/        # 架構、API、部署與 iOS 文件
+│  └─ api/      # Node.js / Express / MongoDB 後端 API
+├─ docs/        # 架構、API、部署與專案連結
 ├─ packages/
 │  └─ shared/   # 未來共用型別或工具
 ├─ package.json # npm workspaces 與根目錄 scripts
@@ -63,11 +62,7 @@ npm run dev
 
 ### iOS
 
-```bash
-open apps/ios/Adrift.xcodeproj
-```
-
-使用 Xcode 選擇 `Adrift` scheme 後執行。
+請另外 clone [Adrift-iOS](https://github.com/EnJu1018/Adrift-iOS)，在該專案開啟 `Adrift.xcodeproj`。iOS 不依賴本 repository 的本機路徑，也不需要先啟動 Web 才能編譯。
 
 ## 環境變數
 
@@ -75,7 +70,6 @@ open apps/ios/Adrift.xcodeproj
 
 - `apps/web/.env.example`
 - `apps/api/.env.example`
-- `apps/ios/README.md`
 
 不要 commit 真正的 `.env`、`.env.local` 或其他私密設定。
 
@@ -87,7 +81,7 @@ open apps/ios/Adrift.xcodeproj
 - 好友列表與好友邀請
 - 公開 / 好友 / 私人可見性
 - Adrift Intelligence 智慧洞察
-- 原生 SwiftUI iOS App
+- 與獨立的原生 SwiftUI iOS App 共用 API
 
 ## 技術架構
 
@@ -119,4 +113,4 @@ open apps/ios/Adrift.xcodeproj
 
 - `apps/web`：網站前端
 - `apps/api`：網站後端 API
-- `apps/ios`：iOS App 獨立維護，不影響 Web / API build
+- iOS App 在 [Adrift-iOS](https://github.com/EnJu1018/Adrift-iOS) 獨立維護，不影響 Web / API build

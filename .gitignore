@@ -36,12 +36,6 @@ pnpm-debug.log*
 apps/api/src/uploads/*
 !apps/api/src/uploads/.gitkeep
 
-# iOS / Xcode generated state
-DerivedData/
-*.xcuserstate
-xcuserdata/
-*.xcscmblueprint
-
 # OS / editor
 .DS_Store
 Thumbs.db

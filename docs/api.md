@@ -2,6 +2,14 @@
 
 The API app lives in `apps/api`.
 
+Production clients use `https://adrifttw.com/api`; Nginx strips the `/api`
+prefix before forwarding to Express. The website and independent
+[Adrift-iOS](https://github.com/EnJu1018/Adrift-iOS) app share this backend.
+Preserve existing paths, response envelopes, JWT and visibility rules for
+installed mobile clients. Prefer additive changes and coordinate breaking
+changes with the iOS repository's `docs/API_CONTRACT.md` and contract checks.
+Gemini and database credentials remain server-side.
+
 ## Local Development
 
 ```bash

@@ -4,7 +4,12 @@
 
 - Web build output comes from `apps/web`.
 - API runtime comes from `apps/api`.
-- iOS is built with Xcode from `apps/ios`.
+- iOS is built and released independently with Xcode from
+  [Adrift-iOS](https://github.com/EnJu1018/Adrift-iOS).
+
+The repository split does not change the VPS runtime, API routes, environment
+variables or database. Removing native source needs no frontend rebuild or API
+restart. Continue deploying only the web/API repository when those apps change.
 
 ## Web
 
