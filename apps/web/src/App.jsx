@@ -21,6 +21,9 @@ import ToastViewport from './components/ToastViewport.jsx';
 import UserAvatar from './components/UserAvatar.jsx';
 import AnimatedNumber from './components/ui/AnimatedNumber.jsx';
 import ContentTransition from './components/ui/ContentTransition.jsx';
+import useNotifications from './components/notifications/useNotifications.js';
+import NotificationList from './components/notifications/NotificationList.jsx';
+import FriendProfile from './components/social/FriendProfile.jsx';
 import { usePerformanceMode } from './hooks/usePerformanceMode.js';
 import { useUserLocation } from './hooks/useUserLocation.js';
 import { normalizeTaiwanPlaceName } from './utils/locationFormatter.js';
@@ -211,6 +214,9 @@ export default function App() {
   const [mapFocusLocation, setMapFocusLocation] = useState(null);
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notifications = useNotifications(getEntityId(user), notificationsOpen);
+  const [notificationEntry, setNotificationEntry] = useState(0);
+  const [profilePerson, setProfilePerson] = useState(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userCodeCopied, setUserCodeCopied] = useState(false);
   const [userCodeCopyError, setUserCodeCopyError] = useState(false);
@@ -296,6 +302,8 @@ export default function App() {
     autoLocateRequestedRef.current = false;
     clearStoredAuth();
     setUser(null);
+    setProfilePerson(null);
+    setNotificationEntry(0);
     setFriends([]);
     setFriendRequests([]);
     setSentFriendRequests([]);
@@ -500,7 +508,7 @@ export default function App() {
     if (!notificationsOpen && !userMenuOpen) return undefined;
     const trigger = navbarActionsRef.current?.querySelector('[aria-expanded="true"]');
     const dropdown = document.getElementById(trigger?.getAttribute('aria-controls'));
-    dropdown?.querySelector('button:not(:disabled)')?.focus({ preventScroll: true });
+    (dropdown?.querySelector('button:not(:disabled)') || dropdown)?.focus({ preventScroll: true });
 
     function closePopoversOutside(event) {
       if (navbarActionsRef.current?.contains(event.target)) return;
@@ -599,27 +607,33 @@ export default function App() {
     const events = new EventSource(getDiaryEventsUrl());
 
     function handleCreated(event) {
+      if (getStoredAuth().token !== token) return;
       try {
         const payload = JSON.parse(event.data);
         applyRealtimeDiary(payload.diary);
+        window.dispatchEvent(new CustomEvent('adrift:feed-changed'));
       } catch {
         // Ignore malformed event payloads; the next normal refresh will recover.
       }
     }
 
     function handleDeleted(event) {
+      if (getStoredAuth().token !== token) return;
       try {
         const payload = JSON.parse(event.data);
         removeRealtimeDiary(payload.diaryId);
+        window.dispatchEvent(new CustomEvent('adrift:feed-changed', { detail: { diaryId: payload.diaryId } }));
       } catch {
         // Ignore malformed event payloads; the next normal refresh will recover.
       }
     }
 
     function handleUpdated(event) {
+      if (getStoredAuth().token !== token) return;
       try {
         const payload = JSON.parse(event.data);
         updateRealtimeDiary(payload.diary);
+        window.dispatchEvent(new CustomEvent('adrift:feed-changed', { detail: { diary: payload.diary } }));
       } catch {
         // Ignore malformed event payloads; the next normal refresh will recover.
       }
@@ -628,14 +642,22 @@ export default function App() {
     events.addEventListener('diary:created', handleCreated);
     events.addEventListener('diary:deleted', handleDeleted);
     events.addEventListener('diary:updated', handleUpdated);
-    const socialChanged = () => { if (getStoredAuth().token === token) refreshSocialContent(); };
+    const socialChanged = () => { if (getStoredAuth().token === token) { refreshSocialContent(); window.dispatchEvent(new Event('adrift:feed-changed')); } };
     events.addEventListener('social:changed', socialChanged);
+    const notificationChanged = () => { if (getStoredAuth().token === token) window.dispatchEvent(new Event('adrift:notifications-changed')); };
+    events.addEventListener('notifications:changed', notificationChanged);
+    events.addEventListener('open', notificationChanged);
+    const contentChanged = () => { if (getStoredAuth().token === token) { setSelectedDiary(null); socialChanged(); } };
+    events.addEventListener('content:changed', contentChanged);
 
     return () => {
       events.removeEventListener('diary:created', handleCreated);
       events.removeEventListener('diary:deleted', handleDeleted);
       events.removeEventListener('diary:updated', handleUpdated);
       events.removeEventListener('social:changed', socialChanged);
+      events.removeEventListener('notifications:changed', notificationChanged);
+      events.removeEventListener('open', notificationChanged);
+      events.removeEventListener('content:changed', contentChanged);
       events.close();
     };
   }, [applyRealtimeDiary, removeRealtimeDiary, updateRealtimeDiary, refreshSocialContent, user?.id]);
@@ -903,6 +925,7 @@ export default function App() {
   }
 
   async function reactToDiary(id, type, optimisticDiary) {
+    const token = getStoredAuth().token;
     const previousSelected = selectedDiary?._id === id ? selectedDiary : null;
     const previousDiary = diaries.find((diary) => diary._id === id) || null;
 
@@ -923,6 +946,7 @@ export default function App() {
       showActionToast('已更新共鳴');
       return payload;
     } catch (error) {
+      if (token !== getStoredAuth().token) throw error;
       if (previousSelected) setSelectedDiary(previousSelected);
       if (previousDiary) {
         setDiaries((current) => current.map((diary) => (diary._id === id ? previousDiary : diary)));
@@ -1196,32 +1220,21 @@ export default function App() {
                       setNotificationsOpen((open) => !open);
                       setUserMenuOpen(false);
                     }}
-                    aria-label={`通知${friendRequests.length ? `，${friendRequests.length} 則邀請` : ''}`}
+                    aria-label={`通知${notifications.unreadCount ? `，${notifications.unreadCount} 則未讀` : ''}`}
                     aria-expanded={notificationsOpen}
                     aria-controls="nav-notifications"
                   >
                     <Bell size={18} />
-                    {friendRequests.length > 0 && <span className="nav-badge"><AnimatedNumber value={friendRequests.length > 99 ? '99+' : friendRequests.length} digits={3} variant="badge" /></span>}
+                    {notifications.unreadCount > 0 && <span className="nav-badge"><AnimatedNumber value={notifications.unreadCount > 99 ? '99+' : notifications.unreadCount} digits={3} variant="badge" /></span>}
                   </button>
                   <AnimatePresence initial={false}>{notificationsOpen && (
-                    <ContentTransition id="nav-notifications" className="nav-dropdown notifications-dropdown glass" onKeyDown={handlePopoverKeyDown}>
-                      <div className="nav-dropdown-header">
-                        <strong>通知</strong>
-                        <span>{friendRequests.length > 0 ? `${friendRequests.length} 則好友邀請` : '目前沒有新通知'}</span>
-                      </div>
-                      {friendRequests.length > 0 ? (
-                        friendRequests.slice(0, 3).map((request) => (
-                          <button key={request.requestId} type="button" onClick={() => navigate('/friends')}>
-                            <UserRound size={15} />
-                            <span>
-                              <strong>{request.from?.name || '新的好友邀請'}</strong>
-                              <small>@{request.from?.userCode || 'unknown'} 想加你為好友</small>
-                            </span>
-                          </button>
-                        ))
-                      ) : (
-                        <p>目前沒有新通知</p>
-                      )}
+                    <ContentTransition id="nav-notifications" tabIndex={-1} role="region" aria-label="通知清單" className="nav-dropdown notifications-dropdown glass" onKeyDown={handlePopoverKeyDown}>
+                      <NotificationList notifications={notifications} onOpen={async target => {
+                        if (target.type === 'diary_reaction') await openMemoryDiary(target.targetId);
+                        else if (target.type === 'friend_request') { setNotificationEntry(value => value + 1); navigate('/friends'); }
+                        else setProfilePerson({ _id: target.actorId, name: '好友' });
+                        setNotificationsOpen(false);
+                      }} />
                     </ContentTransition>
                   )}</AnimatePresence>
                 </div>
@@ -1290,24 +1303,6 @@ export default function App() {
                 </div>
               </div>
 
-              <nav className="mobile-bottom-nav glass" aria-label="手機導覽">
-                <button className={isHomePath(currentPath) ? 'active' : ''} type="button" onClick={() => navigate('/')}>
-                  <Home size={18} />
-                  <span>地圖</span>
-                </button>
-                <button className={isFriendsPage ? 'active' : ''} type="button" onClick={() => navigate('/friends')}>
-                  <Users size={18} />
-                  <span>好友</span>
-                </button>
-                <button className={isFeedPage ? 'active' : ''} type="button" onClick={() => navigate('/feed')}>
-                  <Activity size={18} />
-                  <span>動態</span>
-                </button>
-                <button className={isAiPage ? 'active' : ''} type="button" onClick={() => navigate('/ai/life-map')}>
-                  <Brain size={18} />
-                  <span>Intelligence</span>
-                </button>
-              </nav>
             </>
           ) : (
             <button className="primary-button compact" onClick={() => navigate('/auth')}>
@@ -1316,10 +1311,19 @@ export default function App() {
           )}
         </header>
 
+        {user && <nav className="mobile-bottom-nav glass" aria-label="手機導覽">
+          <button className={isHomePath(currentPath) ? 'active' : ''} type="button" onClick={() => navigate('/')}><Home size={18} /><span>地圖</span></button>
+          <button className={isFriendsPage ? 'active' : ''} type="button" onClick={() => navigate('/friends')}><Users size={18} /><span>好友</span></button>
+          <button className={isFeedPage ? 'active' : ''} type="button" onClick={() => navigate('/feed')}><Activity size={18} /><span>動態</span></button>
+          <button className={isAiPage ? 'active' : ''} type="button" onClick={() => navigate('/ai/life-map')}><Brain size={18} /><span>Intelligence</span></button>
+        </nav>}
+
         {user && isSettingsPage ? (
           <AccountSettings
             key="account-settings"
             user={user}
+            theme={theme}
+            onThemeChange={setTheme}
             onBack={() => navigate('/')}
             onUpdateName={updateName}
             onUpdateEmail={updateEmail}
@@ -1331,6 +1335,7 @@ export default function App() {
         ) : user && isFriendsPage ? (
           <FriendsPage
             key="friends-page"
+            notificationEntry={notificationEntry}
             user={user}
             diaries={displayedDiaries}
             friends={friends}
@@ -1354,7 +1359,9 @@ export default function App() {
           <FeedPage
             diaries={diaries}
             user={user}
-            onOpenDiary={openDiaryFromFeed}
+            onOpenDiary={diary => openMemoryDiary(diary._id)}
+            onOpenPerson={setProfilePerson}
+            onReact={reactToDiary}
             onNewDiary={openNewDiary}
           />
         ) : user && isAiPage ? (
@@ -1478,6 +1485,7 @@ export default function App() {
           />
         )}
       </AnimatePresence>
+      <AnimatePresence>{user && profilePerson && <FriendProfile key={profilePerson._id} person={profilePerson} refreshToken={socialRefreshToken} onClose={() => setProfilePerson(null)} onOpenDiary={async (id, signal) => { await openMemoryDiary(id, signal); setProfilePerson(null); }} />}</AnimatePresence>
       <ToastViewport toast={actionToast} className="avoid-sidebar" onDismiss={() => setActionToast(null)} />
     </main>
   );

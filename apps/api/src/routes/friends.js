@@ -1,7 +1,7 @@
 import express from 'express';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
-import { notifySocialChange } from './diaries.js';
+import { notifySocialChange, notifyNotificationChange } from './diaries.js';
 import { getFriendRecommendations } from '../services/friendRecommendationService.js';
 import { cancelInvitation, createSocialLimiter, publicPerson, publicPersonFields, removeFriend, respondToInvitation, sendInvitation } from '../services/friendRelationships.js';
 import { getPersonMemories, getSharedPlaces, getSocialProfile, searchPeople } from '../services/socialProfiles.js';
@@ -66,6 +66,7 @@ function mutation(action, message) {
     try {
       const data = await action(req);
       notifySocialChange([req.user._id, data.targetUserId]);
+      notifyNotificationChange([req.user._id, data.targetUserId]);
       res.json({ success: true, message: data.friendshipStatus === 'received_request' ? '對方已邀請你，可以直接接受邀請' : message, data });
     } catch (error) { next(error); }
   };

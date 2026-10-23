@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import { createNotification } from './notifications.js';
 
 export const publicPersonFields = '_id name avatar userCode createdAt';
 const same = (a, b) => String(a?._id || a) === String(b?._id || b);
@@ -49,6 +50,7 @@ export function sendInvitation(viewerId, targetId) {
     if (target.friends.some(id => same(id, current))) throw socialError('好友狀態已變更，請重新整理');
     const invite = { _id: new mongoose.Types.ObjectId(), from: current._id, status: 'pending', createdAt: new Date() };
     await User.updateOne({ _id: target._id }, { $push: { friendRequests: invite } }, { session });
+    await createNotification(target._id, current._id, 'friend_request', invite._id, session);
     return { friendshipStatus: 'sent_request', requestId: invite._id, targetUserId: target._id };
   });
 }
@@ -67,6 +69,7 @@ export async function respondToInvitation(viewerId, requestId, accept) {
     if (accept) await User.updateOne({ _id: target._id }, {
       $addToSet: { friends: current._id }, $pull: { friendRequests: { from: current._id, status: 'pending' } }
     }, { session });
+    if (accept) await createNotification(target._id, current._id, 'friend_accepted', request._id, session);
     return { friendshipStatus: accept ? 'friend' : 'none', targetUserId: target._id };
   });
 }

@@ -52,7 +52,7 @@ export default function FriendProfile({ person, refreshToken, renderActions, onC
     <div className="hub-profile-scroll">
       <div className="hub-profile-identity"><UserAvatar user={display} size="lg" /><h2>{display.name}</h2><p>@{display.userCode}</p></div>
       {status === 'ready' && <>
-        <div className="hub-profile-actions">{renderActions(display)}{display.friendshipStatus === 'friend' && <button className="hub-icon-button" onClick={() => onRemove(display)} aria-label={`移除好友 ${display.name}`}><Trash2 size={17} /></button>}</div>
+        <div className="hub-profile-actions">{renderActions?.(display)}{display.friendshipStatus === 'friend' && onRemove && <button className="hub-icon-button" onClick={() => onRemove(display)} aria-label={`移除好友 ${display.name}`}><Trash2 size={17} /></button>}</div>
         <dl className="hub-profile-stats"><div><dt>公開記憶</dt><dd><AnimatedNumber value={profile.diaryStats?.publicCount || 0} digits={4} /></dd></div><div><dt>向你分享的好友記憶</dt><dd><AnimatedNumber value={profile.diaryStats?.friendsCount || 0} digits={4} /></dd></div></dl>
         <nav className="hub-profile-tabs" aria-label="個人記憶分類">
           <button aria-pressed={tab === 'memories'} onClick={() => setTab('memories')}><BookOpen size={16} />可見記憶</button>

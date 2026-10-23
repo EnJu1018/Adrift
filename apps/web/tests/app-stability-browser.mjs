@@ -39,6 +39,7 @@ try {
     api.getFriends = async () => ({ data: [] });
     api.getFriendRequests = async () => ({ data: [{ requestId: 'invite', from: { name: 'River', userCode: 'river' } }] });
     api.getSentFriendRequests = async () => ({ data: [] });
+    api.getNotifications = async () => ({ data: { items: [{ _id: 'notice', type: 'friend_request', actor: { name: 'River', userCode: 'river' }, createdAt: '2026-09-01T12:00:00Z', readAt: null }], unreadCount: 1, nextCursor: null } });
     const { default: App } = await import('/src/App.jsx');
     createRoot(document.getElementById('root')).render(React.createElement(React.StrictMode, null, React.createElement(App)));
   });
@@ -64,7 +65,7 @@ try {
     await menu.waitFor({ state: 'detached' });
     assert.equal(await userMenu.evaluate(el => el === document.activeElement), true);
     assert.deepEqual(await userMenu.boundingBox(), before);
-    const notifications = page.getByRole('button', { name: /通知，1 則邀請/ });
+    const notifications = page.getByRole('button', { name: /通知，1 則未讀/ });
     await notifications.click();
     await page.waitForFunction(() => document.querySelector('#nav-notifications')?.contains(document.activeElement));
     await page.keyboard.press('Escape');

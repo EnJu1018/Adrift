@@ -2,6 +2,12 @@ import express from 'express';
 import { ROLES, VISIBILITIES } from '../constants/app.js';
 import Diary from '../models/Diary.js';
 import User from '../models/User.js';
+import Notification from '../models/Notification.js';
+import ModerationAction from '../models/ModerationAction.js';
+import { broadcastDiaryEvent, notifyContentChange } from './diaries.js';
+import { deleteAccountData } from '../services/deleteAccount.js';
+import { getDbStatus } from '../config/db.js';
+import { removeUpload } from '../utils/removeUpload.js';
 import { requireAdminOrOwner, requireAuth, requireOwner } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -9,10 +15,13 @@ const adminUserFields = '_id name email userCode role avatar createdAt';
 const adminDiaryUserFields = '_id name userCode avatar';
 
 router.use(requireAuth);
+router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+
+router.get('/status', requireAdminOrOwner, (_req, res) => res.json({ success: true, data: { database: { status: getDbStatus().status }, checkedAt: new Date() } }));
 
 function startOfToday() {
-  const today = new Date();
-  return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const day = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  return new Date(`${day}T00:00:00+08:00`);
 }
 
 function parsePagination(query) {
@@ -108,7 +117,9 @@ router.get('/stats', requireAdminOrOwner, async (_req, res, next) => {
         friendsDiaries,
         privateDiaries,
         todayUsers,
-        todayDiaries
+        todayDiaries,
+        recentUsers: (await User.find().select(adminUserFields).sort({ createdAt: -1, _id: -1 }).limit(5)).map(serializeAdminUser),
+        recentDiaries: (await Diary.find().populate('user', adminDiaryUserFields).sort({ createdAt: -1, _id: -1 }).limit(5)).map(serializeAdminDiary)
       }
     });
   } catch (error) {
@@ -139,7 +150,7 @@ router.get('/users', requireAdminOrOwner, async (req, res, next) => {
     const [users, total] = await Promise.all([
       User.find(query)
         .select(adminUserFields)
-        .sort({ createdAt: -1 })
+        .sort(req.query.sort === 'oldest' ? { createdAt: 1, _id: 1 } : { createdAt: -1, _id: -1 })
         .skip(skip)
         .limit(limit),
       User.countDocuments(query)
@@ -185,13 +196,14 @@ router.patch('/users/:id/role', requireOwner, async (req, res, next) => {
       });
     }
 
-    targetUser.role = nextRole;
-    await targetUser.save();
+    if (targetUser.role === 'owner') return res.status(403).json({ success: false, message: '不可修改 Owner 的權限' });
+    const updated = await User.findOneAndUpdate({ _id: targetUser._id, role: { $ne: 'owner' } }, { $set: { role: nextRole } }, { new: true, runValidators: true });
+    if (!updated) return res.status(409).json({ success: false, message: '角色已變更，請重新整理' });
 
     res.json({
       success: true,
       message: '使用者權限已更新',
-      data: serializeAdminUser(targetUser)
+      data: serializeAdminUser(updated)
     });
   } catch (error) {
     next(error);
@@ -208,34 +220,6 @@ function requireOwnerForUserDelete(req, res, next) {
     success: false,
     message: '只有 Owner 可以刪除使用者'
   });
-}
-
-async function removeUserReactions(targetUserId) {
-  const diaries = await Diary.find({ 'reactedUsers.userId': targetUserId });
-
-  await Promise.all(
-    diaries.map(async (diary) => {
-      const remainingReactions = [];
-
-      for (const reaction of diary.reactedUsers || []) {
-        if (reaction.userId?.toString() === targetUserId.toString()) {
-          const type = reaction.type;
-
-          if (type && diary.reactions?.[type] !== undefined) {
-            diary.reactions[type] = Math.max(0, (diary.reactions[type] || 0) - 1);
-          }
-
-          continue;
-        }
-
-        remainingReactions.push(reaction);
-      }
-
-      diary.reactedUsers = remainingReactions;
-      diary.markModified('reactions');
-      await diary.save();
-    })
-  );
 }
 
 router.delete('/users/:id', requireOwnerForUserDelete, async (req, res, next) => {
@@ -256,27 +240,8 @@ router.delete('/users/:id', requireOwnerForUserDelete, async (req, res, next) =>
       });
     }
 
-    await removeUserReactions(targetUser._id);
-
-    await Promise.all([
-      Diary.deleteMany({ user: targetUser._id }),
-      User.updateMany(
-        {
-          $or: [
-            { friends: targetUser._id },
-            { 'friendRequests.from': targetUser._id }
-          ]
-        },
-        {
-          $pull: {
-            friends: targetUser._id,
-            friendRequests: { from: targetUser._id }
-          }
-        }
-      )
-    ]);
-
-    await targetUser.deleteOne();
+    await deleteAccountData(targetUser._id);
+    notifyContentChange();
 
     res.json({
       success: true,
@@ -340,6 +305,8 @@ router.get('/diaries', requireAdminOrOwner, async (req, res, next) => {
 
 router.delete('/diaries/:id', requireAdminOrOwner, async (req, res, next) => {
   try {
+    const reason = typeof req.body.reason === 'string' ? req.body.reason.trim() : '';
+    if (reason.length < 4 || reason.length > 300) return res.status(400).json({ success: false, message: '請填寫 4～300 字的管理原因' });
     const diary = await Diary.findById(req.params.id);
 
     if (!diary) {
@@ -349,7 +316,13 @@ router.delete('/diaries/:id', requireAdminOrOwner, async (req, res, next) => {
       });
     }
 
-    await diary.deleteOne();
+    await Diary.db.transaction(async session => {
+      await Diary.deleteOne({ _id: diary._id }, { session });
+      await Notification.deleteMany({ type: 'diary_reaction', targetId: diary._id }, { session });
+      await ModerationAction.create([{ actor: req.user._id, targetId: diary._id, action: 'delete_diary', reason }], { session });
+    });
+    broadcastDiaryEvent('diary:deleted', diary);
+    await removeUpload(diary.imageUrl);
 
     res.json({
       success: true,

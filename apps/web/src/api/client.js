@@ -148,6 +148,15 @@ async function fetchWithDeadline(url, options) {
 }
 
 export const api = {
+  getFeed(filter = 'all', cursor = '', signal) {
+    return request(`/diaries/feed?${new URLSearchParams({ filter, ...(cursor ? { cursor } : {}) })}`, { signal });
+  },
+  getNotifications(cursor = '', signal) {
+    return request(`/notifications${cursor ? `?${new URLSearchParams({ cursor })}` : ''}`, { signal });
+  },
+  readNotification(id) { return request(`/notifications/${id}/read`, { method: 'PATCH' }); },
+  readAllNotifications() { return request('/notifications/read-all', { method: 'PATCH' }); },
+  getNotificationTarget(id) { return request(`/notifications/${id}/target`); },
   checkEmail(email) {
     return request('/auth/check-email', {
       method: 'POST',
@@ -266,6 +275,7 @@ export const api = {
   getAdminStats() {
     return request('/admin/stats');
   },
+  getAdminStatus(signal) { return request('/admin/status', { signal }); },
   getAdminUsers(params = {}) {
     const query = new URLSearchParams(
       Object.entries(params).filter(([, value]) => value !== undefined && value !== '' && value !== 'all')
@@ -287,8 +297,8 @@ export const api = {
   deleteAdminUser(id) {
     return request(`/admin/users/${id}`, { method: 'DELETE' });
   },
-  deleteAdminDiary(id) {
-    return request(`/admin/diaries/${id}`, { method: 'DELETE' });
+  deleteAdminDiary(id, reason) {
+    return request(`/admin/diaries/${id}`, { method: 'DELETE', body: JSON.stringify({ reason }) });
   },
   getMe() {
     return request('/users/me');

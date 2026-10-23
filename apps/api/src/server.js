@@ -13,6 +13,7 @@ import diaryRoutes from './routes/diaries.js';
 import friendRoutes from './routes/friends.js';
 import locationRoutes from './routes/location.js';
 import userRoutes from './routes/users.js';
+import notificationRoutes from './routes/notifications.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 dotenv.config();
@@ -78,6 +79,7 @@ app.get('/health', (_req, res) => {
 app.use('/auth', authRoutes);
 app.use('/diaries', diaryRoutes);
 app.use('/users', userRoutes);
+app.use('/notifications', notificationRoutes);
 app.use('/friends', friendRoutes);
 app.use('/ai', aiRoutes);
 app.use('/admin', adminRoutes);

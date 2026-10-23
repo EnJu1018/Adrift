@@ -11,6 +11,10 @@ import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getDistanceInMeters } from '../utils/distance.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
+import { createNotification } from '../services/notifications.js';
+import { createSocialLimiter } from '../services/friendRelationships.js';
+import { cursorQuery, pageCursor } from '../utils/cursor.js';
+import { removeUpload } from '../utils/removeUpload.js';
 
 const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
@@ -73,7 +77,7 @@ function getDiaryAuthorId(diary) {
   return diary.user?._id || diary.user;
 }
 
-function canViewDiary(user, diary) {
+export function canViewDiary(user, diary) {
   const authorId = getDiaryAuthorId(diary);
 
   if (sameId(authorId, user._id)) return true;
@@ -90,7 +94,7 @@ function sendDiaryEvent(client, event, data) {
   client.res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
-export async function broadcastDiaryEvent(event, diary) {
+export async function broadcastDiaryEvent(event, diary, previousDiary) {
   const clients = [...diaryEventClients.values()];
   if (!clients.length) return;
   try {
@@ -103,6 +107,7 @@ export async function broadcastDiaryEvent(event, diary) {
       if (!fresh) { client.res.end(); continue; }
       client.user = fresh;
       if (canViewDiary(fresh, diary)) sendDiaryEvent(client, event, event === 'diary:deleted' ? { diaryId: diary._id } : { diary: serializeDiary(diary, fresh._id) });
+      else if (previousDiary && canViewDiary(fresh, previousDiary)) sendDiaryEvent(client, 'diary:deleted', { diaryId: diary._id });
     }
   } catch { for (const client of clients) client.res.end(); }
 }
@@ -112,6 +117,21 @@ export function notifySocialChange(ids) {
   for (const client of diaryEventClients.values()) if (changed.has(String(client.user._id))) {
     client.user.friends = [];
     try { sendDiaryEvent(client, 'social:changed', {}); } catch { client.res.end(); }
+  }
+}
+
+export function notifyNotificationChange(ids) {
+  const changed = new Set(ids.map(String));
+  for (const client of diaryEventClients.values()) if (changed.has(String(client.user._id))) {
+    if (client.expiresAt <= Date.now()) { client.res.end(); continue; }
+    try { sendDiaryEvent(client, 'notifications:changed', {}); } catch { client.res.end(); }
+  }
+}
+
+export function notifyContentChange() {
+  for (const client of diaryEventClients.values()) {
+    if (client.expiresAt <= Date.now()) { client.res.end(); continue; }
+    try { sendDiaryEvent(client, 'content:changed', {}); } catch { client.res.end(); }
   }
 }
 
@@ -330,6 +350,20 @@ function serializeExploreDiary(diary, userId) {
   };
 }
 
+router.get('/feed', requireAuth, createSocialLimiter(90), async (req, res, next) => {
+  try {
+    const filter = req.query.filter || 'all';
+    if (!['all', 'friends', 'public'].includes(filter)) return res.status(400).json({ success: false, message: '動態篩選不正確' });
+    const scope = filter === 'friends'
+      ? { user: { $in: req.user.friends || [] }, visibility: { $in: ['public', 'friends'] } }
+      : filter === 'public' ? { visibility: 'public' }
+        : { $or: [{ visibility: 'public' }, { user: { $in: [req.user._id, ...(req.user.friends || [])] }, visibility: 'friends' }] };
+    const rows = await Diary.find({ $and: [scope, cursorQuery(req.query.cursor)] }).sort({ createdAt: -1, _id: -1 }).limit(21).populate('user', authorFields).maxTimeMS(5000);
+    const diaries = rows.slice(0, 20).map(diary => ({ ...serializeDiary(diary, req.user._id), text: diary.text.slice(0, 280) }));
+    res.set('Cache-Control', 'no-store').json({ success: true, data: { diaries, nextCursor: pageCursor(rows, 20) } });
+  } catch (error) { next(error); }
+});
+
 router.get('/', requireAuth, async (req, res, next) => {
   try {
     const locationQuery = buildLocationQuery(req.query, res);
@@ -516,35 +550,30 @@ router.post('/:id/react', requireAuth, async (req, res, next) => {
       });
     }
 
-    const diary = await Diary.findOne({
-      _id: req.params.id,
-      ...diaryQueryForViewer(req.user)
-    });
-
-    if (!diary) {
-      return res.status(404).json({
-        success: false,
-        message: '找不到日記'
-      });
-    }
-
-    const reactions = getReactionCounts(diary);
-    const existingReaction = diary.reactedUsers.find((item) => item.userId?.toString() === req.user._id.toString());
-
-    if (!existingReaction) {
-      reactions[type] += 1;
-      diary.reactedUsers.push({ userId: req.user._id, type });
-    } else if (existingReaction.type === type) {
-      reactions[type] = Math.max(0, reactions[type] - 1);
-      diary.reactedUsers.pull(existingReaction._id);
-    } else {
-      reactions[existingReaction.type] = Math.max(0, reactions[existingReaction.type] - 1);
-      reactions[type] += 1;
-      existingReaction.type = type;
-    }
-
-    diary.reactions = reactions;
-    await diary.save();
+    const diary = await Diary.db.transaction(async session => {
+      const diary = await Diary.findOne({ _id: req.params.id, ...diaryQueryForViewer(req.user) }).session(session);
+      if (!diary) throw Object.assign(new Error('找不到日記'), { statusCode: 404 });
+      const reactions = getReactionCounts(diary);
+      const existingReaction = diary.reactedUsers.find(item => sameId(item.userId, req.user._id));
+      if (!existingReaction) {
+        reactions[type]++;
+        diary.reactedUsers.push({ userId: req.user._id, type });
+      } else if (existingReaction.type === type) {
+        reactions[type] = Math.max(0, reactions[type] - 1);
+        diary.reactedUsers.pull(existingReaction._id);
+      } else {
+        reactions[existingReaction.type] = Math.max(0, reactions[existingReaction.type] - 1);
+        reactions[type]++;
+        existingReaction.type = type;
+      }
+      diary.reactions = reactions;
+      await diary.save({ session });
+      if (getUserReaction(diary, req.user._id)) await createNotification(diary.user, req.user._id, 'diary_reaction', diary._id, session);
+      return diary;
+    }, { maxCommitTimeMS: 5000, timeoutMS: 15000 });
+    notifyNotificationChange([diary.user]);
+    await diary.populate('user', authorFields);
+    broadcastDiaryEvent('diary:updated', diary);
 
     res.json({
       success: true,
@@ -739,6 +768,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
       visibility: diary.visibility,
       editedAt: new Date()
     });
+    const previousDiary = { user: diary.user, visibility: diary.visibility };
     diary.title = payload.title;
     diary.text = payload.content;
     diary.mood = {
@@ -751,7 +781,7 @@ router.patch('/:id', requireAuth, async (req, res, next) => {
 
     await diary.save();
     const populatedDiary = await diary.populate('user', authorFields);
-    broadcastDiaryEvent('diary:updated', populatedDiary);
+    broadcastDiaryEvent('diary:updated', populatedDiary, previousDiary);
 
     res.json({
       success: true,
@@ -794,6 +824,7 @@ router.delete('/:id', requireAuth, async (req, res, next) => {
     const populatedDiary = await diary.populate('user', authorFields);
     await diary.deleteOne();
     broadcastDiaryDeleted(populatedDiary);
+    await removeUpload(diary.imageUrl);
 
     res.json({
       success: true,

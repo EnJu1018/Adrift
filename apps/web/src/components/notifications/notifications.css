@@ -1,0 +1,125 @@
+.notice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px;
+  border-bottom: 1px solid var(--border-soft);
+  gap: 12px;
+}
+.notice-header div,
+.notice-item > span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.notice-header small,
+.notice-item small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.notice-header button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  border-radius: 6px;
+}
+.notice-scroll {
+  max-height: min(520px, 65dvh);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.nav-dropdown.notifications-dropdown {
+  width: min(370px, calc(100vw - 24px));
+  padding: 0;
+  overflow: hidden;
+  background: var(--dropdown-bg);
+  backdrop-filter: none;
+}
+.nav-dropdown .notice-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 84px;
+  padding: 14px 18px;
+  border: 0;
+  border-bottom: 1px solid var(--border-soft);
+  border-radius: 0;
+  text-align: left;
+  white-space: normal;
+  background: transparent;
+}
+.notice-item > span > span {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.notice-item strong {
+  overflow-wrap: anywhere;
+}
+.notice-item[data-unread="true"] {
+  background: var(--accent-soft, rgba(27, 161, 175, 0.09));
+}
+.notice-item i {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.notice-item:hover,
+.notice-header button:hover {
+  background: var(--accent-soft, rgba(27, 161, 175, 0.09));
+}
+.notice-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 32px 22px;
+  text-align: center;
+  color: var(--text-muted);
+}
+.notice-empty p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+.notice-error {
+  padding: 12px 18px;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+.notice-error button,
+.notice-more {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--accent);
+  border: 0;
+  min-height: 40px;
+}
+.notice-more {
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .notice-header button {
+    width: 44px;
+    height: 44px;
+  }
+  .nav-dropdown.notifications-dropdown {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 72px;
+    width: auto;
+  }
+  .notice-scroll {
+    max-height: calc(100dvh - 180px);
+  }
+}

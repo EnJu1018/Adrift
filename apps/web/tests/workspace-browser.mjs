@@ -33,6 +33,7 @@ try {
     }));
     window.opened = [];
     window.insightCalls = 0;
+    api.getFeed = async filter => ({ data: { diaries: diaries.filter(diary => diary.visibility !== 'private' && (filter !== 'public' || diary.visibility === 'public')), nextCursor: null } });
     api.getIntelligenceOverview = async days => ({ data: { days, count: 2, start: '2026-09-01', end: '2026-10-01', moods: [{ type: 'calm', count: 2 }], daily: [], placeCount: 0, places: [] } });
     api.getAdminStats = async () => ({ data: { totalUsers: 2 } });
     api.getAdminUsers = async () => ({ data: { items: [owner, friend] } });
@@ -72,19 +73,20 @@ try {
     await page.locator(selector).waitFor();
     await page.waitForTimeout(700);
   }
-  assert.equal(await page.locator('.feed-card').count(), 2);
-  const first = page.locator('.feed-card').first();
-  await first.focus();
+  await page.waitForFunction(() => document.querySelectorAll('.mf-card').length === 2);
+  assert.equal(await page.locator('.mf-card').count(), 2);
+  const first = page.locator('.mf-card').first();
+  await first.locator('.mf-story').focus();
   const scroll = await page.evaluate(() => window.scrollY);
   await page.keyboard.press('Space');
   assert.deepEqual(await page.evaluate(() => window.opened), ['public']);
   assert.equal(await page.evaluate(() => window.scrollY), scroll);
   await first.evaluate(el => { window.retainedCard = el; });
-  await page.locator('.feed-filter').getByRole('button', { name: '公開', exact: true }).click();
-  await page.waitForFunction(() => document.querySelectorAll('.feed-card').length === 1);
-  assert.equal(await page.locator('.feed-card').count(), 1);
+  await page.locator('.mf-tabs').getByRole('button', { name: '公開', exact: true }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.mf-card').length === 1);
+  assert.equal(await page.locator('.mf-card').count(), 1);
   assert.equal(await first.evaluate(el => el === window.retainedCard), true);
-  assert.equal(await page.locator('.feed-filter button.active').getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('.mf-tabs button.active').getAttribute('aria-pressed'), 'true');
 
   await view('AccountSettings', '.settings-page');
   const row = page.locator('.settings-row').filter({ has: page.locator('.settings-row-label', { hasText: '使用者名稱' }) });
@@ -203,7 +205,7 @@ try {
   await page.waitForTimeout(150);
   assert.equal(await page.locator('[data-insight-reveal]').evaluateAll(els => els.every(el => !el.style.transform && !el.style.opacity)), true, 'live reduced motion restores styles');
 
-  for (const [name, selector] of [['FeedPage', '.feed-page'], ['FriendsPage', '.friends-hub'], ['AccountSettings', '.settings-page'], ['LifeMapAI', '.intelligence-page'], ['AdminDashboard', '.admin-page']]) {
+  for (const [name, selector] of [['FeedPage', '.memory-feed'], ['FriendsPage', '.friends-hub'], ['AccountSettings', '.settings-page'], ['LifeMapAI', '.intelligence-page'], ['AdminDashboard', '.admin-page']]) {
     await view(name, selector);
     for (const theme of ['bright', 'dark']) {
       await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);

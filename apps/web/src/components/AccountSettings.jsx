@@ -6,6 +6,7 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Palette,
   Shield,
   Trash2,
   Upload,
@@ -18,10 +19,13 @@ import { EMAIL_PATTERN } from '../constants/app.js';
 import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
 import ButtonFeedback from './ui/ButtonFeedback.jsx';
+import './settings.css';
 
 const sections = [
   { id: 'profile', label: '個人檔案', icon: UserRound },
   { id: 'security', label: '帳號安全', icon: Lock },
+  { id: 'privacy', label: '隱私', icon: Shield },
+  { id: 'appearance', label: '外觀', icon: Palette },
   { id: 'danger', label: '危險區域', icon: AlertTriangle }
 ];
 
@@ -40,6 +44,8 @@ const avatarOutputSize = 512;
 
 export default function AccountSettings({
   user,
+  theme = 'bright',
+  onThemeChange,
   onBack,
   onUpdateName,
   onUpdateEmail,
@@ -173,7 +179,7 @@ export default function AccountSettings({
   }
 
   function validateNewPassword(value = passwordForm.newPassword) {
-    if (!value || value.length < 6) return '新密碼至少需要 6 個字元';
+    if (!value || value.length < 8) return '新密碼至少需要 8 個字元';
     return '';
   }
 
@@ -217,7 +223,9 @@ export default function AccountSettings({
 
     if (!file) return;
 
-    const validation = await validateAvatarFile(file);
+    let validation;
+    try { validation = await validateAvatarFile(file); }
+    catch { setAvatarError('無法讀取圖片，請選擇其他 JPG、PNG 或 WebP'); event.target.value = ''; return; }
     if (validation.error) {
       resetAvatarDraft();
       setAvatarError(validation.error);
@@ -289,7 +297,8 @@ export default function AccountSettings({
     try {
       setLoadingAction('avatar');
       const blob = await createCroppedAvatarBlob(avatarDraft.url, avatarOffset, avatarZoom);
-      const croppedFile = new File([blob], `avatar-${Date.now()}.webp`, { type: 'image/webp' });
+      const extension = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/jpeg' ? 'jpg' : 'png';
+      const croppedFile = new File([blob], `avatar-${Date.now()}.${extension}`, { type: blob.type });
       const formData = new FormData();
       formData.append('avatar', croppedFile);
       const payload = await onUpdateAvatar(formData);
@@ -402,7 +411,7 @@ export default function AccountSettings({
   }
 
   return (
-    <section className="settings-page">
+    <section className="settings-page account-center">
       <ToastViewport toast={toast} onDismiss={() => setToast(null)} />
 
       <div className="settings-page-content">
@@ -418,7 +427,7 @@ export default function AccountSettings({
         </header>
 
         <div className="settings-layout">
-          <aside className="settings-sidebar glass">
+          <aside className="settings-sidebar">
             <div className="settings-profile-card">
               <UserAvatar user={user} size="xl" />
               <div>
@@ -436,7 +445,8 @@ export default function AccountSettings({
                     key={section.id}
                     className={`motion-soft-press ${activeSection === section.id ? 'active' : ''}`}
                     type="button"
-                    onClick={() => setActiveSection(section.id)}
+                    onClick={() => { if (!loadingAction) { cancelEditing(); setActiveSection(section.id); } }}
+                    disabled={!!loadingAction}
                     aria-pressed={activeSection === section.id}
                   >
                     <Icon size={17} />
@@ -588,7 +598,7 @@ export default function AccountSettings({
               id="security"
               icon={<Shield size={19} />}
               title="帳號安全"
-              description="密碼不會直接顯示，點擊編輯後才開啟修改表單。"
+              description="保護你的帳號與城市記憶。"
               visible={activeSection === 'security'}
             >
               <div className="settings-row-list">
@@ -629,7 +639,7 @@ export default function AccountSettings({
                           if (!validateConfirmPassword(passwordForm.confirmPassword, value)) updateError('confirmPassword', '');
                         }}
                         onBlur={() => markBlur('newPassword', validateNewPassword)}
-                        placeholder="至少 6 個字元"
+                        placeholder="至少 8 個字元"
                         invalid={shouldShow('newPassword', 'password')}
                       />
                       {shouldShow('newPassword', 'password') && <span className="field-error">{errors.newPassword}</span>}
@@ -662,6 +672,14 @@ export default function AccountSettings({
               </div>
             </SettingsCard>
 
+            <SettingsCard id="privacy" icon={<Shield size={19} />} title="你的足跡，由你決定" description="每篇日記的分享範圍，都在新增時由你選擇。" visible={activeSection === 'privacy'}>
+              <div className="settings-row-list"><SettingsRow label="私人記憶" value="只有你自己可以看見" /><SettingsRow label="好友記憶" value="只向目前的好友分享" /><SettingsRow label="公開記憶" value="其他使用者可以在地圖與動態牆看見" /></div>
+              <p className="account-note">這裡不會更改既有日記的可見範圍。新增日記時，可選擇精確或模糊位置；公開前請確認內容與地點是否適合分享。</p>
+            </SettingsCard>
+            <SettingsCard id="appearance" icon={<Palette size={19} />} title="外觀" description="選擇閱讀與記錄時最舒服的主題。" visible={activeSection === 'appearance'}>
+              <SettingsRow label="主題" value={theme === 'bright' ? '明亮' : '深色'} />
+              <div className="account-theme" aria-label="外觀主題">{[['bright', '明亮'], ['dark', '深色']].map(([value, label]) => <button key={value} aria-pressed={theme === value} onClick={() => onThemeChange?.(value)}><span data-theme-preview={value} />{label}{theme === value && <Check size={16} />}</button>)}</div>
+            </SettingsCard>
             <SettingsCard
               id="danger"
               icon={<AlertTriangle size={19} />}
@@ -670,7 +688,7 @@ export default function AccountSettings({
               visible={activeSection === 'danger'}
               danger
             >
-              <form className="settings-danger-panel" onSubmit={submitDelete} noValidate>
+              {user?.role === 'owner' ? <p className="account-note">Owner 帳號受到保護，無法在這裡刪除。</p> : <form className="settings-danger-panel" onSubmit={submitDelete} noValidate>
                 <div>
                   <strong>刪除帳號</strong>
                   <span>這是不可逆操作，請確認後再進行。</span>
@@ -710,7 +728,7 @@ export default function AccountSettings({
                   <Trash2 size={16} />
                   刪除帳號
                 </button>
-              </form>
+              </form>}
             </SettingsCard>
           </main>
         </div>
@@ -733,7 +751,15 @@ export default function AccountSettings({
                 <div
                   className="avatar-crop-frame"
                   onPointerDown={beginCropDrag}
-                  role="presentation"
+                  tabIndex={0}
+                  role="group"
+                  aria-label="頭貼位置，使用方向鍵調整"
+                  onKeyDown={event => {
+                    const delta = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, -8], ArrowDown: [0, 8] }[event.key];
+                    if (!delta) return;
+                    event.preventDefault();
+                    setAvatarOffset(current => ({ x: clamp(current.x + delta[0], -avatarCropSize, avatarCropSize), y: clamp(current.y + delta[1], -avatarCropSize, avatarCropSize) }));
+                  }}
                 >
                   {avatarDraft.url && (
                     <img

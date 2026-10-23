@@ -470,14 +470,10 @@ body,
 .product-navbar,
 .nav-dropdown,
 .app-toast,
-.admin-card,
-.admin-hero,
-.admin-table-row,
 .diary-modal,
 .diary-side-panel,
 .memory-panel,
 .friends-hub,
-.feed-page,
 .presentation-page,
 .presentation-nav,
 .presentation-controls,
@@ -923,7 +919,6 @@ body:has(.auth-mode),
 .app-layout.authenticated .memory-panel,
 .app-layout.authenticated .friends-page-shell,
 .app-layout.authenticated .friends-hub,
-.app-layout.authenticated .feed-page,
 .app-layout.authenticated .settings-panel {
   height: 100%;
   min-height: 0;
@@ -2036,8 +2031,7 @@ select option {
   background: rgba(2, 13, 24, 0.34);
 }
 
-.friends-page-shell,
-.feed-page {
+.friends-page-shell {
   grid-column: 1 / -1;
   display: grid;
   align-content: start;
@@ -2051,8 +2045,7 @@ select option {
   scrollbar-gutter: stable;
 }
 
-.friends-page-hero,
-.feed-page-hero {
+.friends-page-hero {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -2061,15 +2054,13 @@ select option {
   border-bottom: 1px solid rgba(196, 235, 255, 0.12);
 }
 
-.friends-page-hero h2,
-.feed-page-hero h2 {
+.friends-page-hero h2 {
   margin: 0;
   color: #ffffff;
   font-size: 1.65rem;
 }
 
-.friends-page-hero span,
-.feed-page-hero span {
+.friends-page-hero span {
   display: block;
   margin-top: 5px;
   color: var(--muted);
@@ -3131,162 +3122,6 @@ select option {
   line-height: 1.55;
 }
 
-.feed-page {
-  grid-template-rows: auto auto minmax(0, 1fr);
-  align-self: stretch;
-}
-
-.feed-filter {
-  display: inline-flex;
-  width: fit-content;
-  gap: 4px;
-  padding: 4px;
-  border: 1px solid rgba(191, 232, 255, 0.14);
-  border-radius: 14px;
-  background: rgba(3, 15, 26, 0.48);
-}
-
-.feed-filter button {
-  min-height: 32px;
-  padding: 0 12px;
-  border-radius: 10px;
-  color: #a9c7d7;
-  background: transparent;
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.feed-filter button.active {
-  color: #ffffff;
-  background: rgba(100, 202, 255, 0.18);
-  box-shadow: 0 0 22px rgba(128, 179, 255, 0.16);
-}
-
-.feed-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 14px;
-  min-height: 0;
-}
-
-.feed-card {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  padding: 15px;
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  background: rgba(2, 13, 24, 0.38);
-  cursor: pointer;
-  transition: transform var(--duration-quick) var(--ease-smooth-out), border-color var(--duration-quick) var(--ease-smooth-out), background var(--duration-quick) var(--ease-smooth-out);
-}
-
-.feed-card:hover {
-  transform: translateY(-1px);
-  border-color: rgba(121, 241, 220, 0.24);
-  background: rgba(6, 25, 40, 0.54);
-}
-
-.feed-card-header {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 10px;
-}
-
-.feed-card-header strong,
-.feed-card-header span,
-.feed-card h3,
-.feed-card p {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.feed-card-header strong {
-  display: block;
-  color: #ffffff;
-}
-
-.feed-card-header span,
-.feed-card p {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.feed-visibility {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 5px 8px;
-  border-radius: 999px;
-  color: #d8fff4;
-  background: rgba(121, 241, 220, 0.08);
-  font-weight: 800;
-}
-
-.feed-visibility.public {
-  color: #dbeafe;
-  background: rgba(128, 179, 255, 0.1);
-}
-
-.feed-card h3 {
-  margin: 0;
-  color: #ffffff;
-  font-size: 1.02rem;
-  white-space: nowrap;
-}
-
-.feed-card p {
-  display: -webkit-box;
-  min-height: 3.7em;
-  margin: 0;
-  line-height: 1.6;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-}
-
-.feed-card footer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.feed-card footer span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 28px;
-  padding: 0 9px;
-  border-radius: 999px;
-  color: #bddceb;
-  background: rgba(137, 215, 255, 0.08);
-  font-size: 0.76rem;
-  font-weight: 800;
-}
-
-.feed-empty {
-  grid-column: 1 / -1;
-  display: grid;
-  justify-items: center;
-  gap: 10px;
-  padding: 48px 20px;
-  border: 1px dashed rgba(196, 235, 255, 0.17);
-  border-radius: 18px;
-  color: var(--muted);
-  background: rgba(2, 13, 24, 0.28);
-  text-align: center;
-}
-
-.feed-empty h3,
-.feed-empty p {
-  margin: 0;
-}
-
-.feed-empty h3 {
-  color: #ffffff;
-}
-
 .social-search label {
   gap: 8px;
 }
@@ -3615,11 +3450,9 @@ select option {
 
 .memory-item,
 .person-card,
-.admin-stat,
 .settings-section,
 .profile-popover,
 .quiet-note,
-.admin-card,
 .ui-select-menu button {
   transition:
     transform var(--duration-quick) var(--ease-smooth-out),
@@ -3631,7 +3464,6 @@ select option {
 
 @media (hover: hover) {
   .person-card:hover,
-  .admin-stat:hover,
   .settings-section:hover {
     transform: translateY(-2px);
     border-color: rgba(125, 211, 252, 0.24);
@@ -3641,13 +3473,11 @@ select option {
 
 .app-frame.low-performance .memory-item,
 .app-frame.low-performance .person-card,
-.app-frame.low-performance .admin-stat,
 .app-frame.low-performance .settings-section {
   transition-duration: 80ms;
 }
 
 .app-frame.low-performance .person-card:hover,
-.app-frame.low-performance .admin-stat:hover,
 .app-frame.low-performance .settings-section:hover {
   transform: none;
 }
@@ -3656,123 +3486,6 @@ select option {
   color: #ffd6dc;
   border-color: rgba(255, 128, 151, 0.22);
   background: rgba(255, 77, 111, 0.1);
-}
-
-.admin-page {
-  grid-column: 1 / -1;
-  display: grid;
-  align-content: start;
-  gap: 20px;
-  width: 100%;
-  height: 100%;
-  max-height: none;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-gutter: stable;
-}
-
-.admin-dashboard-container {
-  width: min(1280px, 100%);
-  margin: 0 auto;
-  padding: 32px;
-  box-sizing: border-box;
-}
-
-.admin-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  min-height: auto;
-  padding: 20px 24px;
-  border-radius: 20px;
-  background: linear-gradient(145deg, rgba(14, 30, 48, 0.76), rgba(6, 18, 30, 0.58));
-  border-color: rgba(196, 235, 255, 0.2);
-}
-
-.admin-hero h1,
-.admin-card h1,
-.admin-card h2 {
-  margin: 0;
-  line-height: 1.2;
-}
-
-.admin-hero h1 {
-  font-size: clamp(1.5rem, 2vw, 1.75rem);
-  font-weight: 800;
-}
-
-.admin-hero p:not(.eyebrow),
-.admin-card p {
-  color: var(--muted);
-}
-
-.admin-hero p:not(.eyebrow) {
-  margin: 3px 0 0;
-  font-size: 0.86rem;
-  line-height: 1.45;
-}
-
-.admin-hero .eyebrow,
-.admin-card .eyebrow {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-}
-
-.admin-title-block {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.admin-hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  flex: 0 0 auto;
-}
-
-.admin-theme-switcher {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 4px 6px 4px 10px;
-  border: 1px solid var(--glass-border);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  background: var(--surface-soft);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-}
-
-.admin-theme-switcher > span {
-  font-size: 0.76rem;
-  font-weight: 850;
-  white-space: nowrap;
-}
-
-.admin-theme-switcher div {
-  display: inline-flex;
-  gap: 4px;
-}
-
-.admin-theme-switcher button {
-  min-height: 26px;
-  padding: 0 10px;
-  border-radius: 999px;
-  color: var(--text-secondary);
-  background: transparent;
-  font-size: 0.74rem;
-  font-weight: 900;
-}
-
-.admin-theme-switcher button.active {
-  color: #04131b;
-  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
-  box-shadow: 0 0 16px rgba(103, 232, 249, 0.16);
 }
 
 .admin-badge,
@@ -3841,156 +3554,6 @@ select option {
   opacity: 0.65;
 }
 
-.admin-card {
-  min-width: 0;
-  padding: 22px;
-  border-radius: 20px;
-  background: linear-gradient(145deg, rgba(12, 27, 44, 0.72), rgba(5, 17, 29, 0.58));
-  border-color: rgba(196, 235, 255, 0.18);
-}
-
-.admin-page > .admin-card,
-.admin-content-frame .admin-card {
-  min-height: 0;
-}
-
-.admin-content-frame {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-}
-
-.admin-content-frame > .admin-card {
-  width: 100%;
-}
-
-.admin-overview-card {
-  min-height: 0;
-}
-
-.admin-data-card {
-  min-height: 520px;
-}
-
-.admin-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.admin-stat {
-  display: grid;
-  align-content: center;
-  gap: 8px;
-  min-height: 96px;
-  padding: 18px;
-  border: 1px solid rgba(196, 235, 255, 0.16);
-  border-radius: 18px;
-  background: linear-gradient(145deg, rgba(7, 23, 38, 0.64), rgba(3, 13, 24, 0.4));
-}
-
-.admin-stat span,
-.admin-table-row.header {
-  color: var(--muted);
-  font-size: 0.76rem;
-}
-
-.admin-stat strong {
-  color: #ffffff;
-  font-size: clamp(1.55rem, 2.4vw, 2rem);
-  line-height: 1;
-}
-
-.admin-search {
-  position: relative;
-  display: block;
-  margin-bottom: 12px;
-}
-
-.admin-search svg {
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  color: var(--muted);
-  transform: translateY(-50%);
-}
-
-.admin-search input {
-  padding-left: 38px;
-}
-
-.admin-table {
-  display: grid;
-  gap: 7px;
-  align-content: start;
-  min-height: 420px;
-  min-width: 0;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding-bottom: 4px;
-  scrollbar-gutter: stable;
-}
-
-.admin-table-row {
-  display: grid;
-  align-items: center;
-  gap: 8px;
-  min-height: 34px;
-  padding: 0 8px;
-  border: 1px solid rgba(196, 235, 255, 0.08);
-  border-radius: 11px;
-  color: #eaf8ff;
-  background: rgba(2, 13, 24, 0.22);
-  font-size: 0.8rem;
-}
-
-.diaries-table .admin-table-row:not(.header) {
-  min-height: 32px;
-}
-
-.admin-table-row:not(.header):hover,
-.admin-diary-row.active {
-  border-color: rgba(130, 222, 255, 0.2);
-  background: rgba(80, 181, 235, 0.1);
-}
-
-.admin-table-row span {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.admin-table-row.header {
-  min-height: 32px;
-  background: rgba(2, 13, 24, 0.12);
-  font-size: 0.7rem;
-  letter-spacing: 0.03em;
-}
-
-.admin-table-row .role-editor,
-.admin-table-row .admin-row-actions {
-  overflow: visible;
-}
-
-.users-table .admin-table-row {
-  grid-template-columns: 1fr 1fr minmax(160px, 1.4fr) 80px 128px 88px;
-}
-
-.diaries-table .admin-table-row {
-  grid-template-columns: minmax(180px, 1.6fr) minmax(110px, 0.8fr) 78px 82px 118px 104px;
-}
-
-.admin-diary-row {
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-}
-
-.admin-diary-row.active {
-  box-shadow: inset 3px 0 0 rgba(121, 241, 220, 0.68);
-}
-
 .admin-empty {
   margin: 0;
   min-height: 64px;
@@ -4005,162 +3568,11 @@ select option {
   place-items: center;
 }
 
-.admin-forbidden .admin-card {
-  width: min(520px, 100%);
-  min-height: auto;
-}
 
-.admin-tabs {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: fit-content;
-  max-width: min(100%, 420px);
-  min-height: 44px;
-  padding: 5px;
-  border-radius: 16px;
-  background: rgba(7, 21, 35, 0.64);
-  border-color: rgba(196, 235, 255, 0.18);
-}
-
-.admin-tab-strip {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 18px;
-  min-width: 0;
-}
-
-.admin-current-section {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-  padding-left: 18px;
-  border-left: 1px solid rgba(196, 235, 255, 0.14);
-}
-
-.admin-current-section h2 {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  margin: 0;
-  color: #f3fbff;
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.admin-current-section .eyebrow {
-  margin: 0;
-  font-size: 0.68rem;
-}
-
-.admin-tabs button {
-  flex: 0 0 124px;
-  height: 44px;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: 12px;
-  color: var(--muted);
-  background: transparent;
-  font-size: 0.84rem;
-  font-weight: 800;
-  transition: color var(--duration-quick) var(--ease-smooth-out), background var(--duration-quick) var(--ease-smooth-out), box-shadow var(--duration-quick) var(--ease-smooth-out);
-}
-
-.admin-tabs button.active {
-  color: #ffffff;
-  background: rgba(100, 202, 255, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(164, 228, 255, 0.12), 0 0 18px rgba(101, 212, 255, 0.1);
-}
-
-.overview-stats {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.admin-activity {
-  display: grid;
-  gap: 8px;
-  min-height: 120px;
-  margin-top: 16px;
-  padding: 18px;
-  border: 1px solid rgba(196, 235, 255, 0.16);
-  border-radius: 18px;
-  background: rgba(2, 13, 24, 0.34);
-}
-
-.admin-activity h3,
-.admin-activity p {
-  margin: 0;
-}
-
-.admin-controls {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) 160px;
-  gap: 14px;
-  align-items: end;
-  min-height: auto;
-  margin-bottom: 16px;
-}
-
-.admin-controls.diaries-controls {
-  grid-template-columns: minmax(260px, 1fr) 150px 150px;
-}
-
-.admin-controls label {
-  min-width: 0;
-}
-
-.admin-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 42px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(196, 235, 255, 0.08);
-  color: var(--muted);
-  font-size: 0.82rem;
-}
-
-.admin-pagination div {
-  display: flex;
-  gap: 8px;
-}
-
-.admin-pagination .ghost-button:disabled,
 .compact-action:disabled {
   cursor: not-allowed;
   opacity: 0.5;
   transform: none;
-}
-
-.users-table .admin-table-row {
-  grid-template-columns: minmax(136px, 1fr) minmax(116px, 0.75fr) minmax(190px, 1.25fr) 142px 112px 92px;
-  min-width: 840px;
-}
-
-.diaries-table .admin-table-row {
-  grid-template-columns: minmax(180px, 1.6fr) minmax(110px, 0.8fr) 78px 82px 118px 104px;
-  min-width: 720px;
-}
-
-.admin-row-actions {
-  display: inline-flex;
-  gap: 6px;
-  justify-content: flex-end;
-}
-
-.admin-row-actions.user-actions {
-  align-items: center;
-}
-
-.admin-row-note {
-  width: 100%;
-  color: rgba(192, 214, 226, 0.68);
-  font-size: 0.72rem;
-  text-align: right;
 }
 
 .compact-action {
@@ -4523,22 +3935,6 @@ select option {
   min-height: 36px;
   margin-top: 0;
   padding: 0 12px;
-}
-
-@media (max-width: 1100px) {
-  .overview-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .admin-hero {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .admin-hero-actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
 }
 
 .experience-panel {
@@ -5569,7 +4965,6 @@ select option {
 .app-frame.reduced-motion .modal-card,
 .app-frame.reduced-motion .memory-item,
 .app-frame.reduced-motion .person-card,
-.app-frame.reduced-motion .admin-stat,
 .app-frame.reduced-motion .settings-section {
   transition-duration: 0.01ms !important;
 }
@@ -7762,12 +7157,8 @@ select option {
 :root[data-theme="bright"] .primary-nav button:hover,
 :root[data-theme="bright"] .primary-nav button.active,
 :root[data-theme="bright"] .nav-dropdown-header strong,
-:root[data-theme="bright"] .admin-hero h1,
-:root[data-theme="bright"] .admin-card h1,
-:root[data-theme="bright"] .admin-card h2,
 :root[data-theme="bright"] .diary-side-header h2,
 :root[data-theme="bright"] .friends-page-hero h2,
-:root[data-theme="bright"] .feed-page-hero h2,
 :root[data-theme="bright"] .presentation-section-heading h2,
 :root[data-theme="bright"] .cover-title-en,
 :root[data-theme="bright"] .cover-title-zh {
@@ -7778,8 +7169,6 @@ select option {
 :root[data-theme="bright"] .primary-nav button,
 :root[data-theme="bright"] .nav-dropdown button,
 :root[data-theme="bright"] .nav-avatar-button small,
-:root[data-theme="bright"] .admin-card p,
-:root[data-theme="bright"] .admin-hero p:not(.eyebrow),
 :root[data-theme="bright"] .diary-side-text,
 :root[data-theme="bright"] .memory-item p,
 :root[data-theme="bright"] .person-card p,
@@ -7816,10 +7205,7 @@ select option {
 :root[data-theme="bright"] .memory-panel,
 :root[data-theme="bright"] .friends-page-shell,
 :root[data-theme="bright"] .friends-hub,
-:root[data-theme="bright"] .feed-page,
 :root[data-theme="bright"] .settings-panel,
-:root[data-theme="bright"] .admin-card,
-:root[data-theme="bright"] .admin-hero,
 :root[data-theme="bright"] .diary-side-panel,
 :root[data-theme="bright"] .diary-modal,
 :root[data-theme="bright"] .profile-popover,
@@ -7836,7 +7222,6 @@ select option {
 :root[data-theme="bright"] .memory-panel,
 :root[data-theme="bright"] .friends-page-shell,
 :root[data-theme="bright"] .friends-hub,
-:root[data-theme="bright"] .feed-page,
 :root[data-theme="bright"] .settings-panel {
   background: rgba(255, 255, 255, 0.82);
 }
@@ -7859,7 +7244,6 @@ select option {
 :root[data-theme="bright"] .friend-list-item,
 :root[data-theme="bright"] .recommendation-card,
 :root[data-theme="bright"] .feed-diary-card,
-:root[data-theme="bright"] .admin-stat,
 :root[data-theme="bright"] .settings-section,
 :root[data-theme="bright"] .presentation-card,
 :root[data-theme="bright"] .presentation-statement-card,
@@ -7874,7 +7258,6 @@ select option {
 :root[data-theme="bright"] input,
 :root[data-theme="bright"] textarea,
 :root[data-theme="bright"] select,
-:root[data-theme="bright"] .admin-search,
 :root[data-theme="bright"] .ui-select-trigger {
   border-color: var(--input-border);
   color: var(--text-primary);
@@ -7892,27 +7275,6 @@ select option {
 :root[data-theme="bright"] input::placeholder,
 :root[data-theme="bright"] textarea::placeholder {
   color: var(--text-muted);
-}
-
-:root[data-theme="bright"] .admin-table {
-  border-color: var(--glass-border-strong);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: var(--shadow-soft);
-}
-
-:root[data-theme="bright"] .admin-table-row {
-  border-color: rgba(39, 115, 150, 0.12);
-  color: var(--text-secondary);
-}
-
-:root[data-theme="bright"] .admin-table-row.header {
-  color: var(--text-primary);
-  background: rgba(225, 241, 248, 0.92);
-}
-
-:root[data-theme="bright"] .admin-table-row:not(.header):hover,
-:root[data-theme="bright"] .admin-diary-row.active {
-  background: rgba(8, 145, 178, 0.08);
 }
 
 :root[data-theme="bright"] .primary-button,
@@ -8016,8 +7378,6 @@ select option {
 :root[data-theme="bright"] .friend-recommendation-card,
 :root[data-theme="bright"] .social-friend-item,
 :root[data-theme="bright"] .friend-activity-item,
-:root[data-theme="bright"] .feed-card,
-:root[data-theme="bright"] .admin-stat,
 :root[data-theme="bright"] .settings-section,
 :root[data-theme="bright"] .presentation-member-grid span,
 :root[data-theme="bright"] .presentation-advisors,
@@ -8037,8 +7397,7 @@ select option {
 :root[data-theme="bright"] .memory-item.compact:hover,
 :root[data-theme="bright"] .friend-user-card:hover,
 :root[data-theme="bright"] .social-friend-item:hover,
-:root[data-theme="bright"] .friend-activity-item:hover,
-:root[data-theme="bright"] .feed-card:hover {
+:root[data-theme="bright"] .friend-activity-item:hover {
   border-color: var(--accent-border, var(--border-strong));
   background: var(--card-bg-strong);
   box-shadow: var(--shadow-strong);
@@ -8046,10 +7405,8 @@ select option {
 
 :root[data-theme="bright"] .memory-item.compact.selected,
 :root[data-theme="bright"] .social-friend-item.selected,
-:root[data-theme="bright"] .feed-filter button.active,
 :root[data-theme="bright"] .visibility-filter button.active,
-:root[data-theme="bright"] .friend-segmented button.active,
-:root[data-theme="bright"] .admin-tabs button.active {
+:root[data-theme="bright"] .friend-segmented button.active {
   color: var(--accent);
   border-color: var(--accent-border, var(--border-strong));
   background: var(--accent-soft);
@@ -8079,10 +7436,8 @@ select option {
 :root[data-theme="bright"] .ghost-button,
 :root[data-theme="bright"] .icon-button,
 :root[data-theme="bright"] .copy-mini-button,
-:root[data-theme="bright"] .feed-filter button,
 :root[data-theme="bright"] .visibility-filter button,
-:root[data-theme="bright"] .friend-segmented button,
-:root[data-theme="bright"] .admin-tabs button {
+:root[data-theme="bright"] .friend-segmented button {
   color: var(--text-secondary);
   border-color: var(--card-border);
   background: rgba(255, 255, 255, 0.58);
@@ -8133,7 +7488,6 @@ select option {
 :root[data-theme="bright"] .friend-inline-note,
 :root[data-theme="bright"] .friend-empty-state p,
 :root[data-theme="bright"] .friends-empty-panel p,
-:root[data-theme="bright"] .feed-card p,
 :root[data-theme="bright"] .presentation-card p,
 :root[data-theme="bright"] .presentation-card li,
 :root[data-theme="bright"] .team-row span,
@@ -8230,11 +7584,8 @@ select option {
   .memory-panel,
   .friends-page-shell,
   .friends-hub,
-  .feed-page,
   .settings-panel,
   .life-map-panel,
-  .admin-card,
-  .admin-hero,
   .diary-side-panel,
   .diary-modal,
   .friend-profile-modal,
@@ -8264,12 +7615,10 @@ select option {
   .friend-list-item,
   .social-friend-item,
   .friend-activity-item,
-  .feed-card,
   .life-map-card,
   .life-map-feature-card,
   .life-map-insight-card,
   .life-map-location-card,
-  .admin-stat,
   .settings-section,
   .presentation-card,
   .presentation-statement-card,
@@ -8321,11 +7670,7 @@ select option {
   .friend-identity strong,
   .friend-user-main strong,
   .friends-section-heading h3,
-  .feed-card-header strong,
   .life-map-card-heading strong,
-  .admin-card h1,
-  .admin-card h2,
-  .admin-table-row.header,
   .diary-side-header h2,
   .diary-side-title,
   .presentation-section-heading h2,
@@ -8341,8 +7686,6 @@ select option {
   small,
   .nav-avatar-button small,
   .primary-nav button,
-  .admin-card p,
-  .admin-hero p:not(.eyebrow),
   .memory-item p,
   .memory-item small,
   .friend-inline-note,
@@ -8350,7 +7693,6 @@ select option {
   .friends-subtle-copy,
   .friend-empty-state p,
   .friends-empty-panel p,
-  .feed-card p,
   .life-map-card p,
   .life-map-hero-copy span,
   .life-map-privacy-card,
@@ -8370,7 +7712,6 @@ select option {
   input,
   textarea,
   select,
-  .admin-search,
   .ui-select-trigger,
   .friend-search-control,
   .friend-list-search,
@@ -8411,10 +7752,8 @@ select option {
   .ghost-button,
   .icon-button,
   .copy-mini-button,
-  .feed-filter button,
   .visibility-filter button,
   .friend-segmented button,
-  .admin-tabs button,
   .life-map-secondary-action,
   .presentation-control-button
 ) {
@@ -8431,10 +7770,8 @@ select option {
   .nav-avatar-button:hover,
   .nav-icon-button.active,
   .nav-avatar-button.active,
-  .feed-filter button.active,
   .visibility-filter button.active,
   .friend-segmented button.active,
-  .admin-tabs button.active,
   .memory-item.compact.selected,
   .social-friend-item.selected
 ) {
@@ -8454,28 +7791,6 @@ select option {
   color: var(--danger);
   border-color: rgba(180, 35, 24, 0.24);
   background: rgba(180, 35, 24, 0.08);
-}
-
-:root[data-theme="bright"] .admin-table {
-  color: var(--text-primary);
-  border-color: var(--border-soft);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow-soft);
-}
-
-:root[data-theme="bright"] .admin-table-row {
-  color: var(--text-secondary);
-  border-color: rgba(28, 100, 135, 0.1);
-}
-
-:root[data-theme="bright"] .admin-table-row.header {
-  color: var(--text-secondary);
-  background: rgba(15, 127, 156, 0.06);
-}
-
-:root[data-theme="bright"] .admin-table-row:not(.header):hover,
-:root[data-theme="bright"] .admin-diary-row.active {
-  background: rgba(15, 127, 156, 0.06);
 }
 
 :root[data-theme="bright"] .role-pill,
@@ -8657,7 +7972,6 @@ select option {
 }
 
 :root[data-theme="bright"] .admin-detail-content,
-:root[data-theme="bright"] .feed-card p,
 :root[data-theme="bright"] .feed-card-body {
   color: var(--text-primary) !important;
 }
@@ -8671,120 +7985,18 @@ select option {
 
 /* Bright theme dashboard/readability consolidation.
    This final layer removes dark-theme leftovers from dense admin and data UI. */
-:root[data-theme="bright"] .admin-page,
-:root[data-theme="bright"] .admin-dashboard-container {
-  color: var(--text-primary);
-}
 
-:root[data-theme="bright"] .admin-dashboard-container {
-  background:
-    radial-gradient(circle at 18% 16%, rgba(56, 189, 248, 0.14), transparent 32%),
-    radial-gradient(circle at 88% 8%, rgba(45, 212, 191, 0.1), transparent 24%),
-    linear-gradient(135deg, #fbfdff 0%, #eef8ff 52%, #f8fcff 100%);
-}
 
-:root[data-theme="bright"] .admin-hero,
-:root[data-theme="bright"] .admin-card,
-:root[data-theme="bright"] .admin-content-frame .admin-card,
-:root[data-theme="bright"] .admin-page > .admin-card {
-  color: var(--text-primary) !important;
-  border-color: rgba(28, 100, 135, 0.16) !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 18px 45px rgba(14, 116, 144, 0.1) !important;
-}
-
-:root[data-theme="bright"] .admin-hero h1,
-:root[data-theme="bright"] .admin-card h1,
-:root[data-theme="bright"] .admin-card h2,
-:root[data-theme="bright"] .admin-current-section h2,
-:root[data-theme="bright"] .admin-activity h3,
 :root[data-theme="bright"] .admin-detail-modal h2 {
   color: var(--text-heading) !important;
 }
 
-:root[data-theme="bright"] .admin-hero p:not(.eyebrow),
-:root[data-theme="bright"] .admin-card p,
-:root[data-theme="bright"] .admin-activity p,
-:root[data-theme="bright"] .admin-pagination,
-:root[data-theme="bright"] .admin-current-section .eyebrow,
-:root[data-theme="bright"] .admin-row-note {
-  color: var(--text-secondary) !important;
-}
 
-:root[data-theme="bright"] .admin-hero .eyebrow,
-:root[data-theme="bright"] .admin-card .eyebrow,
 :root[data-theme="bright"] .admin-detail-modal .eyebrow {
   color: var(--accent-hover) !important;
 }
 
-:root[data-theme="bright"] .admin-theme-switcher {
-  color: var(--text-secondary);
-  border-color: rgba(28, 100, 135, 0.18);
-  background: rgba(245, 252, 255, 0.94);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
-}
 
-:root[data-theme="bright"] .admin-theme-switcher button {
-  color: var(--text-secondary);
-}
-
-:root[data-theme="bright"] .admin-theme-switcher button.active {
-  color: #ffffff;
-  background: linear-gradient(135deg, #0f7f9c, #14b8a6);
-  box-shadow: 0 10px 22px rgba(15, 127, 156, 0.2);
-}
-
-:root[data-theme="bright"] .admin-tabs {
-  border-color: rgba(28, 100, 135, 0.16) !important;
-  background: rgba(255, 255, 255, 0.82) !important;
-  box-shadow: 0 12px 32px rgba(14, 116, 144, 0.08);
-}
-
-:root[data-theme="bright"] .admin-tabs button {
-  color: var(--text-secondary) !important;
-  background: transparent !important;
-}
-
-:root[data-theme="bright"] .admin-tabs button.active {
-  color: var(--accent-hover) !important;
-  -webkit-text-fill-color: currentColor !important;
-  border-color: rgba(15, 127, 156, 0.24) !important;
-  background: rgba(15, 127, 156, 0.11) !important;
-  box-shadow: inset 0 0 0 1px rgba(15, 127, 156, 0.08) !important;
-}
-
-:root[data-theme="bright"] .admin-current-section {
-  border-left-color: rgba(28, 100, 135, 0.18);
-}
-
-:root[data-theme="bright"] .admin-stat,
-:root[data-theme="bright"] .admin-activity {
-  color: var(--text-primary) !important;
-  border-color: rgba(28, 100, 135, 0.14) !important;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(245, 252, 255, 0.9)) !important;
-  box-shadow: 0 12px 32px rgba(14, 116, 144, 0.08) !important;
-}
-
-:root[data-theme="bright"] .admin-stat span {
-  color: var(--text-muted) !important;
-}
-
-:root[data-theme="bright"] .admin-stat strong {
-  color: var(--text-heading) !important;
-}
-
-:root[data-theme="bright"] .admin-search {
-  color: var(--text-primary) !important;
-  border-color: rgba(28, 100, 135, 0.22) !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-}
-
-:root[data-theme="bright"] .admin-search svg {
-  color: var(--text-muted) !important;
-}
-
-:root[data-theme="bright"] .admin-search input,
 :root[data-theme="bright"] .admin-confirm-field input {
   -webkit-text-fill-color: var(--text-primary);
   color: var(--text-primary) !important;
@@ -8792,47 +8004,10 @@ select option {
   background: rgba(255, 255, 255, 0.96) !important;
 }
 
-:root[data-theme="bright"] .admin-search input::placeholder,
+
 :root[data-theme="bright"] .admin-confirm-field input::placeholder {
   -webkit-text-fill-color: var(--text-faint);
   color: var(--text-faint) !important;
-}
-
-:root[data-theme="bright"] .admin-table {
-  padding: 8px;
-  border: 1px solid rgba(28, 100, 135, 0.14);
-  border-radius: 18px;
-  color: var(--text-primary) !important;
-  background: rgba(255, 255, 255, 0.96) !important;
-  box-shadow: 0 14px 36px rgba(14, 116, 144, 0.08) !important;
-}
-
-:root[data-theme="bright"] .admin-table-row {
-  color: var(--text-primary) !important;
-  border-color: rgba(28, 100, 135, 0.12) !important;
-  background: rgba(255, 255, 255, 0.74) !important;
-}
-
-:root[data-theme="bright"] .admin-table-row span {
-  color: inherit;
-}
-
-:root[data-theme="bright"] .admin-table-row.header {
-  color: var(--text-secondary) !important;
-  border-color: rgba(15, 127, 156, 0.12) !important;
-  background: rgba(15, 127, 156, 0.08) !important;
-  font-weight: 850;
-}
-
-:root[data-theme="bright"] .admin-table-row:not(.header):hover,
-:root[data-theme="bright"] .admin-diary-row.active {
-  color: var(--text-primary) !important;
-  border-color: rgba(15, 127, 156, 0.22) !important;
-  background: rgba(15, 127, 156, 0.07) !important;
-}
-
-:root[data-theme="bright"] .admin-diary-row.active {
-  box-shadow: inset 3px 0 0 rgba(15, 127, 156, 0.72);
 }
 
 :root[data-theme="bright"] .admin-empty {
@@ -9081,11 +8256,8 @@ select option {
   .diary-modal,
   .friends-page-shell,
   .friends-hub,
-  .feed-page,
   .settings-panel,
   .life-map-panel,
-  .admin-hero,
-  .admin-card,
   .nav-dropdown,
   .profile-popover,
   .friend-profile-modal,
@@ -9130,9 +8302,6 @@ select option {
   .friend-activity-item,
   .friends-empty-panel,
   .friend-sort-control,
-  .feed-filter,
-  .feed-card,
-  .feed-empty,
   .settings-section,
   .settings-static-section,
   .account-facts.compact,
@@ -9167,7 +8336,7 @@ select option {
   box-shadow: 0 14px 34px rgba(14, 116, 144, 0.08) !important;
 }
 
-:root[data-theme="bright"] :where(.memory-item:hover, .memory-item.compact:hover, .profile-card:hover, .person-card:hover, .friend-user-card:hover, .recommendation-card:hover, .social-suggestion-card:hover, .social-person-row:hover, .social-friend-item:hover, .friend-activity-item:hover, .feed-card:hover, .settings-section:hover) {
+:root[data-theme="bright"] :where(.memory-item:hover, .memory-item.compact:hover, .profile-card:hover, .person-card:hover, .friend-user-card:hover, .recommendation-card:hover, .social-suggestion-card:hover, .social-person-row:hover, .social-friend-item:hover, .friend-activity-item:hover, .settings-section:hover) {
   border-color: rgba(15, 127, 156, 0.28) !important;
   background: rgba(245, 252, 255, 0.96) !important;
   box-shadow: 0 18px 42px rgba(14, 116, 144, 0.12) !important;
@@ -9175,9 +8344,7 @@ select option {
 
 :root[data-theme="bright"] :where(
   .memory-item.compact.selected,
-  .social-friend-item.selected,
-  .admin-diary-row.active
-) {
+  .social-friend-item.selected) {
   border-color: rgba(15, 127, 156, 0.34) !important;
   background: rgba(15, 127, 156, 0.1) !important;
 }
@@ -9192,7 +8359,6 @@ select option {
   .auth-card-header h1,
   .friends-page-hero h2,
   .friends-hub-header h2,
-  .feed-page-hero h2,
   .settings-header h2,
   .life-map-hero-copy h1,
   .memory-header h2,
@@ -9212,9 +8378,6 @@ select option {
   .friend-empty-state strong,
   .friends-profile-card h3,
   .friends-profile-stats strong,
-  .feed-card h3,
-  .feed-card-header strong,
-  .feed-empty h3,
   .settings-section-header,
   .account-facts strong,
   .life-map-feature-card h3,
@@ -9287,12 +8450,6 @@ select option {
   .friends-profile-stats article,
   .friends-empty-panel p,
   .friend-empty-state p,
-  .feed-page-hero span,
-  .feed-card-header span,
-  .feed-card p,
-  .feed-card footer span,
-  .feed-empty,
-  .feed-empty p,
   .account-facts span,
   .life-map-hero-copy p,
   .life-map-hero-copy span,
@@ -9364,7 +8521,6 @@ select option {
   .visibility-filter button,
   .map-mode-switch button,
   .radius-switch button,
-  .feed-filter button,
   .friend-segmented button,
   .panel-tabs button
 ) {
@@ -9377,7 +8533,6 @@ select option {
   .visibility-filter button:hover,
   .map-mode-switch button:hover,
   .radius-switch button:hover,
-  .feed-filter button:hover,
   .friend-segmented button:hover,
   .panel-tabs button:hover
 ) {
@@ -9389,7 +8544,6 @@ select option {
   .visibility-filter button.active,
   .map-mode-switch button.active,
   .radius-switch button.active,
-  .feed-filter button.active,
   .friend-segmented button.active,
   .panel-tabs button.active
 ) {
@@ -9400,7 +8554,6 @@ select option {
 }
 
 :root[data-theme="bright"] :where(
-  .feed-visibility,
   .recommendation-tags span,
   .friends-hub-pills span,
   .friend-status-pill,
@@ -9455,7 +8608,6 @@ select option {
 }
 
 .app-layout.authenticated.friends-mode .friends-hub,
-.app-layout.authenticated.feed-mode .feed-page,
 .app-layout.authenticated.settings-mode .settings-page {
   grid-column: 1 / -1;
   width: 100%;
@@ -9474,27 +8626,18 @@ select option {
 }
 
 .app-layout.authenticated.friends-mode .friends-new-user-flow,
-.app-layout.authenticated.feed-mode .feed-list,
 .app-layout.authenticated.settings-mode .settings-page-content {
   width: min(1440px, 100%);
   margin-inline: auto;
 }
 
 .app-layout.authenticated.friends-mode .friends-hub-header,
-.app-layout.authenticated.feed-mode .feed-page-hero,
 .app-layout.authenticated.settings-mode .settings-page-hero {
   width: min(1440px, 100%);
   margin-inline: auto;
 }
 
-.app-layout.authenticated.feed-mode .feed-filter {
-  width: fit-content;
-  max-width: min(1440px, 100%);
-  margin-inline: max(0px, calc((100% - 1440px) / 2));
-}
-
 :root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub,
-:root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page,
 :root[data-theme="bright"] .app-layout.authenticated.settings-mode .settings-page {
   background:
     radial-gradient(circle at 16% 18%, rgba(56, 189, 248, 0.16), transparent 34%),
@@ -9503,7 +8646,6 @@ select option {
 }
 
 :root[data-theme="dark"] .app-layout.authenticated.friends-mode .friends-hub,
-:root[data-theme="dark"] .app-layout.authenticated.feed-mode .feed-page,
 :root[data-theme="dark"] .app-layout.authenticated.settings-mode .settings-page {
   background:
     radial-gradient(circle at 14% 18%, rgba(45, 183, 255, 0.14), transparent 32%),
@@ -9795,20 +8937,6 @@ select option {
   color: var(--text-muted);
 }
 
-.admin-user-cell {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 0;
-}
-
-.admin-user-cell > span:last-child {
-  overflow: hidden;
-  min-width: 0;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .nav-dropdown-avatar-row {
   display: flex;
   align-items: center;
@@ -9971,18 +9099,6 @@ select option {
     padding: 22px;
   }
 
-  .admin-hero {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-hero-actions {
-    justify-content: flex-start;
-  }
-
-  .admin-dashboard-container {
-    padding: 18px;
-  }
-
   .presentation-cover,
   .presentation-cover-inner,
   .presentation-summary-grid,
@@ -10124,82 +9240,21 @@ select option {
     gap: 3px;
     min-height: 44px;
     border-radius: 14px;
-    color: #9fc6d8;
+    color: var(--text-secondary);
     background: transparent;
     font-size: 0.68rem;
     font-weight: 800;
   }
 
   .mobile-bottom-nav button.active {
-    color: #ffffff;
-    background: rgba(121, 241, 220, 0.1);
-  }
-
-  .admin-page > .admin-card,
-  .admin-content-frame,
-  .admin-content-frame .admin-card {
-    min-height: auto;
-  }
-
-  .admin-table {
-    min-height: 260px;
-  }
-
-  .overview-stats,
-  .admin-controls,
-  .admin-controls.diaries-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .admin-tabs {
-    width: 100%;
-  }
-
-  .admin-tabs button {
-    flex: 1;
-  }
-
-  .admin-tab-strip {
-    display: grid;
-    gap: 10px;
-  }
-
-  .admin-current-section {
-    padding-left: 0;
-    border-left: 0;
-  }
-
-.users-table,
-.diaries-table {
-  scrollbar-gutter: stable;
-}
-
-.users-table::-webkit-scrollbar,
-.diaries-table::-webkit-scrollbar {
-  height: 8px;
-}
-
-.users-table,
-.diaries-table {
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-  .users-table .admin-table-row {
-    grid-template-columns: 130px 130px 200px 150px 112px 92px;
-    min-width: 860px;
-  }
-
-  .diaries-table .admin-table-row {
-    grid-template-columns: 180px 120px 78px 82px 112px 104px;
-    min-width: 720px;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
   }
 
   .auth-panel,
   .memory-panel,
   .friends-page-shell,
   .friends-hub,
-  .feed-page,
   .settings-panel {
     height: auto;
     min-height: auto;
@@ -10213,8 +9268,7 @@ select option {
   .friends-hub-grid,
   .friends-overview-grid,
   .friends-directory-grid,
-  .recommendation-list-grid,
-  .feed-list {
+  .recommendation-list-grid {
     grid-template-columns: 1fr;
   }
 
@@ -10306,8 +9360,7 @@ select option {
 
 @media (max-width: 560px) {
   .friends-page-shell,
-  .friends-hub,
-  .feed-page {
+  .friends-hub {
     padding: 16px;
     border-radius: 18px;
   }
@@ -11262,8 +10315,6 @@ select option {
 .toast-viewport *,
 .friends-hub,
 .friends-hub *,
-.feed-page,
-.feed-page *,
 .presentation-section-inner,
 .presentation-section-inner * {
   pointer-events: auto;
@@ -11753,9 +10804,6 @@ select option {
   .memory-panel,
   .diary-side-panel,
   .settings-panel,
-  .admin-hero,
-  .admin-card,
-  .admin-table,
   .admin-table-wrapper,
   .friends-hub-card,
   .friends-profile-card,
@@ -11766,8 +10814,6 @@ select option {
   .social-suggestion-card,
   .friends-empty-panel,
   .friend-empty-state,
-  .feed-card,
-  .feed-empty,
   .life-map-hero,
   .life-map-summary-card,
   .life-map-feature-card,
@@ -11807,22 +10853,17 @@ select option {
 :root[data-theme="bright"] :where(
   h1, h2, h3, h4,
   .friends-hub-header h2,
-  .feed-page-hero h2,
   .life-map-hero-copy h1,
   .life-map-summary-card h2,
   .life-map-feature-card h3,
   .life-map-card-heading strong,
   .life-map-card-heading span,
-  .admin-hero h1,
-  .admin-card h1,
-  .admin-card h2,
   .settings-header h1,
   .settings-section h2,
   .diary-side-title,
   .friend-user-main strong,
   .social-person-row strong,
   .social-friend-item strong,
-  .feed-card h3,
   .presentation-section-heading h2,
   .cover-title-en,
   .cover-title-zh
@@ -11842,9 +10883,6 @@ select option {
   .friends-subtle-copy,
   .friends-hub-header span,
   .friends-hub-pills span,
-  .feed-page-hero span,
-  .feed-card p,
-  .feed-card footer span,
   .life-map-hero-copy p,
   .life-map-hero-copy span,
   .life-map-feature-card p,
@@ -11856,7 +10894,6 @@ select option {
   .life-map-muted,
   .life-map-location-card span,
   .life-map-privacy-card p,
-  .admin-card p,
   .admin-empty,
   .settings-section p,
   .presentation-section-heading p,
@@ -11872,17 +10909,13 @@ select option {
 
 :root[data-theme="bright"] :where(
   .friends-hub,
-  .feed-page,
   .life-map-panel,
-  .admin-dashboard-container,
   .settings-panel
 ) {
   background: var(--page-bg) !important;
 }
 
-.app-layout.authenticated.friends-mode .friends-hub,
-.app-layout.authenticated.feed-mode .feed-page,
-.admin-dashboard-container {
+.app-layout.authenticated.friends-mode .friends-hub {
   width: 100%;
   max-width: none;
   border-radius: 0 !important;
@@ -11892,14 +10925,12 @@ select option {
 }
 
 .app-layout.authenticated.friends-mode .friends-new-user-flow,
-.app-layout.authenticated.feed-mode :where(.feed-page-hero, .feed-filter, .feed-list),
-.app-layout.authenticated.ai-mode :where(.life-map-hero, .life-map-state-stage, .life-map-privacy-card),
-.admin-dashboard-container :where(.admin-hero, .admin-card) {
+.app-layout.authenticated.ai-mode :where(.life-map-hero, .life-map-state-stage, .life-map-privacy-card) {
   width: min(1440px, 100%);
   margin-inline: auto;
 }
 
-:root[data-theme="bright"] :where(input, textarea, select, .ui-select-trigger, .auth-input input, .friend-list-search, .friends-quick-search label, .admin-search, .friend-sort-control select) {
+:root[data-theme="bright"] :where(input, textarea, select, .ui-select-trigger, .auth-input input, .friend-list-search, .friends-quick-search label, .friend-sort-control select) {
   color: var(--text-primary) !important;
   -webkit-text-fill-color: var(--text-primary);
   border-color: var(--input-border) !important;
@@ -11946,10 +10977,8 @@ select option {
   .chip-button,
   .compact-action,
   .life-map-secondary-action,
-  .feed-filter button,
   .visibility-filter button,
   .friend-segmented button,
-  .admin-tabs button,
   .presentation-control-button,
   .map-controls button
 ) {
@@ -11967,7 +10996,6 @@ select option {
   .chip-button:hover:not(:disabled),
   .compact-action:hover:not(:disabled),
   .life-map-secondary-action:hover:not(:disabled),
-  .feed-filter button:hover,
   .visibility-filter button:hover,
   .friend-segmented button:hover,
   .map-controls button:hover:not(:disabled)
@@ -11977,11 +11005,8 @@ select option {
 }
 
 :root[data-theme="bright"] :where(
-  .feed-filter button.active,
   .visibility-filter button.active,
-  .friend-segmented button.active,
-  .admin-tabs button.active
-) {
+  .friend-segmented button.active) {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   border-color: transparent !important;
@@ -12034,10 +11059,8 @@ select option {
   .settings-section-header svg,
   .life-map-card-heading svg,
   .life-map-feature-icon,
-  .feed-empty svg,
   .friends-empty-panel svg,
   .friend-empty-state svg,
-  .admin-card svg,
   .presentation-section-heading svg,
   .map-controls button svg
 ) {
@@ -12068,27 +11091,6 @@ select option {
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
 }
 
-:root[data-theme="bright"] .admin-dashboard-container {
-  min-height: calc(100vh - 76px);
-  padding: 36px clamp(20px, 4.5vw, 64px);
-  background: var(--page-bg) !important;
-}
-
-:root[data-theme="bright"] :where(.admin-table, .admin-table-row, .admin-table-row span) {
-  color: var(--text-primary) !important;
-  -webkit-text-fill-color: var(--text-primary) !important;
-}
-
-:root[data-theme="bright"] .admin-table-row.header {
-  color: var(--text-secondary) !important;
-  background: rgba(15, 127, 156, 0.08) !important;
-}
-
-:root[data-theme="bright"] .admin-table-row:not(.header):hover,
-:root[data-theme="bright"] .admin-diary-row.active {
-  background: rgba(15, 127, 156, 0.06) !important;
-}
-
 :root[data-theme="bright"] .role-pill.user {
   color: #334155 !important;
   border-color: rgba(100, 116, 139, 0.22) !important;
@@ -12107,11 +11109,7 @@ select option {
   background: rgba(180, 83, 9, 0.12) !important;
 }
 
-:root[data-theme="bright"] .feed-card {
-  cursor: pointer;
-}
 
-:root[data-theme="bright"] .feed-visibility,
 :root[data-theme="bright"] .friend-status-pill,
 :root[data-theme="bright"] .diary-time-pill,
 :root[data-theme="bright"] .diary-place-pill,
@@ -12166,16 +11164,13 @@ select option {
 }
 
 @media (max-width: 760px) {
-  .app-layout.authenticated.friends-mode .friends-hub,
-  .app-layout.authenticated.feed-mode .feed-page,
-  .admin-dashboard-container {
+  .app-layout.authenticated.friends-mode .friends-hub {
     padding: 20px 16px !important;
   }
 }
 
 /* Align Friends page title area with Feed page title rhythm. */
-.app-layout.authenticated.friends-mode .friends-hub-header,
-.app-layout.authenticated.feed-mode .feed-page-hero {
+.app-layout.authenticated.friends-mode .friends-hub-header {
   display: flex;
   min-height: 78px;
   align-items: flex-end;
@@ -12186,15 +11181,13 @@ select option {
   background: transparent !important;
 }
 
-.app-layout.authenticated.friends-mode .friends-title-copy,
-.app-layout.authenticated.feed-mode .feed-page-hero > div {
+.app-layout.authenticated.friends-mode .friends-title-copy {
   display: grid;
   gap: 5px;
   min-width: 0;
 }
 
-.app-layout.authenticated.friends-mode .friends-hub-kicker,
-.app-layout.authenticated.feed-mode .feed-page-hero .eyebrow {
+.app-layout.authenticated.friends-mode .friends-hub-kicker {
   margin: 0;
   font-size: 0.74rem;
   font-weight: 900;
@@ -12203,8 +11196,7 @@ select option {
   text-transform: uppercase;
 }
 
-.app-layout.authenticated.friends-mode .friends-hub-header h2,
-.app-layout.authenticated.feed-mode .feed-page-hero h2 {
+.app-layout.authenticated.friends-mode .friends-hub-header h2 {
   margin: 0;
   font-size: 1.65rem;
   font-weight: 850;
@@ -12212,8 +11204,7 @@ select option {
   letter-spacing: 0;
 }
 
-.app-layout.authenticated.friends-mode .friends-hub-header .friends-title-copy > span,
-.app-layout.authenticated.feed-mode .feed-page-hero span {
+.app-layout.authenticated.friends-mode .friends-hub-header .friends-title-copy > span {
   display: block;
   margin: 0;
   font-size: 0.9rem;
@@ -12232,20 +11223,17 @@ select option {
   font-size: 0.76rem;
 }
 
-:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub-header,
-:root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page-hero {
+:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub-header {
   border-bottom-color: rgba(15, 127, 156, 0.16) !important;
 }
 
-:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub-kicker,
-:root[data-theme="bright"] .app-layout.authenticated.feed-mode .feed-page-hero .eyebrow {
+:root[data-theme="bright"] .app-layout.authenticated.friends-mode .friends-hub-kicker {
   color: var(--accent) !important;
   -webkit-text-fill-color: var(--accent) !important;
 }
 
 @media (max-width: 640px) {
-  .app-layout.authenticated.friends-mode .friends-hub-header,
-  .app-layout.authenticated.feed-mode .feed-page-hero {
+  .app-layout.authenticated.friends-mode .friends-hub-header {
     min-height: auto;
     align-items: flex-start;
     flex-direction: column;
@@ -15120,7 +14108,7 @@ input.mood-intensity-slider {
   background-color: var(--accent-soft);
 }
 
-:where(.feed-page, .friends-hub, .settings-page, .admin-page, .life-map-panel) :focus-visible {
+:where( .friends-hub, .settings-page, .life-map-panel) :focus-visible {
   outline: 2px solid var(--accent-strong);
   outline-offset: 3px;
 }
@@ -15600,8 +14588,6 @@ input.mood-intensity-slider {
 }
 
 .diary-image-frame[data-state="ready"] > img { opacity: 1; }
-
-.admin-table[aria-busy="true"] { cursor: progress; }
 
 .settings-inline-actions .primary-button { min-width: 100px; }
 

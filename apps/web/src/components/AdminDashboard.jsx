@@ -4,34 +4,37 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, getImageUrl } from '../api/client.js';
 import ContentTransition from './ui/ContentTransition.jsx';
 import Modal from './ui/Modal.jsx';
-import { MOOD_FILTER_OPTIONS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
+import { MOOD_FILTER_OPTIONS, MOOD_LABELS, ROLE_FILTER_OPTIONS, ROLE_OPTIONS, VISIBILITY_FILTER_OPTIONS } from '../constants/app.js';
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 import ToastViewport from './ToastViewport.jsx';
 import UserAvatar from './UserAvatar.jsx';
 import Select from './ui/Select.jsx';
 import AnimatedNumber from './ui/AnimatedNumber.jsx';
+import './admin.css';
 
 const tabs = [
   { id: 'overview', label: 'Overview' },
   { id: 'users', label: 'Users' },
-  { id: 'diaries', label: 'Diaries' }
+  { id: 'diaries', label: 'Diaries' },
+  { id: 'roles', label: 'Roles & Permissions' },
+  { id: 'status', label: 'System Status' }
 ];
 
 const defaultPagination = { page: 1, limit: 10, total: 0, totalPages: 1 };
 
 const roleFilterOptions = ROLE_FILTER_OPTIONS.map((value) => ({
   value,
-  label: value === 'all' ? 'All roles' : formatRole(value)
+  label: value === 'all' ? '全部角色' : formatRole(value)
 }));
 
 const visibilityFilterOptions = VISIBILITY_FILTER_OPTIONS.map((value) => ({
   value,
-  label: value === 'all' ? 'All visibility' : value
+  label: ({ all: '全部範圍', private: '私人', friends: '好友', public: '公開' })[value]
 }));
 
 const moodFilterOptions = MOOD_FILTER_OPTIONS.map((value) => ({
   value,
-  label: value === 'all' ? 'All moods' : value
+  label: value === 'all' ? '全部心情' : MOOD_LABELS[value] || value
 }));
 
 export default function AdminDashboard({ user, theme = 'dark', onThemeChange, onBack, onLogout }) {
@@ -42,6 +45,10 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
   const [diaries, setDiaries] = useState([]);
   const [diariesPagination, setDiariesPagination] = useState(defaultPagination);
   const [selectedDiary, setSelectedDiary] = useState(null);
+  const [diaryDeleteTarget, setDiaryDeleteTarget] = useState(null);
+  const [deleteReason, setDeleteReason] = useState('');
+  const [systemStatus, setSystemStatus] = useState(null);
+  const [userSort, setUserSort] = useState('newest');
   const [userSearch, setUserSearch] = useState('');
   const [debouncedUserSearch, setDebouncedUserSearch] = useState('');
   const [userRole, setUserRole] = useState('all');
@@ -90,7 +97,15 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
     if (activeTab === 'users') {
       loadUsers();
     }
-  }, [activeTab, debouncedUserSearch, userRole, userPage]);
+  }, [activeTab, debouncedUserSearch, userRole, userPage, userSort]);
+
+  useEffect(() => {
+    if (activeTab !== 'status') return;
+    const controller = new AbortController();
+    api.getAdminStatus(controller.signal).then(payload => { if (!controller.signal.aborted) setSystemStatus(payload.data); })
+      .catch(error => { if (!controller.signal.aborted) setError(error.message); });
+    return () => controller.abort();
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'diaries') {
@@ -114,10 +129,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
       ['總使用者數', stats?.totalUsers],
       ['總日記數', stats?.totalDiaries],
       ['今日新增使用者', stats?.todayUsers],
-      ['今日新增日記', stats?.todayDiaries],
-      ['Public 日記', stats?.publicDiaries],
-      ['Friends 日記', stats?.friendsDiaries],
-      ['Private 日記', stats?.privateDiaries]
+      ['今日新增日記', stats?.todayDiaries]
     ];
   }, [stats]);
 
@@ -125,7 +137,9 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
     const sections = {
       overview: { eyebrow: 'Overview', title: '系統總覽' },
       users: { eyebrow: 'Users', title: '使用者管理' },
-      diaries: { eyebrow: 'Diaries', title: '日記管理' }
+      diaries: { eyebrow: 'Diaries', title: '日記管理' },
+      roles: { eyebrow: 'Access', title: '角色與權限' },
+      status: { eyebrow: 'Status', title: '系統狀態' }
     };
 
     return sections[activeTab] || sections.overview;
@@ -155,7 +169,8 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
         page: userPage,
         limit: 10,
         search: debouncedUserSearch,
-        role: userRole
+        role: userRole,
+        sort: userSort
       });
       if (version !== requestVersions.current.users) return;
       setUsers(asArray(payload.data?.items));
@@ -193,13 +208,16 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
     if (activeTab === 'overview') loadStats();
     if (activeTab === 'users') loadUsers();
     if (activeTab === 'diaries') loadDiaries();
+    if (activeTab === 'status') { setSystemStatus(null); api.getAdminStatus().then(payload => setSystemStatus(payload.data)).catch(error => setError(error.message)); }
   }
 
   async function deleteDiary(id) {
     try {
       setDeleteLoadingId(id);
       setError('');
-      const payload = await api.deleteAdminDiary(id);
+      const payload = await api.deleteAdminDiary(id, deleteReason.trim());
+      setDiaryDeleteTarget(null); setDeleteReason('');
+      window.dispatchEvent(new CustomEvent('adrift:feed-changed', { detail: { diaryId: id } }));
       setDiaries((current) => current.filter((item) => item._id !== id));
       setDiariesPagination((current) => ({
         ...current,
@@ -223,6 +241,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
       const nextUser = payload.data && typeof payload.data === 'object' ? payload.data : { role };
       setUsers((current) => current.map((item) => (item._id === id ? { ...item, ...nextUser } : item)));
       setNotice(payload.message || '使用者權限已更新');
+      await loadStats();
     } catch (err) {
       setError(err.message || '更新使用者權限失敗');
     } finally {
@@ -259,16 +278,15 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
 
   return (
     <section
-      className="admin-page admin-dashboard-container"
+      className="admin-page admin-dashboard-container admin-console"
     >
-      <header className="admin-hero glass">
+      <header className="admin-hero">
         <button className="icon-button" type="button" onClick={onBack} aria-label="返回">
           <ArrowLeft size={18} />
         </button>
         <div className="admin-title-block">
-          <p className="eyebrow">Admin Mode</p>
-          <h1>管理員模式</h1>
-          <p>以低密度工作台管理系統、使用者與日記內容。</p>
+          <p className="eyebrow">Adrift · Administration</p>
+          <h1>管理中心</h1>
         </div>
         <div className="admin-hero-actions">
           <div className="admin-theme-switcher" aria-label="主題模式">
@@ -307,7 +325,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
       </header>
 
       <div className="admin-tab-strip">
-        <nav className="admin-tabs glass" aria-label="Admin dashboard tabs">
+        <nav className="admin-tabs" aria-label="Admin dashboard tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -334,7 +352,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
           {activeTab === 'overview' && (
             <ContentTransition as="section"
               key="overview"
-              className="admin-card admin-overview-card glass"
+              className="admin-card admin-overview-card"
             >
             {loading.overview && !stats ? (
               <p className="admin-empty">載入管理資料中...</p>
@@ -345,14 +363,8 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                     <Stat key={label} label={label} value={value} />
                   ))}
                 </div>
-                <div className="admin-activity">
-                  <div>
-                    <p className="eyebrow">Recent Activity</p>
-                    <h3>今日系統狀態</h3>
-                  </div>
-                  <p>今天新增 {stats?.todayUsers ?? 0} 位使用者、{stats?.todayDiaries ?? 0} 篇日記。</p>
-                  <p>公開 / 好友 / 私密日記分布為 {stats?.publicDiaries ?? 0} / {stats?.friendsDiaries ?? 0} / {stats?.privateDiaries ?? 0}。</p>
-                </div>
+                <div className="admin-distribution"><h3>記憶分享範圍</h3>{[['公開', 'publicDiaries'], ['好友', 'friendsDiaries'], ['私人', 'privateDiaries']].map(([label, key]) => <div key={key}><span>{label}</span><meter min="0" max={Math.max(1, stats?.totalDiaries || 0)} value={stats?.[key] || 0} /><AnimatedNumber value={stats?.[key] ?? '—'} digits={5} /></div>)}</div>
+                <div className="admin-recent-grid"><section><h3>最近加入</h3>{stats?.recentUsers?.length ? stats.recentUsers.map(person => <div key={person._id} className="admin-recent-person"><UserAvatar user={person} size="sm" /><span><strong>{person.name}</strong><small>@{person.userCode}</small></span><time>{formatDate(person.createdAt)}</time></div>) : <p>目前沒有使用者資料</p>}</section><section><h3>最近的記憶</h3>{stats?.recentDiaries?.length ? stats.recentDiaries.map(diary => <button key={diary._id} onClick={() => setSelectedDiary(diary)}><strong>{diary.title}</strong><span>@{diary.author?.userCode || 'unknown'} · {formatDate(diary.createdAt)}</span></button>) : <p>目前沒有日記資料</p>}</section></div>
               </>
             )}
             </ContentTransition>
@@ -361,7 +373,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
           {activeTab === 'users' && (
             <ContentTransition as="section"
               key="users"
-              className="admin-card admin-data-card glass"
+              className="admin-card admin-data-card"
             >
             <div className="admin-controls">
               <label className="admin-search">
@@ -369,11 +381,12 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                 <input
                   value={userSearch}
                   onChange={(event) => setUserSearch(event.target.value)}
-                  placeholder="搜尋 name / userCode / email"
+                  placeholder="搜尋名稱、使用者 ID 或 Email"
                 />
               </label>
+              <Select label="排序" value={userSort} options={[{ value: 'newest', label: '最新加入' }, { value: 'oldest', label: '最早加入' }]} onChange={value => { setUserSort(value); setUserPage(1); }} size="sm" fullWidth={false} />
               <Select
-                label="Role"
+                label="權限"
                 value={userRole}
                 options={roleFilterOptions}
                 onChange={(value) => {
@@ -381,6 +394,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                   setUserRole(value);
                 }}
                 size="sm"
+                fullWidth={false}
               />
             </div>
             <UsersTable
@@ -399,7 +413,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
           {activeTab === 'diaries' && (
             <ContentTransition as="section"
               key="diaries"
-              className="admin-card admin-data-card glass"
+              className="admin-card admin-data-card"
             >
             <div className="admin-controls diaries-controls">
               <label className="admin-search">
@@ -407,11 +421,11 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                 <input
                   value={diarySearch}
                   onChange={(event) => setDiarySearch(event.target.value)}
-                  placeholder="搜尋 title / content / author userCode"
+                  placeholder="搜尋標題、內容或作者 ID"
                 />
               </label>
               <Select
-                label="Visibility"
+                label="可見範圍"
                 value={diaryVisibility}
                 options={visibilityFilterOptions}
                 onChange={(value) => {
@@ -419,9 +433,10 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                   setDiaryVisibility(value);
                 }}
                 size="sm"
+                fullWidth={false}
               />
               <Select
-                label="Mood"
+                label="心情"
                 value={diaryMood}
                 options={moodFilterOptions}
                 onChange={(value) => {
@@ -429,6 +444,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                   setDiaryMood(value);
                 }}
                 size="sm"
+                fullWidth={false}
               />
             </div>
             <DiariesTable
@@ -436,11 +452,13 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
               loading={loading.diaries}
               deleteLoadingId={deleteLoadingId}
               onView={diary => { setError(''); setSelectedDiary(diary); }}
-              onDelete={deleteDiary}
+              onDelete={diary => { setError(''); setDeleteReason(''); setDiaryDeleteTarget(diary); }}
             />
             <Pagination pagination={diariesPagination} onPageChange={setDiaryPage} />
             </ContentTransition>
           )}
+          {activeTab === 'roles' && <ContentTransition key="roles" className="admin-access"><p>目前登入角色：<strong>{formatRole(user.role)}</strong></p><table><thead><tr><th>權限</th><th>User</th><th>Admin</th><th>Owner</th></tr></thead><tbody>{[['個人日記與好友', '✓', '✓', '✓'], ['查看系統統計', '—', '✓', '✓'], ['管理日記', '—', '✓', '✓'], ['調整角色 / 刪除使用者', '—', '—', '✓']].map(row => <tr key={row[0]}>{row.map((cell, index) => index ? <td key={index}>{cell}</td> : <th key={index}>{cell}</th>)}</tr>)}</tbody></table><p>Owner 帳號不可降權或刪除。所有操作由伺服器重新驗證權限。</p></ContentTransition>}
+          {activeTab === 'status' && <ContentTransition key="status" className="admin-system"><h3>服務連線</h3>{systemStatus ? <dl><div><dt>API</dt><dd>已回應</dd></div><div><dt>資料庫</dt><dd>{systemStatus.database?.connected ? '已連線' : systemStatus.database?.status || '尚未連線'}</dd></div><div><dt>檢查時間</dt><dd>{formatDate(systemStatus.checkedAt)}</dd></div></dl> : <p role="status">正在檢查服務…</p>}<p>顯示本次實際查詢結果，不代表歷史可用率。</p></ContentTransition>}
         </AnimatePresence>
       </div>
 
@@ -451,7 +469,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
             error={error}
             deleteLoading={deleteLoadingId === selectedDiary._id}
             onClose={() => setSelectedDiary(null)}
-            onDelete={() => deleteDiary(selectedDiary._id)}
+            onDelete={() => { setDeleteReason(''); setDiaryDeleteTarget(selectedDiary); setSelectedDiary(null); }}
           />
         )}
         {userDeleteTarget && (
@@ -463,6 +481,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
             onConfirm={() => deleteUser(userDeleteTarget._id)}
           />
         )}
+        {diaryDeleteTarget && <Modal label="刪除日記確認" className="admin-detail-modal admin-danger-modal" busy={!!deleteLoadingId} error={error} onClose={() => setDiaryDeleteTarget(null)}><header><h2>刪除這篇記憶？</h2><button className="icon-button" aria-label="關閉" onClick={() => setDiaryDeleteTarget(null)} disabled={!!deleteLoadingId}><X size={18} /></button></header><p>「{diaryDeleteTarget.title}」將永久移除，作者無法復原。</p><label className="admin-confirm-field"><span>管理原因</span><textarea value={deleteReason} maxLength={300} onChange={event => setDeleteReason(event.target.value)} placeholder="請簡短說明原因（至少 4 字）" /></label><footer><button className="ghost-button" disabled={!!deleteLoadingId} onClick={() => setDiaryDeleteTarget(null)}>取消</button><button className="danger-button compact-danger" disabled={!!deleteLoadingId || deleteReason.trim().length < 4} onClick={() => deleteDiary(diaryDeleteTarget._id)}>{deleteLoadingId ? <span className="button-spinner" /> : <Trash2 size={16} />}永久刪除</button></footer></Modal>}
       </AnimatePresence>
       <ToastViewport
         toast={error ? { id: `admin-error-${error}`, message: error, type: 'error' } : notice ? { id: `admin-notice-${notice}`, message: notice, type: 'success' } : null}
@@ -496,7 +515,7 @@ function Stat({ label, value }) {
   return (
     <div className="admin-stat">
       <span>{label}</span>
-      <strong><AnimatedNumber value={value ?? 0} digits={7} /></strong>
+      <strong><AnimatedNumber value={value ?? '—'} digits={7} /></strong>
     </div>
   );
 }
@@ -506,39 +525,39 @@ function UsersTable({ users, currentUser, loading, roleLoadingId, userDeleteLoad
   const canDeleteUsers = currentUser?.role === 'owner';
 
   return (
-    <div className="admin-table users-table" aria-busy={loading} inert={loading || undefined}>
-      <div className="admin-table-row header">
-        <span>使用者名稱</span>
-        <span>User ID</span>
-        <span>Email</span>
-        <span>Role</span>
-        <span>Created</span>
-        <span>操作</span>
+    <div className="admin-table users-table" role="table" aria-label="使用者資料" aria-colcount={6} aria-busy={loading} inert={loading || undefined}>
+      <div className="admin-table-row header" role="row">
+        <span role="columnheader">使用者名稱</span>
+        <span role="columnheader">User ID</span>
+        <span role="columnheader">Email</span>
+        <span role="columnheader">Role</span>
+        <span role="columnheader">Created</span>
+        <span role="columnheader">操作</span>
       </div>
       {loading && users.length === 0 && <p className="admin-empty">載入管理資料中...</p>}
       {users.map((item) => {
         const isSelf = String(item._id || item.id) === String(currentUser?._id || currentUser?.id);
 
         return (
-          <div className="admin-table-row" key={item._id}>
-            <span className="admin-user-cell" title={item.name}>
+          <div className="admin-table-row" role="row" key={item._id}>
+            <span role="cell" className="admin-user-cell" title={item.name}>
               <UserAvatar user={item} size="sm" />
               <span>{item.name}</span>
             </span>
-            <span title={item.userCode}>@{item.userCode}</span>
-            <span title={item.email}>{item.email}</span>
-            <RoleControl
+            <span role="cell" title={item.userCode}>@{item.userCode}</span>
+            <span role="cell" title={item.email}>{item.email}</span>
+            <span role="cell"><RoleControl
               user={item}
               currentUser={currentUser}
               canManageRoles={canManageRoles}
               loading={roleLoadingId === item._id}
               onUpdateRole={onUpdateRole}
-            />
-            <span>{formatDate(item.createdAt)}</span>
-            <span className="admin-row-actions user-actions">
+            /></span>
+            <span role="cell">{formatDate(item.createdAt)}</span>
+            <span role="cell" className="admin-row-actions user-actions">
               {isSelf ? (
                 <span className="admin-row-note">目前帳號</span>
-              ) : canDeleteUsers ? (
+              ) : canDeleteUsers && item.role !== 'owner' ? (
                 <button
                   className="icon-button danger compact-action"
                   type="button"
@@ -564,7 +583,7 @@ function RoleControl({ user, currentUser, canManageRoles, loading, onUpdateRole 
   const role = user.role || 'user';
   const isSelf = String(user._id || user.id) === String(currentUser?._id || currentUser?.id);
   if (isSelf) return <span className={`role-pill ${role} self`}>{formatRole(role)} · 目前帳號</span>;
-  if (!canManageRoles) return <span className={`role-pill ${role}`}>{formatRole(role)}</span>;
+  if (!canManageRoles || role === 'owner') return <span className={`role-pill ${role}`}>{formatRole(role)}</span>;
   return <div className="role-editor">
     <Select placeholder={`角色：${user.name || user.userCode}`} value={role}
       options={ROLE_OPTIONS.map(value => ({ value, label: formatRole(value) }))}
@@ -585,24 +604,24 @@ function asArray(value) {
 
 function DiariesTable({ diaries, loading, deleteLoadingId, onView, onDelete }) {
   return (
-    <div className="admin-table diaries-table" aria-busy={loading} inert={loading || undefined}>
-      <div className="admin-table-row header">
-        <span>Title</span>
-        <span>Author</span>
-        <span>Mood</span>
-        <span>Visibility</span>
-        <span>Created</span>
-        <span>操作</span>
+    <div className="admin-table diaries-table" role="table" aria-label="日記資料" aria-colcount={6} aria-busy={loading} inert={loading || undefined}>
+      <div className="admin-table-row header" role="row">
+        <span role="columnheader">Title</span>
+        <span role="columnheader">Author</span>
+        <span role="columnheader">Mood</span>
+        <span role="columnheader">Visibility</span>
+        <span role="columnheader">Created</span>
+        <span role="columnheader">操作</span>
       </div>
       {loading && diaries.length === 0 && <p className="admin-empty">載入管理資料中...</p>}
       {diaries.map((diary) => (
-        <div className="admin-table-row admin-diary-row" key={diary._id}>
-          <span title={diary.title}>{diary.title}</span>
-          <span title={diary.author?.userCode || ''}>@{diary.author?.userCode || 'unknown'}</span>
-          <span>{diary.mood?.type || '-'}</span>
-          <span>{diary.visibility}</span>
-          <span>{formatDate(diary.createdAt)}</span>
-          <span className="admin-row-actions">
+        <div className="admin-table-row admin-diary-row" role="row" key={diary._id}>
+          <span role="cell" title={diary.title}>{diary.title}</span>
+          <span role="cell" title={diary.author?.userCode || ''}>@{diary.author?.userCode || 'unknown'}</span>
+          <span role="cell">{diary.mood?.type || '-'}</span>
+          <span role="cell">{diary.visibility}</span>
+          <span role="cell">{formatDate(diary.createdAt)}</span>
+          <span role="cell" className="admin-row-actions">
             <button className="chip-button compact-action" type="button" onClick={() => onView(diary)}>
               <Eye size={14} />
               查看
@@ -610,7 +629,7 @@ function DiariesTable({ diaries, loading, deleteLoadingId, onView, onDelete }) {
             <button
               className="icon-button danger compact-action"
               type="button"
-              onClick={() => onDelete(diary._id)}
+              onClick={() => onDelete(diary)}
               disabled={deleteLoadingId === diary._id}
               aria-label="刪除日記"
             >

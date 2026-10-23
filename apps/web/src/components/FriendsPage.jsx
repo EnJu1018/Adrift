@@ -27,6 +27,7 @@ export default function FriendsPage(props) {
   const [pending, setPending] = useState({}), [overrides, setOverrides] = useState({}), [toast, setToast] = useState(null);
   const locks = useRef(new Set()), callbacks = useRef(props), mounted = useRef(false), searchInput = useRef(null);
   const discovery = useRef(null);
+  useEffect(() => { if (props.notificationEntry) { setTab('invites'); setInviteTab('received'); } }, [props.notificationEntry]);
   callbacks.current = props;
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(null), 2600); return () => clearTimeout(timer); }, [toast]);

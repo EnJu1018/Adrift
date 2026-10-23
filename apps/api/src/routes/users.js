@@ -4,8 +4,9 @@ import fs from 'node:fs/promises';
 import multer from 'multer';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import Diary from '../models/Diary.js';
 import User from '../models/User.js';
+import { deleteAccountData } from '../services/deleteAccount.js';
+import { notifyContentChange } from './diaries.js';
 import { requireAuth } from '../middleware/auth.js';
 import { EMAIL_PATTERN } from '../constants/app.js';
 import { createSocialLimiter, relationship } from '../services/friendRelationships.js';
@@ -43,7 +44,7 @@ const avatarUpload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (_req, file, callback) => {
     if (!allowedAvatarMimeTypes.has(file.mimetype)) {
-      return callback(new Error('頭貼僅支援 JPG、PNG、WebP'));
+      return callback(Object.assign(new Error('頭貼僅支援 JPG、PNG、WebP'), { statusCode: 400 }));
     }
 
     callback(null, true);
@@ -162,7 +163,7 @@ router.patch('/me/email', requireAuth, async (req, res, next) => {
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatches) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: '密碼錯誤，無法修改 Email'
       });
@@ -195,10 +196,10 @@ router.patch('/me/password', requireAuth, async (req, res, next) => {
       });
     }
 
-    if (!newPassword || newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 8) {
       return res.status(400).json({
         success: false,
-        message: '新密碼至少需要 6 個字元'
+        message: '新密碼至少需要 8 個字元'
       });
     }
 
@@ -213,7 +214,7 @@ router.patch('/me/password', requireAuth, async (req, res, next) => {
     const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
 
     if (!passwordMatches) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: '目前密碼錯誤'
       });
@@ -232,7 +233,7 @@ router.patch('/me/password', requireAuth, async (req, res, next) => {
   }
 });
 
-router.patch('/me/avatar', requireAuth, avatarUpload.single('avatar'), async (req, res, next) => {
+router.patch('/me/avatar', requireAuth, createSocialLimiter(10), avatarUpload.single('avatar'), async (req, res, next) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -241,6 +242,13 @@ router.patch('/me/avatar', requireAuth, avatarUpload.single('avatar'), async (re
       });
     }
 
+    const file = await fs.open(req.file.path, 'r');
+    const header = Buffer.alloc(12);
+    try { await file.read(header, 0, 12, 0); } finally { await file.close(); }
+    const isImage = req.file.mimetype === 'image/png' ? header.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+      : req.file.mimetype === 'image/jpeg' ? header[0] === 255 && header[1] === 216 && header[2] === 255
+        : header.toString('ascii', 0, 4) === 'RIFF' && header.toString('ascii', 8, 12) === 'WEBP';
+    if (!isImage) throw Object.assign(new Error('圖片格式不正確，請選擇 JPG、PNG 或 WebP'), { statusCode: 400 });
     const user = await User.findById(req.user._id);
     const oldAvatar = user.avatar || '';
     user.avatar = `/uploads/avatars/${req.file.filename}`;
@@ -308,19 +316,14 @@ router.delete('/me', requireAuth, async (req, res, next) => {
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatches) {
-      return res.status(401).json({
+      return res.status(400).json({
         success: false,
         message: '目前密碼錯誤'
       });
     }
 
-    await Promise.all([
-      Diary.deleteMany({ user: user._id }),
-      User.updateMany({ friends: user._id }, { $pull: { friends: user._id } }),
-      User.updateMany({}, { $pull: { friendRequests: { from: user._id } } })
-    ]);
-
-    await User.deleteOne({ _id: user._id });
+    await deleteAccountData(user._id);
+    notifyContentChange();
 
     res.json({
       success: true,
