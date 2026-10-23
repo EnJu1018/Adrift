@@ -154,5 +154,6 @@ diarySchema.pre('validate', function normalizeLocationAccuracy(next) {
 });
 
 diarySchema.index({ location: '2dsphere' });
+diarySchema.index({ user: 1, visibility: 1, createdAt: -1, _id: -1 });
 
 export default mongoose.model('Diary', diarySchema);

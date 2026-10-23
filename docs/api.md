@@ -40,6 +40,9 @@ Important variables:
 Memory Chat authorization, retrieval limits, quotas, and tests are documented
 in [memory-chat.md](memory-chat.md).
 
+Social Hub endpoints, transaction requirements, visibility rules and integration
+tests are documented in [social-hub.md](social-hub.md).
+
 All protected routes require:
 
 ```txt

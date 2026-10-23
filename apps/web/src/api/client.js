@@ -208,6 +208,9 @@ export const api = {
     const query = new URLSearchParams({ userCode }).toString();
     return request(`/users/search?${query}`);
   },
+  searchPeople(q, signal) {
+    return request(`/friends/search?${new URLSearchParams({ q })}`, { signal });
+  },
   sendFriendRequest(targetUserId) {
     return request('/friends/request', {
       method: 'POST',
@@ -232,12 +235,18 @@ export const api = {
   getFriends() {
     return request('/friends');
   },
-  getFriendRecommendations(limit = 10) {
+  getFriendRecommendations(limit = 10, signal) {
     const query = new URLSearchParams({ limit }).toString();
-    return request(`/friends/recommendations?${query}`);
+    return request(`/friends/recommendations?${query}`, { signal });
   },
-  getFriendProfile(friendId) {
-    return request(`/friends/${friendId}/profile`);
+  getFriendProfile(friendId, signal) {
+    return request(`/friends/${encodeURIComponent(friendId)}/profile`, { signal });
+  },
+  getFriendMemories(friendId, cursor, signal) {
+    return request(`/friends/${encodeURIComponent(friendId)}/memories${cursor ? `?${new URLSearchParams({ cursor })}` : ''}`, { signal });
+  },
+  getSharedPlaces(friendId, signal) {
+    return request(`/friends/${encodeURIComponent(friendId)}/places`, { signal });
   },
   deleteFriend(friendId) {
     return request(`/friends/${friendId}`, { method: 'DELETE' });

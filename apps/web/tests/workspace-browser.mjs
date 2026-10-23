@@ -51,8 +51,8 @@ try {
         FeedPage: shared,
         AccountSettings: { ...shared, onUpdateName: async name => setUser(current => ({ ...current, name })) },
         FriendsPage: { ...shared, friends: [friend],
-          friendRequests: [{ requestId: 'received', from: friend }],
-          sentFriendRequests: [{ requestId: 'sent', to: friend }] },
+          friendRequests: [{ requestId: 'received', from: { ...friend, _id: 'incoming', name: 'Harbor', userCode: 'harbor' } }],
+          sentFriendRequests: [{ requestId: 'sent', to: { ...friend, _id: 'outgoing', name: 'Meadow', userCode: 'meadow' } }] },
         AdminDashboard: shared,
         LifeMapAI: { state, onStateChange: setState, onBack() {} }
       };
@@ -114,21 +114,18 @@ try {
   assert.equal(await copyAction.locator('.lucide-check').evaluate(el => getComputedStyle(el).opacity), '1');
 
   await view('FriendsPage', '.friends-hub');
-  const userSearch = page.getByPlaceholder('輸入 userCode，例如 arren1088');
-  const emptySearchBox = await userSearch.boundingBox();
-  await userSearch.fill('river');
-  assert.deepEqual(await userSearch.boundingBox(), emptySearchBox, 'clear control must not resize the search input');
-  await page.getByRole('button', { name: '清除使用者搜尋' }).click();
-  assert.equal(await userSearch.inputValue(), '');
   const friendSearch = page.getByPlaceholder('搜尋好友名稱或 ID');
+  const emptySearchBox = await friendSearch.boundingBox();
   await friendSearch.fill('river');
+  assert.deepEqual(await friendSearch.boundingBox(), emptySearchBox, 'clear control must not resize the search input');
   await page.getByRole('button', { name: '清除好友篩選' }).click();
   assert.equal(await friendSearch.inputValue(), '');
+  await page.getByRole('tab', { name: '好友邀請' }).click();
   await page.getByRole('button', { name: /已送出/ }).evaluate(el => el.click());
-  await page.waitForFunction(() => document.querySelector('.social-invite-list')?.inert);
-  await page.getByRole('button', { name: '收回', exact: true }).waitFor();
+  await page.waitForFunction(() => document.querySelector('.hub-invite-list')?.inert);
+  await page.getByRole('button', { name: '撤回邀請', exact: true }).waitFor();
   await page.waitForTimeout(500);
-  assert.equal(await page.locator('.social-invite-list').count(), 1);
+  assert.equal(await page.locator('.hub-invite-list').count(), 1);
   assert.equal(await page.getByRole('button', { name: /已送出/ }).getAttribute('aria-pressed'), 'true');
 
   await view('AdminDashboard', '.admin-page');

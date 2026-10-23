@@ -90,24 +90,33 @@ function sendDiaryEvent(client, event, data) {
   client.res.write(`data: ${JSON.stringify(data)}\n\n`);
 }
 
-function broadcastDiaryEvent(event, diary) {
-  for (const client of diaryEventClients.values()) {
-    if (canViewDiary(client.user, diary)) {
-      sendDiaryEvent(client, event, {
-        diary: serializeDiary(diary, client.user._id)
-      });
+export async function broadcastDiaryEvent(event, diary) {
+  const clients = [...diaryEventClients.values()];
+  if (!clients.length) return;
+  try {
+    const ids = [...new Set(clients.map(client => String(client.user._id)))];
+    const users = await User.find({ _id: { $in: ids } }).select('_id friends').maxTimeMS(5000).lean();
+    const current = new Map(users.map(user => [String(user._id), user]));
+    for (const client of clients) {
+      const fresh = current.get(String(client.user._id));
+      if (client.expiresAt <= Date.now()) { client.res.end(); continue; }
+      if (!fresh) { client.res.end(); continue; }
+      client.user = fresh;
+      if (canViewDiary(fresh, diary)) sendDiaryEvent(client, event, event === 'diary:deleted' ? { diaryId: diary._id } : { diary: serializeDiary(diary, fresh._id) });
     }
+  } catch { for (const client of clients) client.res.end(); }
+}
+
+export function notifySocialChange(ids) {
+  const changed = new Set(ids.map(String));
+  for (const client of diaryEventClients.values()) if (changed.has(String(client.user._id))) {
+    client.user.friends = [];
+    try { sendDiaryEvent(client, 'social:changed', {}); } catch { client.res.end(); }
   }
 }
 
 function broadcastDiaryDeleted(diary) {
-  for (const client of diaryEventClients.values()) {
-    if (canViewDiary(client.user, diary)) {
-      sendDiaryEvent(client, 'diary:deleted', {
-        diaryId: diary._id
-      });
-    }
-  }
+  return broadcastDiaryEvent('diary:deleted', diary);
 }
 
 function getReactionCounts(diary) {
@@ -374,11 +383,13 @@ router.get('/events', async (req, res) => {
     res.write('retry: 3000\n\n');
 
     const clientId = `${user._id}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    const expiresAt = (jwt.decode(token)?.exp || 0) * 1000;
     const heartbeat = setInterval(() => {
+      if (expiresAt <= Date.now()) { res.end(); return; }
       res.write(': keep-alive\n\n');
     }, 25000);
 
-    diaryEventClients.set(clientId, { res, user });
+    diaryEventClients.set(clientId, { res, user, expiresAt });
     sendDiaryEvent({ res }, 'connected', { ok: true });
 
     req.on('close', () => {

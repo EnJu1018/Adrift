@@ -1,12 +1,12 @@
 import { animate, createDrawable, createMotionPath, createScope, stagger } from 'animejs';
 import { motionMs, motionTokens } from './tokens.js';
 
-export function createInsightReveal(root) {
+function createStaggerReveal(root, selector) {
   if (!root || typeof window === 'undefined') return () => {};
   const scope = createScope({ root, mediaQueries: { reduce: '(prefers-reduced-motion: reduce)' } });
   scope.add(({ matches }) => {
     if (matches.reduce) return;
-    animate(root.querySelectorAll('[data-insight-reveal]'), {
+    animate([...root.querySelectorAll(selector)].slice(0, 6), {
       opacity: [0, 1], translateY: [motionTokens.distance.small, 0],
       duration: motionMs.slow, delay: stagger(motionMs.stagger), ease: 'out(3)',
       onComplete: animation => animation.revert()
@@ -14,6 +14,9 @@ export function createInsightReveal(root) {
   });
   return () => scope.revert();
 }
+
+export const createInsightReveal = root => createStaggerReveal(root, '[data-insight-reveal]');
+export const createPeopleReveal = root => createStaggerReveal(root, '[data-person-reveal]');
 
 export function prefersReducedMotion() {
   return typeof window === 'undefined' ||

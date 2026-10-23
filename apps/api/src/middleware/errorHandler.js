@@ -42,7 +42,7 @@ export function errorHandler(error, _req, res, _next) {
     });
   }
 
-  const status = Number(error.statusCode) >= 400 && Number(error.statusCode) < 500 ? Number(error.statusCode) : 500;
+  const status = Number(error.statusCode) >= 400 && Number(error.statusCode) < 600 ? Number(error.statusCode) : 500;
   res.status(status).json({
     success: false,
     message: status < 500 ? error.message : '伺服器暫時無法完成，請稍後重試'

@@ -23,7 +23,12 @@ try {
     const React = (await import(source.match(/from "([^"]*deps\/react\.js[^"]*)"/)[1])).default;
     const { createRoot } = (await import(main.match(/from "([^"]*react-dom_client[^"]*)"/)[1])).default;
     const { api, saveAuth } = await import('/src/api/client.js');
-    saveAuth('local-test-session', { _id: 'keeper', name: 'Keeper', userCode: 'keeper', role: 'user' });
+    saveAuth('local-test-session', { id: 'keeper', _id: 'keeper', name: 'Keeper', userCode: 'keeper', role: 'user' });
+    window.EventSource = class extends EventTarget {
+      constructor() { super(); window.socialStream = this; }
+      close() {}
+    };
+    api.getMe = async () => ({ data: { id: 'keeper', _id: 'keeper', name: 'Keeper', userCode: 'keeper', role: 'user' } });
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: {
       getCurrentPosition: success => { window.finishLocation = () => success({ coords: { latitude: 24, longitude: 120, accuracy: 10 }, timestamp: Date.now() }); }
     } });
@@ -102,6 +107,15 @@ try {
   await page.waitForTimeout(100);
   assert.equal(await page.evaluate(() => window.mapProps.diaries[0].title), 'Personal memory', 'old map mode must not overwrite the latest data');
 
+  await page.evaluate(item => window.socialStream.dispatchEvent(new MessageEvent('diary:created', { data: JSON.stringify({ diary: item }) })), { ...diary('Friend-only memory'), visibility: 'friends', user: { _id: 'river', name: 'River' } });
+  await page.waitForFunction(() => window.mapProps.diaries.some(item => item.title === 'Friend-only memory'));
+  await page.evaluate(() => window.socialStream.dispatchEvent(new MessageEvent('social:changed', { data: '{}' })));
+  await page.waitForFunction(() => !window.mapProps.diaries.some(item => item.visibility === 'friends'));
+  await page.evaluate(() => window.pendingDiaries.at(-1).reject(new Error('Temporary network outage')));
+  await page.waitForTimeout(80);
+  assert.equal(await page.evaluate(() => window.mapProps.diaries.some(item => item.visibility === 'friends')), false, 'revoked cached records stay hidden even if refresh fails');
+  assert.equal(await page.evaluate(() => window.mapProps.diaries[0].title), 'Personal memory');
+
   await page.getByRole('button', { name: '使用者選單', exact: true }).click();
   await page.locator('#nav-user-menu').getByRole('button', { name: '登出', exact: true }).click();
   await page.locator('.auth-page').waitFor();
@@ -109,7 +123,7 @@ try {
   assert.equal(await page.locator('.auth-page input').count(), 1);
   assert.equal(await page.evaluate(() => localStorage.getItem('adrift_token')), null);
   assert.deepEqual(errors, []);
-  console.log('PASS: real App request ordering, map source race, logout isolation, keyboard popovers, focus return and stable themes.');
+  console.log('PASS: real App request ordering, map source race, social permission/cache revocation, logout isolation, keyboard popovers, focus return and stable themes.');
 } finally {
   await browser.close();
 }

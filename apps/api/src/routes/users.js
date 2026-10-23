@@ -8,6 +8,7 @@ import Diary from '../models/Diary.js';
 import User from '../models/User.js';
 import { requireAuth } from '../middleware/auth.js';
 import { EMAIL_PATTERN } from '../constants/app.js';
+import { createSocialLimiter, relationship } from '../services/friendRelationships.js';
 
 const router = express.Router();
 const publicUserFields = '_id name avatar userCode';
@@ -50,24 +51,7 @@ const avatarUpload = multer({
 });
 
 function getFriendshipStatus(currentUser, targetUser) {
-  const currentId = currentUser._id.toString();
-  const targetId = targetUser._id.toString();
-
-  if (currentId === targetId) return 'self';
-
-  if ((currentUser.friends || []).some((id) => id.toString() === targetId)) {
-    return 'friend';
-  }
-
-  if ((targetUser.friendRequests || []).some((request) => request.from.toString() === currentId && request.status === 'pending')) {
-    return 'sent_request';
-  }
-
-  if ((currentUser.friendRequests || []).some((request) => request.from.toString() === targetId && request.status === 'pending')) {
-    return 'received_request';
-  }
-
-  return 'none';
+  return relationship(currentUser, targetUser).friendshipStatus;
 }
 
 function serializeUser(user) {
@@ -348,8 +332,9 @@ router.delete('/me', requireAuth, async (req, res, next) => {
   }
 });
 
-router.get('/search', requireAuth, async (req, res, next) => {
+router.get('/search', requireAuth, createSocialLimiter(30), async (req, res, next) => {
   try {
+    res.set('Cache-Control', 'no-store');
     const userCode = req.query.userCode?.toString().toLowerCase().trim();
 
     if (!userCode) {

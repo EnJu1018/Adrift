@@ -192,6 +192,7 @@ export default function App() {
   const [friendRequests, setFriendRequests] = useState([]);
   const [sentFriendRequests, setSentFriendRequests] = useState([]);
   const [socialRefreshToken, setSocialRefreshToken] = useState(0);
+  const [socialState, setSocialState] = useState({ status: 'idle', error: '' });
   const [selectedDiary, setSelectedDiary] = useState(null);
   const [draftLocation, setDraftLocation] = useState(null);
   const [editingDiary, setEditingDiary] = useState(null);
@@ -298,6 +299,7 @@ export default function App() {
     setFriends([]);
     setFriendRequests([]);
     setSentFriendRequests([]);
+    setSocialState({ status: 'idle', error: '' });
     setSocialRefreshToken(0);
     setDiaries([]);
     setDiaryLoading(false);
@@ -373,6 +375,7 @@ export default function App() {
     const { token } = getStoredAuth();
     if (!token) return;
     const version = ++socialRequestVersion.current;
+    setSocialState(current => ({ ...current, status: 'loading', error: '' }));
 
     try {
       const [friendsPayload, requestsPayload, sentRequestsPayload] = await Promise.all([
@@ -388,6 +391,7 @@ export default function App() {
       setFriends(nextFriends);
       setFriendRequests(nextRequests);
       setSentFriendRequests(nextSentRequests);
+      setSocialState({ status: 'ready', error: '' });
       setSocialRefreshToken((current) => current + 1);
 
       return {
@@ -396,9 +400,34 @@ export default function App() {
         sentFriendRequests: nextSentRequests
       };
     } catch (error) {
-      if (version === socialRequestVersion.current && getStoredAuth().token === token && error.status !== 401) setDiaryError(error.message);
+      if (version === socialRequestVersion.current && getStoredAuth().token === token && error.status !== 401) setSocialState({ status: 'error', error: error.message });
     }
   }, []);
+
+  const clearSharedContent = useCallback(() => {
+    const ownId = getEntityId(getStoredAuth().user);
+    diaryRequestVersion.current++;
+    setSocialRefreshToken(current => current + 1);
+    setDiaries(current => current.filter(diary => diary.visibility !== 'friends' || sameId(getDiaryAuthorId(diary), ownId)));
+    setSelectedDiary(current => current?.visibility === 'friends' && !sameId(getDiaryAuthorId(current), ownId) ? null : current);
+  }, []);
+
+  const refreshSocialContent = useCallback(async () => {
+    clearSharedContent();
+    const snapshot = await loadSocial();
+    if (mapMode === 'explore' && exploreCenter) await loadExploreDiaries({ ...exploreCenter, radius: exploreRadius }, { silent: true });
+    else await loadDiaries({}, { silent: true });
+    return snapshot;
+  }, [clearSharedContent, loadSocial, loadDiaries, loadExploreDiaries, mapMode, exploreCenter, exploreRadius]);
+
+  useEffect(() => {
+    if (!user || !isFriendsPage) return;
+    const refresh = () => { if (document.visibilityState !== 'hidden') refreshSocialContent(); };
+    refresh();
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh); };
+  }, [isFriendsPage, Boolean(user), refreshSocialContent]);
 
   const applyRealtimeDiary = useCallback((diary) => {
     if (!diary?._id) return;
@@ -599,14 +628,17 @@ export default function App() {
     events.addEventListener('diary:created', handleCreated);
     events.addEventListener('diary:deleted', handleDeleted);
     events.addEventListener('diary:updated', handleUpdated);
+    const socialChanged = () => { if (getStoredAuth().token === token) refreshSocialContent(); };
+    events.addEventListener('social:changed', socialChanged);
 
     return () => {
       events.removeEventListener('diary:created', handleCreated);
       events.removeEventListener('diary:deleted', handleDeleted);
       events.removeEventListener('diary:updated', handleUpdated);
+      events.removeEventListener('social:changed', socialChanged);
       events.close();
     };
-  }, [applyRealtimeDiary, removeRealtimeDiary, updateRealtimeDiary, user?.id]);
+  }, [applyRealtimeDiary, removeRealtimeDiary, updateRealtimeDiary, refreshSocialContent, user?.id]);
 
   const currentUserId = getEntityId(user);
   const stats = useMemo(() => {
@@ -984,7 +1016,7 @@ export default function App() {
 
   async function acceptFriendRequest(requestId) {
     const payload = await api.acceptFriendRequest(requestId);
-    await Promise.all([loadSocial(), loadDiaries({}, { silent: true })]);
+    await refreshSocialContent();
     return payload;
   }
 
@@ -1009,7 +1041,9 @@ export default function App() {
 
   async function deleteFriend(friendId) {
     const payload = await api.deleteFriend(friendId);
-    await Promise.all([loadSocial(), loadDiaries({}, { silent: true })]);
+    clearSharedContent();
+    setFriends(current => current.filter(friend => !sameId(friend._id, friendId)));
+    await refreshSocialContent();
     return payload;
   }
 
@@ -1303,7 +1337,10 @@ export default function App() {
             friendRequests={friendRequests}
             sentFriendRequests={sentFriendRequests}
             socialRefreshToken={socialRefreshToken}
-            onOpenDiary={openDiaryFromFeed}
+            socialState={socialState}
+            onRefresh={refreshSocialContent}
+            onOpenMap={() => navigate('/')}
+            onOpenDiary={openMemoryDiary}
             onSearchUser={searchFriendUser}
             onSendFriendRequest={sendFriendRequest}
             onCancelFriendRequest={cancelFriendRequest}

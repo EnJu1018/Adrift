@@ -46,6 +46,7 @@ const userSchema = new mongoose.Schema(
         ref: 'User'
       }
     ],
+    socialVersion: { type: Number, default: 0, select: false },
     friendRequests: [
       {
         from: {
@@ -67,5 +68,9 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.index({ 'friendRequests.from': 1, 'friendRequests.status': 1 });
+userSchema.index({ 'friendRequests._id': 1 });
+userSchema.index({ friends: 1 });
 
 export default mongoose.model('User', userSchema);
