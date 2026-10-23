@@ -1,0 +1,12 @@
+body { margin: 0; }
+.web-starting {
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  min-height: 100svh;
+  margin: 0;
+  padding: 24px;
+  font: 16px/1.6 system-ui, sans-serif;
+  color: #bed2e3;
+  background: #070b12;
+}

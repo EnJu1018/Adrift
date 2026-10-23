@@ -8,7 +8,7 @@ try {
   await page.route('**/src/main.jsx', async route => {
     const response = await route.fetch();
     const text = await response.text();
-    await route.fulfill({ response, body: text.slice(0, text.indexOf('createRoot(document')) });
+    await route.fulfill({ response, body: text.slice(0, text.indexOf('createRoot(document')) + '\nimport "/src/DesktopApp.jsx";' });
   });
   await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:5178');
   await page.evaluate(async () => {
