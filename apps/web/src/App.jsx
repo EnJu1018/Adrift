@@ -1047,7 +1047,7 @@ export default function App() {
       <div className="ambient-bg" />
 
       <div
-        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isLandingPage ? 'landing-mode' : ''} ${isPublicInfoPage ? 'public-info-mode' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
+        className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isLandingPage ? 'landing-mode' : ''} ${isPublicInfoPage || isFeaturePage ? 'public-info-mode' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
       >
         {isPresentationDownloadPage ? (
           <PresentationPdfDownload />

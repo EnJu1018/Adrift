@@ -241,7 +241,7 @@ export default function FeedPage({
             String(author?._id || diary.user) === String(user?._id || user?.id);
           const display = own ? user : author;
           return (
-            <article className="mf-card" key={diary._id}>
+            <article className={`mf-card${diary.imageUrl ? " has-photo" : ""}`} key={diary._id}>
               <header>
                 <button
                   className="mf-author"
@@ -270,7 +270,7 @@ export default function FeedPage({
               </header>
               <button className="mf-story" onClick={() => open(diary)}>
                 <h2>{diary.title || "未命名記憶"}</h2>
-                <p>{(diary.text || diary.content || "").slice(0, 280)}</p>
+                <p>{diary.text || diary.content || ""}</p>
               </button>
               {diary.imageUrl && (
                 <button
@@ -328,10 +328,8 @@ export default function FeedPage({
           );
         })}
         {status === "loading" && !items.length && (
-          <div className="mf-skeleton" role="status" aria-label="正在讀取動態">
-            <span />
-            <span />
-            <span />
+          <div className="mf-loading" role="status" aria-label="正在讀取動態">
+            {[0, 1].map(index => <div className="mf-skeleton" key={index} aria-hidden="true"><span /><span /><span /></div>)}
           </div>
         )}
         {status === "ready" && !items.length && (

@@ -363,7 +363,7 @@ export default function AdminDashboard({ user, theme = 'dark', onThemeChange, on
                     <Stat key={label} label={label} value={value} />
                   ))}
                 </div>
-                <div className="admin-distribution"><h3>記憶分享範圍</h3>{[['公開', 'publicDiaries'], ['好友', 'friendsDiaries'], ['私人', 'privateDiaries']].map(([label, key]) => <div key={key}><span>{label}</span><meter min="0" max={Math.max(1, stats?.totalDiaries || 0)} value={stats?.[key] || 0} /><AnimatedNumber value={stats?.[key] ?? '—'} digits={5} /></div>)}</div>
+                <div className="admin-distribution"><h3>記憶分享範圍</h3>{[['公開', 'publicDiaries'], ['好友', 'friendsDiaries'], ['私人', 'privateDiaries']].map(([label, key]) => <div key={key}><span>{label}</span><meter aria-label={label} min="0" max={Math.max(1, stats?.totalDiaries || 0)} value={stats?.[key] || 0} /><AnimatedNumber value={stats?.[key] ?? '—'} digits={5} /></div>)}</div>
                 <div className="admin-recent-grid"><section><h3>最近加入</h3>{stats?.recentUsers?.length ? stats.recentUsers.map(person => <div key={person._id} className="admin-recent-person"><UserAvatar user={person} size="sm" /><span><strong>{person.name}</strong><small>@{person.userCode}</small></span><time>{formatDate(person.createdAt)}</time></div>) : <p>目前沒有使用者資料</p>}</section><section><h3>最近的記憶</h3>{stats?.recentDiaries?.length ? stats.recentDiaries.map(diary => <button key={diary._id} onClick={() => setSelectedDiary(diary)}><strong>{diary.title}</strong><span>@{diary.author?.userCode || 'unknown'} · {formatDate(diary.createdAt)}</span></button>) : <p>目前沒有日記資料</p>}</section></div>
               </>
             )}

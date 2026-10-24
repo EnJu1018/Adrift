@@ -1,15 +1,12 @@
 :root[data-theme]
   .app-layout.authenticated.settings-mode
   .settings-page.account-center {
-  padding: 36px 32px 80px;
+  padding: var(--page-padding-top) var(--page-gutter) 64px;
   background: var(--bg-primary) !important;
 }
 .account-center .settings-page-content {
-  max-width: 1120px !important;
-  gap: 34px;
-}
-:root[data-theme="bright"] .account-center {
-  --accent-strong: var(--accent-hover);
+  max-width: var(--page-content-width) !important;
+  gap: var(--section-gap);
 }
 .account-center .settings-page-header {
   display: flex;
@@ -28,28 +25,28 @@
 }
 .account-center .settings-page-title {
   display: block;
-  font-size: 30px;
+  font-size: var(--font-page-title);
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: 0;
   writing-mode: horizontal-tb;
   white-space: nowrap;
-  margin: 8px 0 10px;
+  margin: 6px 0 8px;
 }
 .account-center .settings-page-subtitle {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-body);
   line-height: 1.6;
 }
 .account-center .settings-layout {
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap: 54px;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  gap: var(--space-12);
 }
 .account-center .settings-sidebar {
   padding: 0;
   gap: 28px;
   position: sticky;
-  top: 28px;
+  top: var(--sticky-offset);
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -86,10 +83,10 @@
   gap: 4px;
 }
 .account-center .settings-sidebar nav button {
-  font-size: 14px;
+  font-size: var(--font-button);
   font-weight: 500;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   min-height: 44px;
 }
 .account-center .settings-sidebar nav button.active {
@@ -110,11 +107,11 @@
   display: none;
 }
 .account-center .settings-card h2 {
-  font-size: 21px;
+  font-size: var(--font-section-title);
   line-height: 1.4;
 }
 .account-center .settings-card-header p {
-  font-size: 14px;
+  font-size: var(--font-secondary);
   margin-top: 6px;
 }
 .account-center .settings-card-icon {
@@ -152,7 +149,7 @@
   min-width: 0;
 }
 .account-center .settings-avatar-feature strong {
-  font-size: 15px;
+  font-size: var(--font-body);
 }
 .account-center .settings-avatar-feature span {
   font-size: 13px;
@@ -166,8 +163,8 @@
 }
 .account-center .settings-avatar-actions button {
   font-size: 13px;
-  min-height: 38px;
-  border-radius: 6px;
+  min-height: var(--control-height);
+  border-radius: var(--control-radius);
 }
 .account-center .settings-row {
   grid-template-columns: 120px minmax(0, 1fr) auto;
@@ -177,18 +174,18 @@
   background: transparent;
 }
 .account-center .settings-row-label {
-  font-size: 14px;
+  font-size: var(--font-secondary);
 }
 .account-center .settings-row-value > strong {
-  font-size: 15px;
+  font-size: var(--font-body);
   font-weight: 500;
   line-height: 1.65;
   overflow-wrap: anywhere;
   white-space: normal;
 }
 .account-center .settings-row-action {
-  min-height: 38px;
-  border-radius: 5px;
+  min-height: var(--control-height);
+  border-radius: var(--control-radius);
   padding: 6px 10px;
   font-size: 13px;
 }
@@ -203,9 +200,9 @@
   border-radius: 0;
 }
 .account-center .settings-inline-edit input {
-  font-size: 15px;
+  font-size: var(--font-body);
   min-height: 44px;
-  border-radius: 6px;
+  border-radius: var(--control-radius);
 }
 .account-center .settings-inline-edit label > span {
   font-size: 13px;
@@ -216,7 +213,7 @@
   gap: 8px;
 }
 .account-center .settings-inline-actions button {
-  min-height: 38px;
+  min-height: var(--control-height);
   font-size: 13px;
   padding: 8px 14px;
 }
@@ -236,10 +233,10 @@
 }
 .account-center .settings-danger-panel input {
   min-height: 44px;
-  font-size: 15px;
+  font-size: var(--font-body);
 }
 .account-note {
-  font-size: 14px;
+  font-size: var(--font-secondary);
   line-height: 1.8;
   color: var(--text-secondary);
 }
@@ -254,11 +251,11 @@
   align-items: center;
   gap: 10px;
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   background: transparent;
   color: var(--text-primary);
   padding: 14px;
-  font-size: 14px;
+  font-size: var(--font-button);
 }
 .account-theme button[aria-pressed="true"] {
   border-color: var(--accent-strong);
@@ -310,7 +307,7 @@
     font-size: 26px;
   }
   .account-center .settings-page-header > .chip-button {
-    font-size: 12px;
+    font-size: var(--font-caption);
     min-width: 0;
   }
   .account-center .settings-layout {

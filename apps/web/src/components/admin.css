@@ -1,6 +1,6 @@
 .admin-console.admin-page {
   display: grid !important;
-  grid-template-columns: 200px minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   grid-template-rows: auto auto 1fr;
   align-content: start;
   gap: 0 36px;
@@ -8,7 +8,7 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  padding: 28px 32px 60px;
+  padding: var(--page-padding-top) var(--page-gutter) 60px;
   color: var(--text-primary);
   background: var(--bg-primary) !important;
 }
@@ -29,7 +29,7 @@
   flex: 1;
 }
 .admin-console .admin-hero h1 {
-  font-size: 28px;
+  font-size: var(--font-page-title);
   line-height: 1.3;
   margin: 4px 0 0;
   letter-spacing: 0;
@@ -45,7 +45,7 @@
   flex-wrap: wrap;
 }
 .admin-console .admin-hero-actions button {
-  min-height: 38px;
+  min-height: var(--control-height);
   font-size: 13px;
 }
 .admin-console .admin-theme-switcher {
@@ -74,9 +74,9 @@
   text-align: left;
   justify-content: flex-start;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--control-radius);
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--font-button);
   color: var(--text-secondary);
   background: transparent;
   font-weight: 500;
@@ -99,7 +99,7 @@
   display: none;
 }
 .admin-console .admin-current-section h2 {
-  font-size: 23px;
+  font-size: var(--font-section-title);
   margin: 0;
 }
 .admin-console .admin-content-frame {
@@ -167,9 +167,16 @@
 }
 .admin-distribution meter {
   width: 100%;
-  height: 12px;
+  height: 8px;
+  appearance: none;
+  border: 0;
+  border-radius: 4px;
+  background: var(--accent-soft);
   accent-color: var(--accent-strong);
 }
+.admin-distribution meter::-webkit-meter-bar { height: 8px; border: 0; border-radius: 4px; background: var(--accent-soft); }
+.admin-distribution meter::-webkit-meter-optimum-value { background: var(--accent-strong); border-radius: 4px; }
+.admin-distribution meter::-moz-meter-bar { background: var(--accent-strong); border-radius: 4px; }
 .admin-recent-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -192,11 +199,11 @@
   min-width: 0;
 }
 .admin-recent-person strong {
-  font-size: 14px;
+  font-size: var(--font-secondary);
   overflow-wrap: anywhere;
 }
 .admin-recent-person small {
-  font-size: 12px;
+  font-size: var(--font-caption);
   color: var(--text-muted);
 }
 .admin-recent-person time {
@@ -220,11 +227,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: var(--font-button);
 }
 .admin-recent-grid button span,
 .admin-recent-grid section > p {
-  font-size: 12px;
+  font-size: var(--font-caption);
   color: var(--text-secondary);
 }
 .admin-console .admin-controls {
@@ -240,10 +247,10 @@
 .admin-console .admin-search {
   flex: 1;
   min-width: 200px;
-  border-radius: 6px;
+  border-radius: var(--control-radius);
 }
 .admin-console .admin-controls input {
-  font-size: 14px;
+  font-size: var(--font-secondary);
   min-height: 42px;
 }
 .admin-console .admin-controls .ui-select-field {
@@ -262,7 +269,7 @@
   min-width: 0;
   overflow-x: auto;
   border: 1px solid var(--border-soft);
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   background: transparent;
 }
 .admin-console .admin-table-row {
@@ -278,7 +285,7 @@
 }
 .admin-console .admin-table-row.header {
   min-height: 44px;
-  font-size: 12px;
+  font-size: var(--font-caption);
   font-weight: 600;
   background: var(--bg-surface);
   color: var(--text-secondary);
@@ -306,7 +313,7 @@
   gap: 8px;
 }
 .admin-console .role-pill {
-  font-size: 12px;
+  font-size: var(--font-caption);
   padding: 6px;
   border-radius: 4px;
 }
@@ -317,16 +324,16 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 20px 0;
-  font-size: 12px;
+  font-size: var(--font-caption);
 }
 .admin-console .admin-pagination button {
-  font-size: 12px;
+  font-size: var(--font-caption);
   min-height: 38px;
   padding: 8px 12px;
 }
 .admin-access,
 .admin-system {
-  font-size: 14px;
+  font-size: var(--font-secondary);
   line-height: 1.7;
 }
 .admin-access > p,
@@ -366,7 +373,7 @@
   resize: vertical;
   padding: 12px;
   border: 1px solid var(--input-border);
-  border-radius: 6px;
+  border-radius: var(--control-radius);
   background: var(--input-bg);
   color: var(--text-primary);
   font: inherit;
@@ -492,7 +499,7 @@
   }
   .admin-console .admin-tabs button {
     flex-shrink: 0;
-    font-size: 12px;
+    font-size: var(--font-caption);
     padding: 8px 10px;
   }
   .admin-console .admin-current-section {
@@ -502,7 +509,7 @@
     padding: 5px 16px;
   }
   .admin-console .admin-stat strong {
-    font-size: 28px;
+    font-size: var(--font-page-title);
   }
   .admin-console .admin-search {
     min-width: 150px;
@@ -513,7 +520,7 @@
   .admin-access th,
   .admin-access td {
     padding: 12px 7px;
-    font-size: 12px;
+    font-size: var(--font-caption);
   }
   .admin-recent-person time {
     max-width: 80px;
