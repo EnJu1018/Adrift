@@ -36,9 +36,12 @@ queries sample recent records; historical reviews should specify a period.
 
 ## Generation and Safety
 
-The existing Gemini SDK reads only `GEMINI_API_KEY` and `GEMINI_MODEL` on
-the server. No guessed model fallback is used. Model availability and quota
-depend on the configured Google project; a free tier is not guaranteed.
+The Gemini service reads `GEMINI_API_KEY`, `GEMINI_MODEL` and optional
+`GEMINI_FALLBACK_MODEL` on the server, using the supported `v1beta`
+generateContent endpoint. Configure a fallback only after verifying model
+access and free-tier availability for the Google project. No model is
+silently selected from a hardcoded list, and billing is never enabled by
+the application. Model availability and remaining quota are not guaranteed.
 
 System instructions are separate from untrusted questions and diary data.
 The model has no database tools or write capability. Responses must conform
@@ -63,15 +66,33 @@ not psychological diagnoses. Users should check the original cited diaries.
   expire after two days. No existing diary/user document is migrated.
 - Failed generations count. The global counter is reserved first, so a
   rejected per-user reservation can conservatively consume global capacity.
-- Twenty-second generation deadline, caller cancellation, at most one
-  retry for 500/502/503, and no automatic retry for 429. The deadline covers
-  both attempts; two provider calls may use one reserved generation attempt.
+- Forty-second total generation deadline and caller cancellation. At most
+  two provider requests per operation, separated by an 800ms backoff.
+  Without a configured fallback, only explicit upstream 500/502/503 errors
+  get a retry. With a fallback, the primary has fifteen seconds, and a
+  timeout, missing model or upstream 5xx may use the fallback once within
+  the same overall deadline. No retry for bad credentials, quota, input or
+  invalid output. Two provider calls may use one reserved generation attempt.
+- One in-flight operation per user per feature in each API worker. Chat
+  and Insights have separate guards and failure states; statistics do not
+  consume model quota.
+- Gemini 3 uses `low` thinking rather than unsupported `minimal`; Gemini
+  2.5 Flash uses its supported thinking budget. The 4,096-token output cap
+  includes reasoning tokens. Empty, truncated, blocked or invalid JSON is
+  rejected, not replaced with fabricated analysis. Both features use
+  structured output and server-side response validation.
 - Retrieval/usage operations have five-second query deadlines. Shared API
-  requests have a thirty-second client connection deadline.
-- HTTP 429 includes Retry-After; unavailable providers return 503 with a
-  retry action. Database failures during authentication return 503, not 401.
+  requests retain a thirty-second client deadline, while AI generation
+  requests have sixty-five seconds for authentication, retrieval, usage
+  reservation and generation. Nginx must allow that complete request budget.
+- Error responses preserve `success` and `message` and add a safe `code`
+  and `requestId`; `X-Request-ID` links server logs. Quota returns 429,
+  timeout 504, invalid provider output/configuration 502, and temporary
+  unavailability 503. Provider authentication errors never return a
+  logout-inducing 401. Local JWT failures retain the existing 401 behavior.
 - HTTP access logs omit query strings, including event-stream credentials.
-  Provider errors log only status/type metadata, not request content or keys.
+  Provider logs contain request ID, feature, model, category, HTTP status,
+  duration and retry count, never upstream error text, diary content or keys.
 
 ## Interface
 

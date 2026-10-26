@@ -77,6 +77,8 @@
 .intel-review > .intel-section-heading > .intel-button { flex-shrink: 0; min-width: 162px; }
 .intel-review-notice { min-height: 28px; font-size: 13px; color: var(--intel-muted); line-height: 1.7; }
 .intel-review-notice[role="alert"] { color: var(--danger); }
+.intel-review-notice strong { font-weight: 500; }
+.intel-review-notice p { margin: 4px 0 12px; color: var(--intel-muted); }
 .intel-review-summary { max-width: 900px; padding: 12px 0 24px; }
 .intel-review-summary > p { font-size: var(--font-section-title); line-height: 1.8; margin: 0 0 12px; text-wrap: pretty; }
 .intel-review-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; border-top: 1px solid var(--intel-line); padding-top: 26px; }

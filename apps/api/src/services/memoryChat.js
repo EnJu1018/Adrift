@@ -1,4 +1,4 @@
-import { generateGeminiJson } from './gemini.js';
+import { AiServiceError, generateGeminiJson } from './gemini.js';
 
 export const SCOPE_REPLY = '我主要協助你探索 Adrift 中的日記、情緒足跡與生活回憶。你可以問最近的心情，或某個地點留下過哪些記憶。';
 const clarify = '你想回顧哪段時間、哪個地點，或哪種心情的日記？請從自己的生活紀錄提問。';
@@ -154,28 +154,28 @@ const instruction = `你是 Adrift Memory Chat，只能整理使用者自己的�
 僅使用提供的 diaries 與統計，不可編造事件、人際關係、情緒、日期或地點。統計涵蓋匹配的紀錄，diaries 只是有上限的樣本；明確區分日記事實與可能趨勢，不能以日記代表整段生活，更不能心理診斷。無法回答時請坦白。使用繁體中文、自然簡短，最多約400字。回答涉及具體回憶時，以 [1]、[2] 等對應提供的日記順序引用，並在引用清單回傳那些日記的 id。不得引用提供範圍以外的 id。只回傳符合 schema 的 JSON。`;
 const schema = { type: 'object', properties: { answer: { type: 'string' }, citations: { type: 'array', items: { type: 'string' } } }, required: ['answer', 'citations'] };
 
-export async function answerMemoryQuestion({ message, history, userId, Diary, reserve, generate = generateGeminiJson, signal, now }) {
+export async function answerMemoryQuestion({ message, history, userId, Diary, reserve, generate = generateGeminiJson, signal, requestId, now }) {
   const plan = planMemoryQuestion(message, history, now);
   if (plan.scope !== 'memory') return { answer: plan.answer, scope: plan.scope, relatedDiaries: [], status: 'success' };
   const context = await retrieveMemories(Diary, userId, plan);
   if (!context.diaries.length) return { answer: noData, scope: 'memory', relatedDiaries: [], status: 'empty' };
   if (signal?.aborted) throw Object.assign(new Error('Request cancelled'), { status: 499 });
   await reserve(userId);
-  const result = await generate({ instruction, schema, signal, data: {
+  const result = await generate({ instruction, schema, signal, requestId, feature: 'memory_chat', data: {
     question: message, previousQuestion: plan.previous, timezone: 'Asia/Taipei', range: plan.range,
     matchedCount: context.total, moodStatistics: context.moods, placeStatistics: context.places, diaries: context.diaries
   } });
   if (typeof result?.answer !== 'string' || !result.answer.trim() || result.answer.length > 5000 || !Array.isArray(result.citations) || !result.citations.length) {
-    throw Object.assign(new Error('Invalid AI response'), { status: 502 });
+    throw new AiServiceError('invalid_response');
   }
   const allowed = new Set(context.diaries.map(item => item.id));
-  if (result.citations.some(id => !allowed.has(id))) throw Object.assign(new Error('Invalid AI citation'), { status: 502 });
+  if (result.citations.some(id => !allowed.has(id))) throw new AiServiceError('invalid_citation');
   const cited = new Set(result.citations);
   const relatedDiaries = context.diaries.filter(item => cited.has(item.id)).map(({ id, title, mood, createdAt, place }) => ({ id, title, mood, createdAt, place }));
   const answer = result.answer.trim().replace(/\[(\d+)\]/g, (_, value) => {
     const source = context.diaries[Number(value) - 1];
     const index = relatedDiaries.findIndex(item => item.id === source?.id);
-    if (index < 0) throw Object.assign(new Error('Invalid AI citation number'), { status: 502 });
+    if (index < 0) throw new AiServiceError('invalid_citation');
     return `[${index + 1}]`;
   });
   return { answer, scope: 'memory', status: 'success', relatedDiaries,

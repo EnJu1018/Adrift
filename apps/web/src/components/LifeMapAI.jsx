@@ -65,7 +65,8 @@ export default function LifeMapAI({ state, onStateChange, onBack, onOpenDiary, o
       if (!data || typeof data.summary !== 'string' || !data.summary.trim()) throw new Error('洞察內容不完整，請再試一次。');
       update({ status: 'success', insight: normalizeInsight(data), generatedAt: new Date().toISOString(), dataWarmup: null });
     } catch (error) {
-      update({ status: controller.signal.aborted ? (insight ? 'success' : 'idle') : 'error', error: controller.signal.aborted ? '' : error.message || '暫時無法整理洞察，請稍後重試。' });
+      const message = error instanceof TypeError ? '連線暫時中斷，請檢查網路後重試。' : error.message || '暫時無法整理洞察，請稍後重試。';
+      update({ status: controller.signal.aborted ? (insight ? 'success' : 'idle') : 'error', error: controller.signal.aborted ? '' : message });
     } finally { if (request.current === controller) { pending.current = false; request.current = null; } }
   }
   function ask(question) {

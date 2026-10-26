@@ -8,7 +8,9 @@ try {
   await page.goto(process.env.PREVIEW_URL || 'http://127.0.0.1:5178');
   const result = await page.evaluate(async () => {
     const { api, saveAuth } = await import('/src/api/client.js');
-    const pending = [];
+    const pending = [], deadlines = [];
+    const schedule = window.setTimeout;
+    window.setTimeout = (callback, ms, ...args) => { deadlines.push(ms); return schedule(callback, ms, ...args); };
     window.fetch = (_url, options) => new Promise((resolve, reject) => {
       pending.push({ resolve, signal: options.signal });
       options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
@@ -30,14 +32,21 @@ try {
     const cancelled = api.chatMemory('我的日記', [], controller.signal).catch(error => error);
     controller.abort();
     const cancellation = { name: (await cancelled).name, aborted: pending.at(-1).signal.aborted };
+    for (const invoke of [() => api.getLifeMapInsight(), () => api.chatMemory('我的日記', []), () => api.getIntelligenceOverview()]) {
+      const response = invoke();
+      pending.at(-1).resolve(new Response(JSON.stringify({ success: true, data: {} })));
+      await response;
+    }
+    const aiDeadlines = deadlines.slice(-3);
     const invalid = api.getMe().catch(error => error);
     pending.at(-1).resolve(new Response(JSON.stringify({ success: false }), { status: 401 }));
     await invalid;
-    return { outcomes, failure, cancellation, finalToken: localStorage.getItem('adrift_token'), expired };
+    return { outcomes, failure, cancellation, aiDeadlines, finalToken: localStorage.getItem('adrift_token'), expired };
   });
   assert.deepEqual(result.outcomes, Array.from({ length: 2 }, () => ({ name: 'AbortError', token: 'new-account', expired: 0 })));
   assert.deepEqual(result.failure, { status: 503, token: 'new-account', expired: 0 });
   assert.deepEqual(result.cancellation, { name: 'AbortError', aborted: true });
+  assert.deepEqual(result.aiDeadlines, [65000, 65000, 30000], 'only AI generation extends the existing client deadline');
   assert.equal(result.finalToken, null);
   assert.equal(result.expired, 1);
   console.log('PASS: stale success/401 cannot cross sessions, 503 preserves login, caller cancellation, current-session 401 expires once.');

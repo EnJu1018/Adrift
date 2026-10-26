@@ -104,7 +104,7 @@ test('own real context only, minimal data, quoted diary instructions remain data
     }
   });
   await assert.rejects(answerMemoryQuestion({ message: '回顧我的日記', history: [], userId: a, Diary: store(), reserve: async () => {},
-    generate: async () => ({ answer: 'Fake reference', citations: [diaries[1]._id] }) }), /Invalid AI citation/);
+    generate: async () => ({ answer: 'Fake reference', citations: [diaries[1]._id] }) }), error => error.category === 'invalid_citation');
 });
 
 test('off-topic and empty retrieval never reserve quota or call the model', async () => {

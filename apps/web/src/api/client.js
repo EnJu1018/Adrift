@@ -77,7 +77,7 @@ export function getDiaryEventsUrl() {
   return url.toString();
 }
 
-async function request(path, options = {}) {
+async function request(path, { timeoutMs, ...options } = {}) {
   const token = localStorage.getItem(TOKEN_KEY);
   const headers = new Headers(options.headers || {});
 
@@ -92,7 +92,7 @@ async function request(path, options = {}) {
   const response = await fetchWithDeadline(`${API_URL}${path}`, {
     ...options,
     headers
-  });
+  }, timeoutMs);
 
   let payload = null;
 
@@ -130,12 +130,12 @@ async function request(path, options = {}) {
   return payload;
 }
 
-async function fetchWithDeadline(url, options) {
+async function fetchWithDeadline(url, options, timeoutMs = 30000) {
   const controller = new AbortController();
   const cancel = () => controller.abort();
   options.signal?.addEventListener('abort', cancel, { once: true });
   if (options.signal?.aborted) cancel();
-  const timer = setTimeout(cancel, 30000);
+  const timer = setTimeout(cancel, timeoutMs);
   try {
     return await fetch(url, { ...options, signal: controller.signal });
   } catch (error) {
@@ -261,13 +261,13 @@ export const api = {
     return request(`/friends/${friendId}`, { method: 'DELETE' });
   },
   getLifeMapInsight(signal) {
-    return request('/ai/life-map', { signal });
+    return request('/ai/life-map', { signal, timeoutMs: 65000 });
   },
   getIntelligenceOverview(days = 30, signal) {
     return request(`/ai/overview?${new URLSearchParams({ days })}`, { signal });
   },
   chatMemory(message, history, signal) {
-    return request('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal });
+    return request('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal, timeoutMs: 65000 });
   },
   getDiary(id, signal) {
     return request(`/diaries/${encodeURIComponent(id)}`, { signal });

@@ -60,8 +60,9 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
       update(current => ({ ...current, messages: current.messages.map(item => item.id === answerId
         ? { ...item, ...payload.data, relatedDiaries, resultStatus: payload.data.status, role: 'assistant', content: payload.data.answer, status: 'complete' } : item) }));
     } catch (error) {
+      const message = error instanceof TypeError ? '連線暫時中斷，請檢查網路後重試。' : error.message || '暫時無法回答，請重試。';
       update(current => ({ ...current, messages: current.messages.map(item => item.id === answerId
-        ? { ...item, status: 'error', error: controller.signal.aborted ? '對話已中止，可以重新提問。' : error.message || '暫時無法回答，請重試。' } : item) }));
+        ? { ...item, status: 'error', error: controller.signal.aborted ? '對話已中止，可以重新提問。' : message } : item) }));
     } finally {
       if (request.current === controller) request.current = null;
     }

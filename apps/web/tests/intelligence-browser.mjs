@@ -75,6 +75,22 @@ try {
   await page.evaluate(() => window.insightCalls.at(-1).reject(new Error('智慧功能使用量已達限制，請稍後或明天再試。')));
   await page.getByRole('alert').filter({ hasText: '已保留上次的結果' }).waitFor();
   assert.equal(await result.isVisible(), true);
+  for (const theme of ['bright', 'dark']) {
+    await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
+    await page.waitForTimeout(750);
+    await page.screenshot({ path: `/tmp/adrift-intelligence-error-${theme}.png` });
+    assert.equal(await page.locator('.intel-metrics').count(), 1);
+    assert.equal(await page.getByRole('button', { name: '重新嘗試', exact: true }).isEnabled(), true);
+  }
+  await page.getByRole('button', { name: '重新嘗試', exact: true }).evaluate(button => { button.click(); button.click(); });
+  assert.equal(await page.evaluate(() => window.insightCalls.length), 3, 'rapid retries cannot duplicate AI requests');
+  await page.evaluate(() => window.insightCalls.at(-1).reject(new TypeError('Failed to fetch')));
+  await page.getByRole('alert').filter({ hasText: '連線暫時中斷，請檢查網路後重試。' }).waitFor();
+  assert.equal(await result.isVisible(), true);
+  await page.getByRole('button', { name: '重新嘗試', exact: true }).click();
+  await page.evaluate(() => window.insightCalls.at(-1).resolve({ data: window.insightFixture }));
+  await page.getByRole('button', { name: '更新 AI 回顧', exact: true }).waitFor();
+  assert.equal(await page.locator('.intel-review-notice[role="alert"]').count(), 0, 'retry success clears only the AI error');
   await page.locator('.intelligence-page').evaluate(el => { el.scrollTop = 250; el.dispatchEvent(new Event('scroll')); window.insightReadingPosition = el.scrollTop; });
   await page.getByRole('tab', { name: '記憶對話' }).evaluate(el => el.click());
   await page.getByRole('tab', { name: '智慧洞察' }).evaluate(el => el.click());
@@ -101,6 +117,15 @@ try {
   assert.equal(await page.locator('.memory-chat-intro').count(), 0);
   assert.equal(await page.locator('.memory-chat-answer strong').innerText(), '平靜');
   assert.equal(await page.evaluate(() => window.unsafeAnswer), undefined);
+  await input.fill('回顧我的日記');
+  await page.getByRole('button', { name: '送出記憶問題' }).click();
+  await page.evaluate(() => window.chatCalls.at(-1).reject(new TypeError('Failed to fetch')));
+  await page.getByText('連線暫時中斷，請檢查網路後重試。', { exact: true }).waitFor();
+  await page.getByRole('tab', { name: '智慧洞察' }).click();
+  assert.equal(await result.isVisible(), true, 'chat failure never removes Insights');
+  assert.equal(await page.locator('.intel-review-notice[role="alert"]').count(), 0);
+  assert.equal(await page.locator('.intel-metrics').count(), 1);
+  await page.getByRole('tab', { name: '記憶對話' }).click();
   await page.getByRole('button', { name: /已刪除的記憶/ }).click();
   await page.locator('.memory-chat-unavailable').waitFor();
   assert.equal(await page.getByText('已刪除的記憶', { exact: true }).count(), 0);
@@ -157,6 +182,7 @@ try {
     api.getMe = async () => ({ data: user });
     api.getDiaries = async () => ({ data: { diaries: [] } });
     api.getFriends = api.getFriendRequests = api.getSentFriendRequests = async () => ({ data: [] });
+    api.getNotifications = async () => ({ data: { notifications: [], unreadCount: 0, nextCursor: null } });
     api.getIntelligenceOverview = async days => ({ data: window.overviewFixture(days) });
     history.replaceState(null, '', '/ai/life-map');
     const { default: App } = await import('/src/App.jsx');
