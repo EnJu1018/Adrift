@@ -25,12 +25,18 @@ function MemoryAnswer({ text }) {
         : <p key={index}>{block.lines.map((line, index) => <Fragment key={index}>{index > 0 && <br />}{inline(line)}</Fragment>)}</p>)}</div>;
 }
 
-export default function ChatMessage({ item, busy, opening, unavailable, onRetry, onOpenDiary, onNewDiary }) {
+export default function ChatMessage({ item, busy, opening, unavailable, onRetry, onOpenDiary, onNewDiary, onViewDiaries, onAdjust }) {
+  const evidence = item.evidence;
   return <article className={`memory-chat-message ${item.role} motion-fade-in`}>
     <span className="sr-only">{item.role === 'user' ? '你' : 'Adrift'}</span>
     {item.status === 'pending' ? <p className="memory-chat-thinking"><span className="button-spinner" aria-hidden="true" />正在尋找你的記憶…</p>
       : item.status === 'error' ? <div className="memory-chat-error"><p role="alert">{item.error}</p><button type="button" className="intel-text-button motion-soft-press" onClick={() => onRetry(item.question, item.id)} disabled={busy}><RefreshCw size={15} />重試</button></div>
         : item.role === 'user' ? <p className="memory-chat-user-text">{item.content}</p> : <MemoryAnswer text={item.content} />}
+    {evidence && Number.isInteger(evidence.matchedCount) && evidence.matchedCount > 0 && <div className="memory-chat-evidence">
+      <p>本次找到 {evidence.matchedCount} 篇記錄 · 閱讀 {evidence.sampledCount} 篇內文片段</p>
+      {evidence.status === 'INSUFFICIENT_EVIDENCE' && <p>現有片段不足以判斷長期變化，仍可回顧有記錄的部分。</p>}
+      {item.status === 'error' && <p>檢索結果已保留，重新嘗試即可繼續分析。</p>}
+    </div>}
     {item.relatedDiaries?.length > 0 && <section className="memory-chat-citations" aria-label="相關記憶">
       <h3>相關記憶</h3>
       {item.relatedDiaries.map(diary => unavailable.has(diary.id) ? <p className="memory-chat-unavailable" key={diary.id}>這則記憶已移除或目前無法查看。</p> : <button type="button" key={diary.id} onClick={() => onOpenDiary(diary.id)} disabled={Boolean(opening)} className="memory-chat-citation">
@@ -38,6 +44,10 @@ export default function ChatMessage({ item, busy, opening, unavailable, onRetry,
         {opening === diary.id ? <span className="button-spinner" /> : <ArrowUpRight size={16} />}
       </button>)}
     </section>}
-    {item.resultStatus === 'empty' && <button type="button" className="intel-text-button" onClick={onNewDiary}><Plus size={15} />新增第一篇日記</button>}
+    {item.resultStatus === 'empty' && evidence?.status === 'NO_DIARIES' && <button type="button" className="intel-text-button" onClick={onNewDiary} aria-label="新增第一篇日記"><Plus size={15} aria-hidden="true" focusable="false" /><span>新增第一篇日記</span></button>}
+    {item.resultStatus === 'empty' && evidence?.status === 'NO_MATCHES' && <div className="memory-chat-empty-actions">
+      <button type="button" className="intel-text-button" onClick={onAdjust} disabled={busy}><RefreshCw size={15} aria-hidden="true" />調整時間範圍</button>
+      <button type="button" className="intel-text-button" onClick={onViewDiaries}><ArrowUpRight size={15} aria-hidden="true" />查看我的日記</button>
+    </div>}
   </article>;
 }

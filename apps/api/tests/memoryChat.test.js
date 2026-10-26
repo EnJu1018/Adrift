@@ -14,8 +14,8 @@ function store(items = diaries) {
   return { aggregate(pipeline) {
     const match = pipeline[0].$match;
     const own = items.filter(item => item.user === match.user);
-    assert.ok(pipeline[1].$facet.diaries.some(stage => stage.$limit === 40));
-    return { option: async options => { assert.equal(options.maxTimeMS, 5000); return [{ diaries: own, total: [{ count: own.length }], moods: [], places: [] }]; } };
+    assert.ok(pipeline.find(stage => stage.$facet).$facet.diaries.some(stage => stage.$limit === 40));
+    return { option: async options => { assert.equal(options.maxTimeMS, 5000); return [{ diaries: own, accountTotal: [{ count: own.length }], total: [{ count: own.length }], monthly: [], moods: [], places: [] }]; } };
   } };
 }
 
@@ -40,8 +40,8 @@ test('strongest mood ranking survives context selection and context stays bounde
   const items = Array.from({ length: 40 }, (_, index) => ({ ...diaries[0], _id: String(index), text: '日記'.repeat(5000), mood: { type: 'joy', intensity: index === 0 ? 5 : 1 }, createdAt: new Date(now.getTime() + index * 1000) }));
   const result = await retrieveMemories(store(items), a, planMemoryQuestion('我哪一天最開心？', [], now));
   assert.equal(result.diaries[0].id, '0');
-  assert.ok(result.diaries.length <= 8);
-  assert.ok(JSON.stringify(result.diaries).length < 11100);
+  assert.ok(result.diaries.length <= 16);
+  assert.ok(JSON.stringify(result.diaries).length < 16000);
   assert.ok(result.diaries.every(item => item.content.length <= 1200));
 });
 

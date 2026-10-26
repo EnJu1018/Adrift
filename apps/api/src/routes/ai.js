@@ -16,9 +16,12 @@ function sendAiError(res, cause, requestId, feature, started) {
     : error.category === 'quota' ? 'AI 分析目前請求較多，請稍後再試。'
     : error.category === 'timeout' ? '整理記憶花了較長時間，請稍後重新嘗試。'
     : error.category === 'network' ? '連線暫時中斷，請稍後重試。'
+    : error.category === 'retrieval' ? '記憶資料暫時無法讀取，請稍後重試。'
     : ['invalid_response', 'empty_response', 'truncated_response', 'invalid_citation'].includes(error.category) ? '這次回覆不完整，請重新嘗試。'
     : '智慧服務暫時未能完成，請稍後重新嘗試。';
-  return res.set('Retry-After', error.status === 429 ? '60' : '10').status(error.status).json({ success: false, message, code: error.category || 'input', requestId });
+  return res.set('Retry-After', error.status === 429 ? '60' : '10').status(error.status).json({ success: false, message, code: error.category || 'input', requestId,
+    ...(feature === 'memory_chat' && error.status !== 400 ? { stage: error.category === 'retrieval' ? 'RETRIEVAL_ERROR' : 'AI_ERROR' } : {}),
+    ...(error.evidence ? { data: { evidence: error.evidence } } : {}) });
 }
 
 export function createAiRouter({ DiaryModel = Diary, reserve = reserveAiUsage, generate, auth = requireAuth } = {}) {

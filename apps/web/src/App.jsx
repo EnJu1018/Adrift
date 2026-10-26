@@ -1261,6 +1261,7 @@ export default function App() {
             state={lifeMapState}
             onStateChange={updateLifeMapState}
             onBack={() => navigate('/')}
+            onViewDiaries={() => { setVisibilityFilter('all'); activateMineMode(); navigate('/'); }}
             onOpenDiary={openMemoryDiary}
             onNewDiary={openNewDiary}
           />

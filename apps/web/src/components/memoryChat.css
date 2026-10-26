@@ -25,6 +25,9 @@
 .memory-chat-citation strong { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }.memory-chat-citation small { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--intel-muted); }
 .memory-chat-unavailable { font-size: 13px; color: var(--intel-muted); }
 .memory-chat-error { border-left: 2px solid var(--danger); padding-left: 14px; }.memory-chat-error p { margin: 0; color: var(--intel-ink); }
+.memory-chat-evidence { margin-top: 12px; color: var(--intel-muted); font-size: var(--font-caption); line-height: 1.7; }
+.memory-chat-evidence p { margin: 4px 0; }
+.memory-chat-empty-actions { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 12px; }
 .memory-chat-composer { position: relative; z-index: 1; flex-shrink: 0; padding: 12px 0 0; background: var(--intel-surface); }
 .memory-chat-composer > [role="alert"] { margin: 0 0 8px; font-size: 13px; color: var(--danger); }
 .memory-chat-input { display: flex; align-items: flex-end; gap: 8px; padding: 6px; border: 1px solid var(--intel-line); border-radius: 8px; background: var(--intel-soft); transition: border-color var(--duration-quick) var(--ease-out); }

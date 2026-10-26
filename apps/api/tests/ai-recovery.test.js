@@ -19,7 +19,7 @@ before(async () => {
     find: query => { assert.ok(query.user); return { select: () => ({ sort: () => ({ limit: () => ({ maxTimeMS: ms => { assert.equal(ms, 5000); return { lean: async () => records }; } }) }) }) }; },
     aggregate: pipeline => ({ option: async () => {
       assert.ok(pipeline[0].$match.user);
-      return [{ diaries: records, total: [{ count: 3 }], totals: [{ count: 3 }], moods: [], places: [], daily: [] }];
+      return [{ diaries: records, accountTotal: [{ count: 3 }], total: [{ count: 3 }], totals: [{ count: 3 }], monthly: [], moods: [], places: [], daily: [] }];
     } })
   };
   const app = express(); app.use(express.json());
@@ -79,7 +79,10 @@ test('statistics and Chat survive Insights failure; Insights survives Chat failu
   assert.equal(reserved, count, 'statistics never consume generation quota');
   assert.equal((await call('/chat', id)).status, 200);
   fail = { feature: 'memory_chat', category: 'quota', status: 429 };
-  assert.equal((await call('/chat', id)).status, 429);
+  const response = await call('/chat', id), error = await response.json();
+  assert.equal(response.status, 429); assert.equal(error.stage, 'AI_ERROR');
+  assert.equal(error.data.evidence.matchedCount, 3);
+  assert.doesNotMatch(JSON.stringify(error.data.evidence), /Owned memory|private synthetic|content/);
   assert.equal((await call('/life-map', id)).status, 200);
   fail = null;
 });

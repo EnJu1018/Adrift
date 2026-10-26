@@ -7,7 +7,7 @@ import User from '../src/models/User.js';
 import { createAiRouter } from '../src/routes/ai.js';
 
 const owner = '111111111111111111111111', other = '222222222222222222222222';
-let server, base, findById, queried = [], generateCalls = 0, reserveCalls = 0, failDb = false;
+let server, base, findById, queried = [], generateCalls = 0, reserveCalls = 0, failDb = false, failRetrieval = false;
 const diaryId = 'aaaaaaaaaaaaaaaaaaaaaaaa';
 before(async () => {
   process.env.JWT_SECRET = 'local-test-only-memory-chat-secret';
@@ -17,9 +17,10 @@ before(async () => {
     return { _id: new mongoose.Types.ObjectId(id) };
   } }) });
   const Diary = { aggregate: pipeline => ({ option: async () => {
+    if (failRetrieval) throw new Error('diary database temporarily unavailable');
     const id = String(pipeline[0].$match.user);
     queried.push(id);
-    return [{ diaries: [{ _id: diaryId, title: id === owner ? 'Owner memory' : 'Other memory', text: 'Personal day', createdAt: new Date(), mood: { type: 'calm', intensity: 2 } }], total: [{ count: 1 }] }];
+    return [{ diaries: [{ _id: diaryId, title: id === owner ? 'Owner memory' : 'Other memory', text: 'Personal day', createdAt: new Date(), mood: { type: 'calm', intensity: 2 } }], accountTotal: [{ count: 1 }], total: [{ count: 1 }], monthly: [], moods: [], places: [] }];
   } }) };
   const app = express();
   app.use(express.json());
@@ -65,6 +66,15 @@ test('temporary database outage returns 503, not a logout-inducing 401', async (
   failDb = true;
   try { assert.equal((await post({ message: '我的日記' })).status, 503); }
   finally { failDb = false; }
+});
+test('diary query failures return RETRIEVAL_ERROR instead of an empty result', async () => {
+  failRetrieval = true;
+  try {
+    const response = await post({ message: '我的日記' }, '444444444444444444444444');
+    const body = await response.json();
+    assert.equal(response.status, 503); assert.equal(body.stage, 'RETRIEVAL_ERROR'); assert.equal(body.code, 'retrieval');
+    assert.doesNotMatch(body.message, /找不到|第一篇|database/);
+  } finally { failRetrieval = false; }
 });
 test('per-user short-window limiter blocks repeated requests', async () => {
   const id = '333333333333333333333333';

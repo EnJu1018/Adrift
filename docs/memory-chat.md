@@ -15,24 +15,38 @@ Unclear requests ask for a diary, place, or mood perspective.
 
 ## Retrieval
 
-- Taipei calendar dates: explicit day/month/year, previous month/year,
-  current/previous week, today/yesterday, and recent-day windows.
-- Follow-up questions inherit the latest explicit time/place from at most
-  four prior user questions. Every turn re-queries authorized data.
-- Location names, mood, and escaped title/content search narrow the query.
-- A single bounded aggregation returns matching totals, mood statistics,
-  top ten places, and at most forty candidates. The user ownership match
-  runs before every aggregation branch.
-- Up to eight diary excerpts enter the model, at most 1,200 characters each
-  and 11,000 serialized characters combined. Statistics cover all matches;
-  excerpts are samples, not the person's complete life history.
+- Taipei calendar dates: explicit days/ranges/months/years, previous calendar
+  month/year, current/previous week, today/yesterday and rolling periods.
+  Rolling months/years preserve local time and clamp month-end/leap days;
+  calendar ranges use an exclusive next-day boundary. "Last month" and
+  "the past month" are deliberately different.
+- `memoryQuery.js` rebuilds structured intent, time, place, mood, topic and
+  depth from up to twelve user questions. Follow-ups replace explicit
+  constraints and retain the others; invalid historical dates are skipped,
+  while an invalid current date returns 400. Every turn re-queries data.
+- Trend questions do not require question words in diary text. Recall can
+  filter location names, mood and escaped title/content search. Broad
+  semantic recall uses representative text rather than literal filler words.
+- One five-second bounded aggregation distinguishes all owned records from
+  matching records and computes exact totals, mood/intensity statistics,
+  monthly coverage and ten leading places with mood counts. The ownership
+  match precedes all branches; no visibility filter excludes one's own
+  private or friends-only diaries.
+- Trend samples cover months and moods, not just the newest records. Up to
+  sixteen excerpts enter the model (at most 2,000 characters each), with a
+  24,000-character serialized budget for the entire generation data payload.
+  Monthly details cover at most the latest 24 months and disclose this limit;
+  totals still cover all matching records. Empty months mean missing data,
+  not a mood score. Statistics share valid intensity handling with Insights.
 - No coordinates, account documents, emails, credentials, or images enter
   the model. Dates, place names and diary excerpts still contain personal
   information; the composer discloses third-party processing before sending.
 
 This is lightweight retrieval, not a universal natural-language date/place
-parser. Ambiguous language may require a more specific question. Broad
-queries sample recent records; historical reviews should specify a period.
+parser. Ambiguous language may require a more specific question. Recall
+relevance ranks forty recent matching candidates; trend reviews additionally
+sample across months and emotions. No vector index or extra planning model
+request is required.
 
 ## Generation and Safety
 
@@ -56,7 +70,15 @@ not psychological diagnoses. Users should check the original cited diaries.
 ## Limits and Failure Recovery
 
 - Message: 1,000 characters. History: twelve bounded entries maximum;
-  only the last four user questions influence retrieval.
+  only user questions influence retrieval. Retrying an older answer uses
+  its original preceding context, never later messages.
+- Evidence distinguishes `NO_DIARIES`, `NO_MATCHES`,
+  `INSUFFICIENT_EVIDENCE` and `AVAILABLE`. A single diary can support a
+  basic answer; sparse trend data still produces a limited, grounded review.
+  The three-diary Insights threshold does not apply to Chat.
+- Failed retrieval returns `RETRIEVAL_ERROR`, not an empty result. Provider
+  failures return `AI_ERROR` plus already computed counts/monthly facts,
+  without diary text. Both are retryable; neither resets existing Insights.
 - Six AI requests per user per minute, shared with Insights. This window
   is process-local; daily caps below remain shared across workers/restarts.
 - Default daily caps: twenty generation attempts per user and two hundred
@@ -100,6 +122,10 @@ Insights remains available alongside the new Memory Chat tab. Session-only
 messages survive tab/route changes while signed in, but logout clears them.
 The interface supports IME-safe Enter, Shift+Enter, retry, new conversation,
 citations, suggestion questions, keyboard tabs, and a first-diary action.
+The first-diary action appears only for `NO_DIARIES`; `NO_MATCHES` offers
+query adjustment or a return to the diary map. Query adjustment only prefills
+the composer and does not submit an extra paid/provider request. Replies
+show matched and sampled counts and flag insufficient long-term evidence.
 The transcript scrolls independently without moving the composer. Compact
 visual-viewport handling reserves input space when a mobile keyboard opens.
 Motion uses existing tokens and reduced-motion rules; Mapbox roots and
@@ -112,6 +138,13 @@ node --test apps/api/tests/*.test.js
 node --test apps/web/src/components/markers/*.test.js
 npm run build --workspace apps/web
 ```
+
+For real MongoDB aggregation tests, set `MEMORY_TEST_MONGO_URI` to a local
+database whose name starts with `adrift_memory_test_`. The fixture creates
+50 owned records across a year plus isolated other-account, empty, sparse
+and boundary cases, then drops only that test database. These integration
+tests are skipped when the variable is absent. Use separate isolated test
+databases for the other API suites; social transaction tests need a replica set.
 
 Browser checks are in `apps/web/tests/memory-chat-browser.mjs` and
 `api-session-browser.mjs`, alongside existing regression scripts. Point

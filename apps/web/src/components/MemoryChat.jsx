@@ -7,7 +7,7 @@ import './memoryChat.css';
 
 const suggestions = ['回顧我最近的心情', '哪個地方留下最多回憶？', '我最近有哪些快樂的時刻？', '幫我回顧上個月的生活'];
 
-export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDiary, active }) {
+export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDiary, onViewDiaries, active }) {
   const messages = state?.messages || [];
   const draft = state?.draft || '';
   const request = useRef(null);
@@ -44,8 +44,10 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
     request.current = controller;
     const userId = crypto.randomUUID();
     const answerId = retryId || crypto.randomUUID();
-    const context = messages.filter(item => item.role === 'user').slice(-4).map(item => ({ role: 'user', content: item.content }));
+    const previous = retryId ? messages.slice(0, messages.findIndex(item => item.id === retryId)) : messages;
+    const context = previous.filter(item => item.role === 'user').map(item => ({ role: 'user', content: item.content }));
     if (retryId && context.at(-1)?.content === text) context.pop();
+    context.splice(0, Math.max(0, context.length - 12));
     nearBottom.current = true;
     update(current => ({ ...current, draft: '', messages: retryId
       ? current.messages.map(item => item.id === retryId ? { ...item, status: 'pending', error: '' } : item)
@@ -62,7 +64,8 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
     } catch (error) {
       const message = error instanceof TypeError ? '連線暫時中斷，請檢查網路後重試。' : error.message || '暫時無法回答，請重試。';
       update(current => ({ ...current, messages: current.messages.map(item => item.id === answerId
-        ? { ...item, status: 'error', error: controller.signal.aborted ? '對話已中止，可以重新提問。' : message } : item) }));
+        ? { ...item, status: 'error', evidence: error.payload?.data?.evidence || item.evidence, errorStage: error.payload?.stage,
+          error: controller.signal.aborted ? '對話已中止，可以重新提問。' : message } : item) }));
     } finally {
       if (request.current === controller) request.current = null;
     }
@@ -114,7 +117,8 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
         <p>從你的日記、情緒與足跡中，<br className="memory-chat-welcome-break" />找回值得重新回顧的時刻。</p>
         <div className="memory-chat-suggestions">{suggestions.map(text => <button type="button" key={text} onClick={() => send(text)} className="motion-soft-press">{text}<ArrowUp size={15} /></button>)}</div>
       </div>}
-      {messages.map(item => <ChatMessage key={item.id} item={item} busy={busy} opening={opening} unavailable={unavailable} onRetry={send} onOpenDiary={openDiary} onNewDiary={onNewDiary} />)}
+      {messages.map(item => <ChatMessage key={item.id} item={item} busy={busy} opening={opening} unavailable={unavailable} onRetry={send} onOpenDiary={openDiary} onNewDiary={onNewDiary} onViewDiaries={onViewDiaries}
+        onAdjust={() => { update(current => ({ ...current, draft: '不限時間，延續剛才的問題' })); input.current?.focus({ preventScroll: true }); }} />)}
     </div>
     {hasNew && <button type="button" className="memory-chat-latest intel-button" onClick={() => { nearBottom.current = true; transcript.current?.scrollTo({ top: transcript.current.scrollHeight, behavior: 'auto' }); setHasNew(false); }}><ArrowDown size={15} />查看最新回覆</button>}
     <form className="memory-chat-composer" onSubmit={event => { event.preventDefault(); send(); }} aria-busy={busy}>

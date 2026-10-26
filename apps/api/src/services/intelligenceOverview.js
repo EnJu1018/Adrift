@@ -1,9 +1,11 @@
 import { normalizeTaiwanPlaceName } from '../utils/locationFormatter.js';
 
+export const diaryIntensity = { $cond: [{ $and: [{ $isNumber: '$mood.intensity' }, { $gte: ['$mood.intensity', 1] }, { $lte: ['$mood.intensity', 5] }] }, '$mood.intensity', null] };
+
 export async function getIntelligenceOverview(Diary, userId, days = '30', now = new Date()) {
   if (typeof days !== 'string' || !['7', '30', '90'].includes(days)) throw Object.assign(new Error('請選擇 7、30 或 90 天'), { status: 400 });
   const end = now, start = new Date(now.getTime() - Number(days) * 86400000);
-  const intensity = { $cond: [{ $and: [{ $isNumber: '$mood.intensity' }, { $gte: ['$mood.intensity', 1] }, { $lte: ['$mood.intensity', 5] }] }, '$mood.intensity', null] };
+  const intensity = diaryIntensity;
   const [result] = await Diary.aggregate([
     { $match: { user: userId, createdAt: { $gte: start, $lte: end } } },
     { $sort: { createdAt: -1, _id: -1 } },

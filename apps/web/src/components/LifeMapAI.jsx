@@ -6,7 +6,7 @@ import InsightsView from './intelligence/InsightsView.jsx';
 import { normalizeInsight } from './intelligence/insightData.js';
 import './intelligence/intelligence.css';
 
-export default function LifeMapAI({ state, onStateChange, onBack, onOpenDiary, onNewDiary }) {
+export default function LifeMapAI({ state, onStateChange, onBack, onOpenDiary, onNewDiary, onViewDiaries }) {
   const panel = useRef(null), request = useRef(null), overviewRequest = useRef(null), pending = useRef(false);
   const insightScroll = useRef(0);
   const callbacks = useRef(null); callbacks.current = onStateChange;
@@ -97,7 +97,7 @@ export default function LifeMapAI({ state, onStateChange, onBack, onOpenDiary, o
         <p className="intel-privacy"><ShieldCheck size={15} />僅使用你的日記；AI 回顧交由 Gemini 整理，可能有誤，並非醫療或心理診斷。</p>
       </div>
       <div id="intelligence-chat" className="intel-tab-panel" role="tabpanel" aria-labelledby="intelligence-chat-tab" hidden={tab !== 'chat'}>
-        <MemoryChat state={state?.chat} onStateChange={onStateChange} onOpenDiary={onOpenDiary} onNewDiary={onNewDiary || onBack} active={tab === 'chat'} />
+        <MemoryChat state={state?.chat} onStateChange={onStateChange} onOpenDiary={onOpenDiary} onNewDiary={onNewDiary || onBack} onViewDiaries={onViewDiaries || onBack} active={tab === 'chat'} />
       </div>
     </div>
   </main>;
