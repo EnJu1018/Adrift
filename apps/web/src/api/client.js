@@ -266,8 +266,8 @@ export const api = {
   getIntelligenceOverview(days = 30, signal) {
     return request(`/ai/overview?${new URLSearchParams({ days })}`, { signal });
   },
-  chatMemory(message, history, signal) {
-    return request('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history }), signal, timeoutMs: 65000 });
+  chatMemory(message, history, signal, queryContext) {
+    return request('/ai/chat', { method: 'POST', body: JSON.stringify({ message, history, ...(queryContext ? { queryContext } : {}) }), signal, timeoutMs: 65000 });
   },
   getDiary(id, signal) {
     return request(`/diaries/${encodeURIComponent(id)}`, { signal });

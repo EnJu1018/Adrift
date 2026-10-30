@@ -22,8 +22,8 @@ try {
     const { default: Intelligence } = await import('/src/components/LifeMapAI.jsx');
     api.getIntelligenceOverview = async days => ({ data: { days, count: 3, start: '2026-09-01', end: '2026-10-01', moods: [{ type: 'calm', count: 3 }], daily: [], placeCount: 0, places: [] } });
     window.chatCalls = [];
-    api.chatMemory = (message, history, signal) => new Promise((resolve, reject) => {
-      window.chatCalls.push({ message, history, resolve, reject, signal });
+    api.chatMemory = (message, history, signal, queryContext) => new Promise((resolve, reject) => {
+      window.chatCalls.push({ message, history, resolve, reject, signal, queryContext });
       signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
     });
     const h = React.createElement;
@@ -140,13 +140,14 @@ try {
   assert.equal(await page.getByText('Original insight', { exact: true }).isVisible(), true, 'chat failure never resets insights');
   await page.getByRole('tab', { name: '記憶對話' }).click();
   await page.evaluate(() => window.chatTest.setState(current => ({ ...current, chat: { draft: '', messages: Array.from({ length: 14 }, (_, index) => [
-    { id: `u${index}`, role: 'user', content: `回顧日記 ${index}` }, { id: `a${index}`, role: 'assistant', status: 'complete', content: '先前的回覆。' }
+    { id: `u${index}`, role: 'user', content: `回顧日記 ${index}` }, { id: `a${index}`, role: 'assistant', status: 'complete', content: '先前的回覆。', queryContext: { intent: 'life_review', topic: '最初的半年生活回顧', depth: 'detailed', terms: [] } }
   ]).flat() } })));
   await input.fill('那去年呢？'); await input.press('Enter');
   await page.waitForFunction(() => window.chatCalls.length === 9);
   const boundedHistory = await page.evaluate(() => window.chatCalls[8].history);
   assert.equal(boundedHistory.length, 12); assert.equal(boundedHistory[0].content, '回顧日記 2');
   assert.ok(boundedHistory.every(item => item.role === 'user'));
+  assert.equal(await page.evaluate(() => window.chatCalls[8].queryContext.topic), '最初的半年生活回顧', 'structured topic survives the twelve-turn history window');
   await page.evaluate(() => window.chatCalls[8].resolve({ data: { answer: '去年的回顧。', status: 'success', scope: 'memory' } }));
   await page.getByText('去年的回顧。', { exact: true }).waitFor();
   await page.evaluate(() => window.chatTest.setState(current => ({ ...current, chat: { draft: '', messages: [
@@ -161,6 +162,19 @@ try {
   assert.equal(await page.evaluate(() => window.chatCalls[9].message), '最近半年的心情變化？');
   await page.evaluate(() => window.chatCalls[9].resolve({ data: { answer: '半年的回顧已恢復。', status: 'success', scope: 'memory' } }));
   await page.getByText('半年的回顧已恢復。', { exact: true }).waitFor();
+  await page.getByRole('button', { name: '新對話', exact: true }).click();
+  await input.fill('回顧最近一年的生活變化'); await input.press('Enter');
+  await page.waitForFunction(() => window.chatCalls.length === 11);
+  assert.equal(await page.evaluate(() => window.chatCalls[10].queryContext), undefined, 'new conversation clears structured context');
+  await page.evaluate(() => window.chatCalls[10].reject(Object.assign(new Error('暫時忙碌'), { payload: { stage: 'AI_ERROR', data: {
+    queryContext: { intent: 'life_review', topic: '回顧最近一年的生活變化', depth: 'standard', terms: [] }
+  } } })));
+  await page.getByRole('alert').filter({ hasText: '暫時忙碌' }).waitFor();
+  await input.fill('再深入一點'); await input.press('Enter');
+  await page.waitForFunction(() => window.chatCalls.length === 12);
+  assert.equal(await page.evaluate(() => window.chatCalls[11].queryContext.topic), '回顧最近一年的生活變化', 'provider failure does not lose the latest retrieval topic');
+  await page.evaluate(() => window.chatCalls[11].resolve({ data: { answer: '一年的回顧。', scope: 'memory', status: 'success' } }));
+  await page.getByText('一年的回顧。', { exact: true }).waitFor();
   assert.deepEqual(errors, []);
   console.log('PASS: Insights/chat isolation, IME, duplicate guard, 12-turn context, original-turn retry, citations, distinct empty states, preserved evidence, partial analysis, cancellation, themes/mobile and reduced motion.');
 } catch (error) {

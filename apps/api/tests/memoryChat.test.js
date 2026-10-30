@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { answerMemoryQuestion, buildMemoryMatch, parseMemoryRange, planMemoryQuestion, retrieveMemories, validateChatInput } from '../src/services/memoryChat.js';
 import { generateGeminiJson } from '../src/services/gemini.js';
 import { reserveAiUsage } from '../src/services/aiLimits.js';
+import { diaryQuery } from './fixtures/diaryQuery.js';
 
 const now = new Date('2026-10-22T04:00:00Z');
 const a = '111111111111111111111111', b = '222222222222222222222222';
@@ -11,9 +12,9 @@ const diaries = [
   { _id: 'bbbbbbbbbbbbbbbbbbbbbbbb', user: b, title: 'Private account B', text: 'Never disclose', mood: { type: 'calm', intensity: 2 }, location: { placeName: '臺北' }, createdAt: now }
 ];
 function store(items = diaries) {
-  return { aggregate(pipeline) {
+  return { find(match) { return diaryQuery(items.filter(item => String(item.user) === String(match.user) && match._id.$in.includes(item._id))); }, aggregate(pipeline) {
     const match = pipeline[0].$match;
-    const own = items.filter(item => item.user === match.user);
+    const own = items.filter(item => String(item.user) === String(match.user));
     assert.ok(pipeline.find(stage => stage.$facet).$facet.diaries.some(stage => stage.$limit === 40));
     return { option: async options => { assert.equal(options.maxTimeMS, 5000); return [{ diaries: own, accountTotal: [{ count: own.length }], total: [{ count: own.length }], monthly: [], moods: [], places: [] }]; } };
   } };
@@ -74,8 +75,8 @@ test('retrieval always scopes to server user and escapes literal search text', (
   const match = buildMemoryMatch(a, plan);
   assert.equal(match.user, a);
   assert.equal(match['mood.type'], 'joy');
-  assert.equal(match.$and[0].$or[0].title.$regex, '[台臺]北');
-  const literal = buildMemoryMatch(a, { terms: ['\\.\\*'], place: null });
+  assert.equal(match['location.placeName'].$regex, '[台臺]北');
+  const literal = buildMemoryMatch(a, { terms: ['.*'], place: null });
   assert.equal(literal.$and[0].$or[0].title.$regex, '\\.\\*');
 });
 

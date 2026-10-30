@@ -1,6 +1,6 @@
 export const SCOPE_REPLY = '我主要協助你探索 Adrift 中的日記、情緒足跡與生活回憶。你可以問最近的心情，或某個地點留下過哪些記憶。';
 const clarify = '你想回顧哪些日記、地點或心情？例如「回顧最近半年的心情變化」。';
-const memoryTopic = /日記|記[憶录錄]|回[憶顾顧]|心情|情緒|足跡|生活|平靜|開心|快樂|焦慮|低落|難過|朋友|難忘|diar|memor|mood|feel|anxi|happ|calm|sad|recollect/i;
+const memoryTopic = /日記|記[憶录錄]|回[憶顾顧]|心情|情緒|足跡|生活|經歷|改變|困擾|平靜|開心|快樂|焦慮|低落|難過|朋友|難忘|diar|memor|mood|feel|anxi|happ|calm|sad|recollect/i;
 const offTopic = /(?:寫|教|解釋|debug|write|explain).{0,15}(?:程式|代碼|論文|食譜|java|python|javascript|code|essay|recipe)|(?:java|python|javascript|程式).{0,12}(?:寫|教|如何|怎麼)|天氣|weather|股價|stock price|即時新聞|翻譯|translate/i;
 const attack = /忽略.{0,10}(指令|規則)|(?:ignore|override).{0,25}(?:instruction|rule|system)|API.?key|金鑰|密碼|password|(?:其他|別人|所有使用者).{0,8}(?:日記|私人|資料)|(?:other users?|someone else).{0,20}(?:diar|private)|system prompt/i;
 const followup = /^(那|再|其中|哪些|哪天|哪一天|哪段|還有|為什麼|可以|幫我整理|改成|改為|換成|不限|全部|所有|what about|which|and |why|tell me more)/i;
@@ -92,6 +92,7 @@ function placeFrom(text) {
   const normalized = text.replaceAll('台', '臺');
   return cities.find(city => normalized.includes(city)) || Object.entries(cityAliases).find(([alias]) => text.toLowerCase().includes(alias))?.[1]
     || text.match(/(?:在|去|地點是)[「『"]([^」』"]{1,30})[」』"]/u)?.[1]
+    || text.match(/(?:回顧|整理).{0,4}在([\p{Script=Han}A-Za-z ]{2,30}?)(?:旅行|旅遊|期間|的生活|的回憶)/u)?.[1]?.trim()
     || text.match(/(?:我(?:們)?(?:上次|曾經|以前|今天|昨天)?(?:去(?:了|過)?|在)|^在)(?!哪|什麼|甚麼|何處|那裡|這裡)([\p{Script=Han}]{2,15}?)(?=做|留下|記錄|的|時|有|玩|發生|[？?。，]|$)/u)?.[1]
     || text.match(/\b(?:visited|went to|in|at)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/)?.[1] || null;
 }
@@ -100,26 +101,34 @@ export function escapeRegex(value) { return value.replace(/[.*+?^${}()|[\]\\]/g,
 function planTurn(message, previous, now) {
   if (attack.test(message) || offTopic.test(message) && !/(日記|記錄|回憶).{0,15}(提到|寫過|記過|當時)/.test(message)) return { scope: 'out_of_scope', answer: SCOPE_REPLY };
   const range = parseMemoryRange(message, now), place = placeFrom(message), mood = moods.find(([, pattern]) => pattern.test(message))?.[0];
+  const years = [...new Set(message.match(/\d{4}年|去年|今年|前年/g) || [])];
+  const comparisons = years.length === 2 && /比較|對比|跟|和|與|不同|vs/i.test(message)
+    ? years.map(label => ({ label, ...parseMemoryRange(label, now) })) : null;
   const continuation = Boolean(previous && (followup.test(message) || !memoryTopic.test(message) && (range || place || mood || /深入|整理|明顯|more|deeper/i.test(message))));
   const personalReview = /我|我們|my |I |we /i.test(message) && (place || range) && /去|做了什麼|發生|過得|did|happen|visit/i.test(message);
   if (!memoryTopic.test(message) && !continuation && !personalReview) return { scope: 'clarify', answer: clarify };
   const isTrend = /心情|情緒|mood|feel/i.test(message) && trend.test(message) || Boolean(mood && /比較|變化|趨勢|是不是|常|trend|change/i.test(message));
-  const intent = isTrend ? 'mood_trend' : /最開心|最平靜|最難過|happiest/i.test(message) ? 'mood_extreme'
+  const intent = comparisons ? 'comparison' : isTrend ? 'mood_trend' : /生活.*(?:變化|改變|不同)|經歷|改變|困擾|反覆/u.test(message) ? 'life_review' : /最開心|最平靜|最難過|happiest/i.test(message) ? 'mood_extreme'
     : continuation && !mood ? previous.intent : 'recall';
   const terms = [];
-  if (/朋友|好友|同學|friends?/i.test(message) && !isTrend) terms.push('朋友|好友|同學|friend');
+  if (/朋友|好友|同學|friends?/i.test(message) && !isTrend) terms.push('朋友', '好友', '同學', 'friend');
   if (!isTrend && /找|搜|提到|包含|mention|find|search/i.test(message)) {
     const quoted = message.match(/[「『"]([^」』"]{1,30})[」』"]/u)?.[1];
-    if (quoted && quoted !== place) terms.push(escapeRegex(quoted));
+    if (quoted && quoted !== place) terms.push(quoted);
     else if (!place && !mood && !/難忘|印象深刻|重要時刻|值得回顧/.test(message)) {
       const words = [...segmenter.segment(message)].filter(item => item.isWordLike && item.segment.length >= 2 && !searchFillers.has(item.segment)
-        && !/月|年|週|星期|\d/.test(item.segment)).map(item => escapeRegex(item.segment)).slice(0, 4);
-      if (words.length) terms.push(words.join('|'));
+        && !/月|年|週|星期|\d/.test(item.segment)).map(item => item.segment).slice(0, 4);
+      terms.push(...words);
     }
   }
+  const resetTime = /不限時間|全部時間|所有日記|全部日記|歷年/.test(message);
+  const ranges = resetTime ? null : comparisons || (!range && continuation ? previous.ranges : null);
   return { scope: 'memory', intent, asOf: now,
-    range: /不限時間|全部時間|所有日記|全部日記|歷年/.test(message) ? null : range || (continuation ? previous.range : null),
+    range: resetTime ? null : ranges?.length ? { start: new Date(Math.min(...ranges.map(item => item.start))),
+      end: new Date(Math.max(...ranges.map(item => item.end))), endInclusive: ranges.some(item => item.endInclusive && Number(item.end) === Math.max(...ranges.map(item => item.end))) } : range || (continuation ? previous.range : null),
+    ranges,
     place: /不限地點|全部地點/.test(message) ? null : place || (continuation ? previous.place : null),
+    placeMode: /提到|mention/i.test(message) ? 'mentioned' : continuation ? previous.placeMode || 'location' : 'location',
     mood: isTrend || /所有心情|整體心情/.test(message) ? null : mood || (continuation ? previous.mood : null),
     terms: isTrend ? [] : terms.length ? terms : continuation ? previous.terms : [],
     question: message, previous: continuation ? previous.topic : null,
@@ -127,8 +136,9 @@ function planTurn(message, previous, now) {
   };
 }
 
-export function planMemoryQuestion(message, history = [], now = new Date()) {
-  let previous = null;
+export function planMemoryQuestion(message, history = [], now = new Date(), queryContext) {
+  let previous = queryContext ? { ...validateQueryContext(queryContext), scope: 'memory' } : null;
+  if (previous) return planTurn(message, previous, now);
   for (const text of history.slice(-12)) {
     try {
       const plan = planTurn(text, previous, now);
@@ -140,13 +150,54 @@ export function planMemoryQuestion(message, history = [], now = new Date()) {
   return planTurn(message, previous, now);
 }
 
+function inputError() { return Object.assign(new Error('查詢條件不正確，請重新提問。'), { status: 400 }); }
+export function validateQueryContext(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || !['recall', 'mood_trend', 'mood_extreme', 'life_review', 'comparison'].includes(value.intent)
+    || typeof value.topic !== 'string' || value.topic.length > 500 || !['standard', 'detailed'].includes(value.depth)) throw inputError();
+  const { range, ranges, place, mood, terms, placeMode } = validateMemoryFilters(value);
+  return { intent: value.intent, topic: value.topic, depth: value.depth, range, ranges, place, mood, terms, placeMode };
+}
+
+export function validateMemoryFilters(value = {}) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw inputError();
+  const readDate = date => {
+    if (!(date instanceof Date) && typeof date !== 'string') throw inputError();
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) return checkedDate(...date.split('-').map(Number));
+    if (typeof date === 'string' && !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(date)) throw inputError();
+    const result = new Date(date);
+    if (!Number.isFinite(result.getTime())) throw inputError();
+    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) checkedDate(...date.slice(0, 10).split('-').map(Number));
+    return result;
+  };
+  const readRange = range => {
+    if (!range || typeof range !== 'object' || Array.isArray(range) || range.endInclusive !== undefined && typeof range.endInclusive !== 'boolean') throw inputError();
+    const start = readDate(range.start), end = readDate(range.end);
+    if (end < start || end - start > 3660 * 86400000) throw inputError();
+    return { start, end, endInclusive: range.endInclusive === true, ...(typeof range.label === 'string' ? { label: range.label.slice(0, 40) } : {}) };
+  };
+  if (value.ranges != null && (!Array.isArray(value.ranges) || value.ranges.length < 1 || value.ranges.length > 2)) throw inputError();
+  if (value.place != null && (typeof value.place !== 'string' || value.place.length > 120)) throw inputError();
+  if (value.mood != null && ![...moods.map(([type]) => type), 'other'].includes(value.mood)) throw inputError();
+  if (value.terms !== undefined && (!Array.isArray(value.terms) || value.terms.length > 8 || value.terms.some(term => typeof term !== 'string' || term.length > 100))) throw inputError();
+  if (value.placeMode !== undefined && !['location', 'mentioned'].includes(value.placeMode)) throw inputError();
+  return { range: value.range != null ? readRange(value.range) : null, ranges: value.ranges?.map(readRange) || null,
+    place: value.place?.trim() || null, mood: value.mood || null, terms: value.terms || [], placeMode: value.placeMode || 'location',
+    asOf: value.asOf !== undefined ? readDate(value.asOf) : new Date() };
+}
+
 export function buildMemoryMatch(userId, plan) {
+  plan = validateMemoryFilters(plan);
   const match = { user: userId };
-  if (plan.range) match.createdAt = { $gte: plan.range.start, [plan.range.endInclusive ? '$lte' : '$lt']: plan.range.end };
-  else if (plan.asOf) match.createdAt = { $lte: plan.asOf };
+  const dates = range => ({ $gte: range.start, [range.endInclusive ? '$lte' : '$lt']: range.end });
+  match.createdAt = { $lte: plan.asOf };
+  if (plan.ranges) match.$and = [{ $or: plan.ranges.map(range => ({ createdAt: dates(range) })) }];
+  else if (plan.range) match.createdAt = { ...dates(plan.range), $lte: new Date(Math.min(plan.range.endInclusive ? plan.range.end : plan.asOf, plan.asOf)) };
   if (plan.mood) match['mood.type'] = plan.mood;
-  const patterns = [...(plan.terms || [])];
-  if (plan.place) patterns.push(escapeRegex(plan.place).replaceAll('臺', '[台臺]'));
-  if (patterns.length) match.$and = patterns.map(pattern => ({ $or: ['title', 'text', 'location.placeName'].map(field => ({ [field]: { $regex: pattern, $options: 'i' } })) }));
+  if (plan.terms.length) (match.$and ||= []).push({ $or: ['title', 'text', 'location.placeName'].map(field => ({ [field]: { $regex: plan.terms.map(escapeRegex).join('|'), $options: 'i' } })) });
+  if (plan.place) {
+    const pattern = { $regex: escapeRegex(plan.place.replaceAll('台', '臺')).replaceAll('臺', '[台臺]'), $options: 'i' };
+    if (plan.placeMode === 'mentioned') (match.$and ||= []).push({ $or: ['title', 'text'].map(field => ({ [field]: pattern })) });
+    else match['location.placeName'] = pattern;
+  }
   return match;
 }

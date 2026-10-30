@@ -1,10 +1,9 @@
 import { AiServiceError, classifyAiError, generateGeminiJson } from './gemini.js';
-import { diaryIntensity } from './intelligenceOverview.js';
-import { buildMemoryMatch, localDate, planMemoryQuestion } from './memoryQuery.js';
+import { diarySource, getEmotionStatistics, validateDiaryCitations } from './diaryRetrieval.js';
+import { planMemoryQuestion, validateQueryContext } from './memoryQuery.js';
 export { SCOPE_REPLY, buildMemoryMatch, parseMemoryRange, planMemoryQuestion } from './memoryQuery.js';
 
 const segmenter = new Intl.Segmenter('zh-TW', { granularity: 'word' });
-const monthFormatter = new Intl.DateTimeFormat('sv', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit' });
 const CONTEXT_BUDGET = 24000;
 
 export function validateChatInput(body) {
@@ -13,69 +12,30 @@ export function validateChatInput(body) {
   const history = body.history || [];
   if (history.some(item => !item || !['user', 'assistant'].includes(item.role) || typeof item.content !== 'string' || item.content.length > 2000)) throw Object.assign(new Error('對話格式不正確。'), { status: 400 });
   // Reconstruct query state from user turns; client answers and supplied identities are never evidence.
-  return { message: body.message.trim(), history: history.filter(item => item.role === 'user').slice(-12).map(item => item.content) };
-}
-
-function monthlyCoverage(rows, plan) {
-  const byMonth = new Map(rows.slice(0, 24).map(row => [row._id, { month: row._id, count: row.count, moods: row.moods,
-    averageIntensity: row.intensityCount ? row.intensityTotal / row.intensityCount : null, intensityCount: row.intensityCount }]));
-  const first = plan.range?.start ? monthFormatter.format(plan.range.start) : [...byMonth.keys()].sort()[0];
-  if (!first) return [];
-  const end = plan.range?.end || plan.asOf;
-  const last = monthFormatter.format(new Date(end.getTime() - (plan.range && !plan.range.endInclusive ? 1 : 0)));
-  let [year, month] = last.split('-').map(Number);
-  const result = [];
-  for (let index = 0; index < 24; index++) {
-    const key = monthFormatter.format(localDate(year, month));
-    if (key < first) break;
-    result.push(byMonth.get(key) || { month: key, count: 0, moods: [], averageIntensity: null, intensityCount: 0 });
-    if (--month < 1) { month = 12; year--; }
-  }
-  return result.reverse();
+  return { message: body.message.trim(), history: history.filter(item => item.role === 'user').slice(-12).map(item => item.content),
+    ...(body.queryContext !== undefined ? { queryContext: validateQueryContext(body.queryContext) } : {}) };
 }
 
 export async function retrieveMemories(Diary, userId, plan) {
-  const { user, ...filter } = buildMemoryMatch(userId, plan);
-  const within = (...stages) => [{ $match: filter }, ...stages];
-  const month = { $dateToString: { format: '%Y-%m', date: '$createdAt', timezone: 'Asia/Taipei' } };
-  const intensityCount = { $sum: { $cond: [{ $ne: [diaryIntensity, null] }, 1, 0] } };
-  const [result] = await Diary.aggregate([
-    { $match: { user } },
-    { $project: { title: 1, text: 1, mood: 1, createdAt: 1, 'location.placeName': 1 } },
-    { $facet: {
-      accountTotal: [{ $count: 'count' }],
-      total: within({ $count: 'count' }),
-      moods: within({ $group: { _id: '$mood.type', count: { $sum: 1 }, averageIntensity: { $avg: diaryIntensity } } }, { $sort: { count: -1, _id: 1 } }),
-      monthly: within({ $group: { _id: { month, mood: '$mood.type' }, count: { $sum: 1 }, intensityTotal: { $sum: diaryIntensity }, intensityCount } },
-        { $group: { _id: '$_id.month', count: { $sum: '$count' }, intensityTotal: { $sum: '$intensityTotal' }, intensityCount: { $sum: '$intensityCount' }, moods: { $push: { type: '$_id.mood', count: '$count' } } } },
-        { $sort: { _id: -1 } }, { $limit: 25 }),
-      places: within({ $group: { _id: { place: '$location.placeName', mood: '$mood.type' }, count: { $sum: 1 } } },
-        { $group: { _id: '$_id.place', count: { $sum: '$count' }, moods: { $push: { type: '$_id.mood', count: '$count' } } } }, { $sort: { count: -1, _id: 1 } }, { $limit: 10 }),
-      temporal: within({ $sort: { createdAt: 1, _id: 1 } }, { $group: { _id: month, first: { $first: '$$ROOT' }, last: { $last: '$$ROOT' } } }, { $sort: { _id: -1 } }, { $limit: 24 }),
-      moodSamples: within({ $sort: { 'mood.intensity': -1, createdAt: -1, _id: 1 } }, { $group: { _id: '$mood.type', diary: { $first: '$$ROOT' } } }, { $sort: { _id: 1 } }, { $limit: 8 }),
-      diaries: within({ $sort: plan.intent === 'mood_extreme' ? { 'mood.intensity': -1, createdAt: -1, _id: 1 } : { createdAt: -1, _id: 1 } }, { $limit: 40 })
-    } }
-  ]).option({ maxTimeMS: 5000 });
-  if (!result || !['accountTotal', 'total', 'moods', 'monthly', 'places', 'diaries'].every(key => Array.isArray(result[key]))) throw new AiServiceError('retrieval', 503);
+  const result = await getEmotionStatistics(Diary, userId, plan, { includeSamples: true });
   const temporal = [...(result.temporal || [])].reverse();
   const tokens = [...segmenter.segment(plan.question)].filter(item => item.isWordLike && item.segment.length > 1).map(item => item.segment);
-  const latest = [...result.diaries].sort((a, b) => (plan.intent === 'mood_extreme' ? (b.mood?.intensity || 0) - (a.mood?.intensity || 0) : score(b, tokens) - score(a, tokens))
+  const latest = [...result.candidates].sort((a, b) => (plan.intent === 'mood_extreme' ? (b.mood?.intensity || 0) - (a.mood?.intensity || 0) : score(b, tokens) - score(a, tokens))
     || new Date(b.createdAt) - new Date(a.createdAt) || String(a._id).localeCompare(String(b._id)));
   const monthSamples = temporal.length <= 13 ? temporal : Array.from({ length: 13 }, (_, index) => temporal[Math.round(index * (temporal.length - 1) / 12)]);
-  const pool = plan.intent === 'mood_trend'
+  const pool = ['mood_trend', 'life_review', 'comparison'].includes(plan.intent)
     ? [...monthSamples.map(item => item.first), ...(result.moodSamples || []).map(item => item.diary), ...latest, ...temporal.map(item => item.last)] : latest;
   const unique = [...new Map(pool.filter(Boolean).map(item => [String(item._id), item])).values()].slice(0, 16);
-  const monthly = monthlyCoverage(result.monthly, plan);
-  const statistics = { accountTotal: result.accountTotal[0]?.count || 0, total: result.total[0]?.count || 0, moods: result.moods, places: result.places,
-    monthly, monthlyLimited: result.monthly.length > 24 || result.monthly.some(row => row._id < monthly[0]?.month) || Boolean(plan.range && monthFormatter.format(plan.range.start) < monthly[0]?.month) };
+  const { candidates, temporal: ignoredTemporal, moodSamples, daily, ...statistics } = result;
   const budget = Math.min(16000, CONTEXT_BUDGET - JSON.stringify({ statistics, plan }).length - 2000);
-  const entries = unique.map(item => ({ id: String(item._id), title: String(item.title || '').slice(0, 50), mood: item.mood, createdAt: item.createdAt, place: String(item.location?.placeName || '').slice(0, 120) }));
+  const entries = unique.map(item => { const { content, ...entry } = diarySource(item); return entry; });
   const contentLimit = Math.max(0, Math.min(2000, Math.floor((budget - JSON.stringify(entries).length - 1000) / Math.max(entries.length, 1))));
   const diaries = entries.map((entry, index) => {
     const text = String(unique[index].text || '');
     const location = tokens.map(token => text.indexOf(token)).find(index => index >= 0) || 0;
     const offset = Math.max(0, location - 100);
-    return { ...entry, content: text.slice(offset, offset + contentLimit), contentTruncated: text.length > contentLimit, excerptOffset: offset };
+    const content = text.slice(offset, offset + contentLimit);
+    return { ...entry, content, contentTruncated: content.length < text.length, excerptOffset: offset, source: { ...entry.source, start: offset, end: offset + content.length } };
   });
   return { ...statistics, diaries };
 }
@@ -86,9 +46,10 @@ function score(item, tokens) {
 
 function evidenceSummary(context, plan) {
   const status = !context.accountTotal ? 'NO_DIARIES' : !context.total ? 'NO_MATCHES'
-    : plan.intent === 'mood_trend' && (context.total < 3 || context.monthly.filter(item => item.count > 0).length < 2) ? 'INSUFFICIENT_EVIDENCE' : 'AVAILABLE';
+    : ['mood_trend', 'life_review', 'comparison'].includes(plan.intent) && (context.status === 'INSUFFICIENT_EVIDENCE' || context.total < 3 || context.monthly.filter(item => item.count > 0).length < 2) ? 'INSUFFICIENT_EVIDENCE' : 'AVAILABLE';
   return { status, totalCount: context.accountTotal, matchedCount: context.total, sampledCount: context.diaries.length,
     timezone: 'Asia/Taipei', range: plan.range, monthly: context.monthly, monthlyLimited: context.monthlyLimited,
+    moods: context.moods, places: context.places.map(({ latest, ...place }) => place), averageIntensity: context.averageIntensity, comparisons: context.comparisons,
     limitations: [context.diaries.length < context.total ? '統計涵蓋全部符合記錄，內文僅為代表性抽樣。' : '僅能說明已留下的日記，不代表整段生活。',
       ...(status === 'INSUFFICIENT_EVIDENCE' ? ['記錄不足以支持長期變化，只能回顧現有片段。'] : []),
       ...(context.monthly.some(item => !item.count) ? ['沒有日記的月份代表缺少資料，不代表情緒低落。'] : []),
@@ -101,17 +62,18 @@ query 是伺服器從多輪使用者問題重建的查詢條件；新問題可�
 使用繁體中文與簡短段落。query.depth 為 detailed 時，依證據提供「整體回顧、時間變化、重要事件／地點、值得回看的片段、觀察限制」，約500～900字；普通提問約150～350字，資料少時更短，不強行填滿章節。每項重要的事件觀察都以 [1]、[2] 等對應 diaries 順序引用。至少引用一則真實記憶，citations 回傳被引用的原始 diary id。不得引用提供範圍外的 id。只回傳符合 schema 的 JSON。`;
 const schema = { type: 'object', properties: { answer: { type: 'string' }, citations: { type: 'array', items: { type: 'string' } } }, required: ['answer', 'citations'] };
 
-export async function answerMemoryQuestion({ message, history = [], userId, Diary, reserve, generate = generateGeminiJson, signal, requestId, now = new Date() }) {
-  const plan = planMemoryQuestion(message, history, now);
+export async function answerMemoryQuestion({ message, history = [], queryContext, userId, Diary, reserve, generate = generateGeminiJson, signal, requestId, now = new Date() }) {
+  const plan = planMemoryQuestion(message, history, now, queryContext);
   if (plan.scope !== 'memory') return { answer: plan.answer, scope: plan.scope, relatedDiaries: [], status: 'success' };
+  const nextContext = validateQueryContext(plan);
   let context;
   try { context = await retrieveMemories(Diary, userId, plan); }
-  catch { throw new AiServiceError('retrieval', 503); }
+  catch (error) { error.queryContext = nextContext; throw error; }
   const evidence = evidenceSummary(context, plan);
   if (!context.total) return { answer: evidence.status === 'NO_DIARIES' ? '還沒有留下任何記憶，先建立第一篇日記吧。' : '這段期間或地點沒有符合條件的記錄，可以調整條件或擴大時間範圍。',
-    scope: 'memory', relatedDiaries: [], status: 'empty', evidence };
+    scope: 'memory', relatedDiaries: [], status: 'empty', evidence, queryContext: nextContext };
   signal?.throwIfAborted();
-  const data = { question: message, query: plan, evidence, moodStatistics: context.moods, placeStatistics: context.places, diaries: context.diaries };
+  const data = { question: message, query: plan, evidence, diaries: context.diaries };
   if (!context.diaries.length || JSON.stringify(data).length > CONTEXT_BUDGET) throw Object.assign(new AiServiceError('context_limit', 503), { evidence });
   let result;
   try {
@@ -120,12 +82,13 @@ export async function answerMemoryQuestion({ message, history = [], userId, Diar
     if (typeof result?.answer !== 'string' || !result.answer.trim() || result.answer.length > 5000 || !Array.isArray(result.citations) || !result.citations.length) throw new AiServiceError('invalid_response');
     const allowed = new Set(context.diaries.map(item => item.id));
     if (result.citations.some(id => !allowed.has(id))) throw new AiServiceError('invalid_citation');
+    await validateDiaryCitations(Diary, userId, result.citations, context.diaries);
   } catch (cause) {
     if (signal?.aborted) throw signal.reason;
-    const error = classifyAiError(cause); error.evidence = evidence; throw error;
+    const error = classifyAiError(cause); error.evidence = evidence; error.queryContext = nextContext; throw error;
   }
   const cited = new Set(result.citations);
-  const relatedDiaries = context.diaries.filter(item => cited.has(item.id)).map(({ id, title, mood, createdAt, place }) => ({ id, title, mood, createdAt, place }));
+  const relatedDiaries = context.diaries.filter(item => cited.has(item.id)).map(({ id, title, mood, createdAt, updatedAt, place, source }) => ({ id, title, mood, createdAt, updatedAt, place, source }));
   let citedInline = false;
   const answer = result.answer.trim().replace(/\[(\d+)\]/g, (_, value) => {
     const source = context.diaries[Number(value) - 1];
@@ -135,5 +98,5 @@ export async function answerMemoryQuestion({ message, history = [], userId, Diar
     return `[${index + 1}]`;
   });
   if (!citedInline) throw Object.assign(new AiServiceError('invalid_citation'), { evidence });
-  return { answer, scope: 'memory', status: 'success', relatedDiaries, matchedCount: context.total, sampledCount: context.diaries.length, evidence };
+  return { answer, scope: 'memory', status: 'success', relatedDiaries, matchedCount: context.total, sampledCount: context.diaries.length, evidence, queryContext: nextContext };
 }

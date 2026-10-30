@@ -2,11 +2,14 @@
 
 ## API and Data Boundary
 
-`POST /api/ai/chat` accepts `{ message, history }` behind the existing JWT
+`POST /api/ai/chat` accepts `{ message, history, queryContext? }` behind the existing JWT
 middleware. The API app itself mounts `/ai/chat`; Nginx provides `/api`.
 Each request queries only `Diary.user === req.user._id`. Body user IDs and
 client-provided assistant answers never determine ownership or evidence.
 Opening a related diary uses the existing authorized diary detail endpoint.
+The retrieval service itself is stricter than that general viewer endpoint:
+it never includes another account's public or friends-only diaries.
+See [Diary Retrieval](diary-retrieval.md) for the shared contract.
 
 The response follows `{ success, data }`. Data includes `answer`, `scope`,
 `status`, and server-validated `relatedDiaries`. Empty results and clearly
@@ -20,24 +23,28 @@ Unclear requests ask for a diary, place, or mood perspective.
   Rolling months/years preserve local time and clamp month-end/leap days;
   calendar ranges use an exclusive next-day boundary. "Last month" and
   "the past month" are deliberately different.
-- `memoryQuery.js` rebuilds structured intent, time, place, mood, topic and
-  depth from up to twelve user questions. Follow-ups replace explicit
+- `memoryQuery.js` accepts bounded, validated query context from the preceding
+  response, or rebuilds it from up to twelve user questions for older clients.
+  This keeps the topic after the original question leaves the history window.
+  Follow-ups replace explicit
   constraints and retain the others; invalid historical dates are skipped,
   while an invalid current date returns 400. Every turn re-queries data.
-- Trend questions do not require question words in diary text. Recall can
-  filter location names, mood and escaped title/content search. Broad
+- Trend questions do not require question words in diary text. Location
+  searches use `location.placeName`; mentioned-place searches use title/text.
+  Recall can filter mood and escaped literal title/content search. Broad
   semantic recall uses representative text rather than literal filler words.
 - One five-second bounded aggregation distinguishes all owned records from
   matching records and computes exact totals, mood/intensity statistics,
   monthly coverage and ten leading places with mood counts. The ownership
   match precedes all branches; no visibility filter excludes one's own
   private or friends-only diaries.
-- Trend samples cover months and moods, not just the newest records. Up to
+- Trend, life-review and two-year comparison samples cover months and moods,
+  not just the newest records. Comparisons retain separate period totals. Up to
   sixteen excerpts enter the model (at most 2,000 characters each), with a
   24,000-character serialized budget for the entire generation data payload.
   Monthly details cover at most the latest 24 months and disclose this limit;
   totals still cover all matching records. Empty months mean missing data,
-  not a mood score. Statistics share valid intensity handling with Insights.
+  not a mood score. Statistics and Insights use the same owner-scoped service.
 - No coordinates, account documents, emails, credentials, or images enter
   the model. Dates, place names and diary excerpts still contain personal
   information; the composer discloses third-party processing before sending.
@@ -62,6 +69,9 @@ The model has no database tools or write capability. Responses must conform
 to a JSON schema and cite IDs from the retrieved evidence. Unknown IDs or
 invalid citation numbers fail closed. Citation numbers are normalized to the
 displayed reference list. Plain React text rendering avoids model HTML.
+After generation, cited documents are re-read with the authenticated owner;
+deleted, reassigned or revised sources invalidate the answer with a 409.
+Source revisions and excerpt spans are supplied by the backend, not the model.
 
 These controls prevent cross-account queries and fabricated reference IDs,
 not every possible inaccurate interpretation. Answers remain review aids,
@@ -72,6 +82,10 @@ not psychological diagnoses. Users should check the original cited diaries.
 - Message: 1,000 characters. History: twelve bounded entries maximum;
   only user questions influence retrieval. Retrying an older answer uses
   its original preceding context, never later messages.
+- Query context carries only intent, topic, date ranges, literal terms, place,
+  mood and depth. It carries no owner, database query or trusted evidence.
+  Every request validates it and queries MongoDB again. Empty results and
+  provider/retrieval errors preserve the current filters for subsequent turns.
 - Evidence distinguishes `NO_DIARIES`, `NO_MATCHES`,
   `INSUFFICIENT_EVIDENCE` and `AVAILABLE`. A single diary can support a
   basic answer; sparse trend data still produces a limited, grounded review.
@@ -152,3 +166,5 @@ Browser checks are in `apps/web/tests/memory-chat-browser.mjs` and
 Playwright module when it is not locally resolvable. `BROWSER=webkit` checks
 WebKit in addition to the default installed Chrome. Fixtures isolate the
 database and model: tests never edit production user/diary records.
+Additional service/JWT/source-revision tests use `DIARY_RETRIEVAL_TEST_MONGO_URI`
+with a loopback database named `adrift_retrieval_test_*`.

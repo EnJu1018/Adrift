@@ -5,10 +5,12 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import User from '../src/models/User.js';
 import { createAiRouter } from '../src/routes/ai.js';
+import { diaryQuery } from './fixtures/diaryQuery.js';
 
 const owner = '111111111111111111111111', other = '222222222222222222222222';
 let server, base, findById, queried = [], generateCalls = 0, reserveCalls = 0, failDb = false, failRetrieval = false;
 const diaryId = 'aaaaaaaaaaaaaaaaaaaaaaaa';
+const record = id => ({ _id: diaryId, title: String(id) === owner ? 'Owner memory' : 'Other memory', text: 'Personal day', createdAt: new Date('2026-10-01T04:00:00Z'), mood: { type: 'calm', intensity: 2 } });
 before(async () => {
   process.env.JWT_SECRET = 'local-test-only-memory-chat-secret';
   findById = User.findById;
@@ -16,11 +18,11 @@ before(async () => {
     if (failDb) throw new Error('db disconnected');
     return { _id: new mongoose.Types.ObjectId(id) };
   } }) });
-  const Diary = { aggregate: pipeline => ({ option: async () => {
+  const Diary = { find: match => diaryQuery([record(match.user)]), aggregate: pipeline => ({ option: async () => {
     if (failRetrieval) throw new Error('diary database temporarily unavailable');
     const id = String(pipeline[0].$match.user);
     queried.push(id);
-    return [{ diaries: [{ _id: diaryId, title: id === owner ? 'Owner memory' : 'Other memory', text: 'Personal day', createdAt: new Date(), mood: { type: 'calm', intensity: 2 } }], accountTotal: [{ count: 1 }], total: [{ count: 1 }], monthly: [], moods: [], places: [] }];
+    return [{ diaries: [record(id)], accountTotal: [{ count: 1 }], total: [{ count: 1 }], monthly: [], moods: [], places: [] }];
   } }) };
   const app = express();
   app.use(express.json());

@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import User from '../src/models/User.js';
 import { createAiRouter } from '../src/routes/ai.js';
 import { AiServiceError } from '../src/services/gemini.js';
+import { diaryQuery } from './fixtures/diaryQuery.js';
 
 const diaryId = 'aaaaaaaaaaaaaaaaaaaaaaaa';
 const valid = { summary: '平靜的記錄。', moodTrend: { description: '平靜。', dominantMood: 'calm', averageIntensity: 2 }, locationInsights: [], behaviorPatterns: [], suggestions: [] };
@@ -16,7 +17,7 @@ before(async () => {
   findById = User.findById;
   User.findById = id => ({ select: () => ({ maxTimeMS: async () => ({ _id: new mongoose.Types.ObjectId(id) }) }) });
   const Diary = {
-    find: query => { assert.ok(query.user); return { select: () => ({ sort: () => ({ limit: () => ({ maxTimeMS: ms => { assert.equal(ms, 5000); return { lean: async () => records }; } }) }) }) }; },
+    find: query => { assert.ok(query.user); return diaryQuery(query._id ? records.slice(0, 1) : records); },
     aggregate: pipeline => ({ option: async () => {
       assert.ok(pipeline[0].$match.user);
       return [{ diaries: records, accountTotal: [{ count: 3 }], total: [{ count: 3 }], totals: [{ count: 3 }], monthly: [], moods: [], places: [], daily: [] }];

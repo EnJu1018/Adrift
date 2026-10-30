@@ -55,7 +55,8 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
     }));
     if (input.current) input.current.style.height = '';
     try {
-      const payload = await api.chatMemory(text, context, controller.signal);
+      const queryContext = [...previous].reverse().find(item => item.role === 'assistant' && item.queryContext)?.queryContext;
+      const payload = await api.chatMemory(text, context, controller.signal, queryContext);
       if (!payload.data || typeof payload.data.answer !== 'string') throw new Error('回覆不完整，請重試。');
       if (controller.signal.aborted) return;
       const relatedDiaries = Array.isArray(payload.data.relatedDiaries) ? payload.data.relatedDiaries.filter(item => item && typeof item.id === 'string' && Number.isFinite(Date.parse(item.createdAt))) : [];
@@ -64,7 +65,7 @@ export default function MemoryChat({ state, onStateChange, onOpenDiary, onNewDia
     } catch (error) {
       const message = error instanceof TypeError ? '連線暫時中斷，請檢查網路後重試。' : error.message || '暫時無法回答，請重試。';
       update(current => ({ ...current, messages: current.messages.map(item => item.id === answerId
-        ? { ...item, status: 'error', evidence: error.payload?.data?.evidence || item.evidence, errorStage: error.payload?.stage,
+        ? { ...item, status: 'error', evidence: error.payload?.data?.evidence || item.evidence, queryContext: error.payload?.data?.queryContext || item.queryContext, errorStage: error.payload?.stage,
           error: controller.signal.aborted ? '對話已中止，可以重新提問。' : message } : item) }));
     } finally {
       if (request.current === controller) request.current = null;

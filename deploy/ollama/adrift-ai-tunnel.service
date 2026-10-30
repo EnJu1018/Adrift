@@ -1,0 +1,19 @@
+[Unit]
+Description=Private reverse inference transport
+Wants=network-online.target
+After=network-online.target adrift-ai-gateway.service
+
+[Service]
+Type=simple
+User=adrift-ai-tunnel
+ExecStart=/usr/bin/ssh -NT -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/etc/adrift-ai/known_hosts -o IdentitiesOnly=yes -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ConnectTimeout=10 -i /etc/adrift-ai/tunnel_ed25519 -R 127.0.0.1:11435:127.0.0.1:11435 adrift-ai-tunnel@VPS_HOST_REPLACE_BEFORE_INSTALL
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

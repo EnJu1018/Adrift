@@ -40,8 +40,10 @@ test('real SDK request keeps the verified model and uses compatible low thinking
     assert.equal(JSON.stringify(data).includes('coordinates'), false);
     return response(JSON.stringify(valid));
   });
-  const result = await generateLifeMapInsight(Array.from({ length: 60 }, () => ({ text: 'private-diary'.repeat(100), location: { coordinates: [120, 24] } })), undefined, { requestId: 'test-id' });
-  assert.deepEqual(result, valid);
+  const result = await generateLifeMapInsight(Array.from({ length: 60 }, () => ({ text: 'private-diary'.repeat(100), mood: { intensity: 2 }, location: { coordinates: [120, 24] } })), undefined, { requestId: 'test-id' });
+  const { statistics, ...insight } = result;
+  assert.deepEqual(insight, valid);
+  assert.equal(statistics.averageIntensity, 2);
   assert.equal(calls, 1);
   assert.equal(logs[0][1].requestId, 'test-id');
   assert.equal(logs[0][1].feature, 'insights');
