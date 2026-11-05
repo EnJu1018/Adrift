@@ -134,7 +134,7 @@ const backendTech = [
   ['MongoDB Atlas', '儲存使用者、日記、好友關係與互動。'],
   ['JWT / bcrypt', '負責登入驗證與密碼安全。'],
   ['GeoJSON', '支援地點查詢與附近公開日記。'],
-  ['AI 推論', '正式站使用 Gemini；本地 Ollama 路徑獨立驗證。']
+  ['AI 推論', '本地 Ollama Qwen 路徑獨立驗證。']
 ];
 
 const userFlowCoreBranches = [
@@ -369,7 +369,7 @@ const systemTreeModules = [
     title: 'Adrift Intelligence',
     tone: 'blue',
     items: [
-      { title: 'Gemini 正式服務' },
+      { title: 'Ollama Qwen' },
       { title: 'Insights 統計' },
       { title: 'Memory Chat 引用' }
     ]
