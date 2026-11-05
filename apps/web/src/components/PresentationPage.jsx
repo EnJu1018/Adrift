@@ -21,6 +21,8 @@ import { memo, useCallback, useEffect, useMemo, useLayoutEffect, useRef, useStat
 import { motionMs } from '../constants/animations.js';
 import { createPresentationMapMotion } from '../lib/motion/animeMotion.js';
 import AnimatedNumber from './ui/AnimatedNumber.jsx';
+import { agentTools, gatewayFlow, retrievalFlow, reviewRows } from './presentationSlides.js';
+import './presentation.css';
 
 const slides = [
   { id: 'cover', label: '封面', group: '封面' },
@@ -31,7 +33,7 @@ const slides = [
   { id: 'map-diary', label: '地圖日記', group: '系統功能' },
   { id: 'friends', label: '好友社交', group: '系統功能' },
   { id: 'authenticity', label: '真實性限制', group: '系統功能' },
-  { id: 'life-map-ai', label: 'Adrift Intelligence', group: '系統功能' },
+  { id: 'activity', label: '動態牆與通知', group: '系統功能' },
   { id: 'user-flow', label: '使用者流程', group: '系統架構' },
   { id: 'architecture', label: '系統架構', group: '系統架構' },
   { id: 'frontend-tech', label: '前端技術', group: '系統架構' },
@@ -39,10 +41,15 @@ const slides = [
   { id: 'ux', label: 'UX 設計', group: '設計亮點' },
   { id: 'difference', label: '差異化', group: '設計亮點' },
   { id: 'admin-role', label: '權限管理', group: '設計亮點' },
-  { id: 'future', label: '未來展望', group: '設計亮點' },
-  { id: 'team', label: '分工表', group: '成果展示' },
-  { id: 'demo', label: 'Demo', group: '成果展示' },
-  { id: 'thank-you', label: 'Thank You', group: '成果展示' }
+  { id: 'life-map-ai', label: 'Adrift Intelligence', group: '設計亮點' },
+  { id: 'insights-chat', label: '洞察與記憶對話', group: '設計亮點' },
+  { id: 'retrieval', label: '日記檢索', group: '設計亮點' },
+  { id: 'ollama', label: '本地模型', group: '成果展示' },
+  { id: 'gateway', label: '私人推論通道', group: '成果展示' },
+  { id: 'agent', label: 'Agent 工具與協調', group: '成果展示' },
+  { id: 'verification', label: '系統驗證', group: '成果展示' },
+  { id: 'review', label: '評審意見與改善策略', group: '成果展示' },
+  { id: 'team', label: '組員分工與自我評分', group: '成果展示' }
 ];
 
 const navGroups = [...new Set(slides.map(slide => slide.group))].map(label => ({ label }));
@@ -73,7 +80,7 @@ const goalCards = [
 ];
 
 const overviewCards = [
-  ['帳號管理', 'JWT 驗證、密碼加密、個人資料與 userCode。', <KeyRound size={22} />],
+  ['帳號管理', 'Email 統一入口、JWT 驗證、bcrypt 與帳號設定。', <KeyRound size={22} />],
   ['日記管理', '地圖新增、編輯、刪除與心情紀錄。', <MapPin size={22} />],
   ['好友關係', '搜尋、邀請、好友限定日記與共鳴互動。', <Users size={22} />],
   ['Adrift Intelligence', '整理情緒、時間、地點與生活模式。', <Brain size={22} />]
@@ -81,36 +88,36 @@ const overviewCards = [
 
 const mapDiaryCards = [
   ['地圖作為主介面', '日記直接落在真實地點，讓回憶有位置。', <MapIcon size={22} />],
-  ['日記 Marker', '心情與可見性會反映在地圖與列表上。', <MapPin size={22} />],
-  ['定位新增日記', '使用目前位置建立日記，支援精確或大略定位。', <Compass size={22} />],
+  ['重疊標點', '鄰近標點以群組顯示；小群組展開、大群組用列表。', <MapPin size={22} />],
+  ['定位與快速記錄', '支援 GPS 或大略定位，可選照片與語音轉文字。', <Compass size={22} />],
   ['即時更新', '新增、編輯、刪除後 marker 與列表立即同步。', <Sparkles size={22} />]
 ];
 
 const socialCards = [
   ['userCode 搜尋', '使用公開 ID 找到朋友，不需要暴露 email。', <KeyRound size={22} />],
   ['好友邀請', '發送、接受、拒絕與收回邀請都能即時更新。', <Users size={22} />],
-  ['好友限定日記', 'friends 權限只開放給好友觀看。', <Lock size={22} />],
+  ['好友推薦與記憶', '以共同好友推薦；日記仍依可見範圍授權。', <Lock size={22} />],
   ['共鳴互動', '用輕量 reaction 表達理解，而不是製造留言壓力。', <Heart size={22} />]
 ];
 
 const authenticityCards = [
   ['1 小時內', '發布後短時間內可修正內容。', <CheckCircle2 size={22} />],
   ['1 公里內', '仍接近原本地點才可編輯。', <MapPin size={22} />],
-  ['不可更改位置與內容', '建立時間與座標保留為真實核心。', <ShieldCheck size={22} />],
+  ['固定位置與建立時間', '作者可在規則內修正內容，不能更改原始座標。', <ShieldCheck size={22} />],
   ['保留版本', 'editHistory 保存編輯前內容。', <Layers3 size={22} />]
 ];
 
 const aiFeatureCards = [
-  ['整體摘要', '整理一段時間內的生活軌跡。', <Sparkles size={22} />],
-  ['情緒趨勢', '辨識主要 mood 與平均強度。', <Heart size={22} />],
-  ['地點洞察', '找出常承載特定心情的地點。', <MapPin size={22} />],
-  ['智慧建議', '用溫和語氣提供自我回顧方向。', <Brain size={22} />]
+  ['Insights', '後端計算日記量、情緒分布與強度趨勢。', <Heart size={22} />],
+  ['地點洞察', '以實際日記回顧常記錄的地點。', <MapPin size={22} />],
+  ['Memory Chat', '按期間、心情與地點尋找本人的日記。', <MessageCircle size={22} />],
+  ['來源與限制', '回覆可回到來源；資料不足時不補造。', <ShieldCheck size={22} />]
 ];
 
 const uxPrinciples = [
   ['地圖優先', '地圖保持主視覺，日記詳情與列表輔助探索。', <MapIcon size={22} />],
   ['社交中心', '好友頁整理搜尋、邀請、好友與推薦，降低操作負擔。', <Users size={22} />],
-  ['洞察儀表板', 'Adrift Intelligence 用卡片化結果呈現，不做聊天框。', <Brain size={22} />],
+  ['洞察與對話', 'Insights 看趨勢，Memory Chat 回查原文。', <Brain size={22} />],
   ['低干擾回饋', 'Toast、空狀態與動畫都服務操作，不遮擋內容。', <Sparkles size={22} />]
 ];
 
@@ -118,8 +125,8 @@ const frontendTech = [
   ['React', '組成地圖頁、好友頁、Adrift Intelligence 儀表板與簡報頁。'],
   ['Vite', '快速開發與前端打包部署。'],
   ['Mapbox GL JS', '地圖互動、定位、marker 與附近探索。'],
-  ['Framer Motion', '頁面過渡、卡片進場與簡報動畫。'],
-  ['CSS', '深色 玻璃擬態、響應式與投影字級。']
+  ['互動動畫', 'Framer Motion、CSS 與 Anime.js 路徑動畫。'],
+  ['CSS', '亮色／深色玻璃介面與桌面投影排版。']
 ];
 
 const backendTech = [
@@ -127,7 +134,7 @@ const backendTech = [
   ['MongoDB Atlas', '儲存使用者、日記、好友關係與互動。'],
   ['JWT / bcrypt', '負責登入驗證與密碼安全。'],
   ['GeoJSON', '支援地點查詢與附近公開日記。'],
-  ['Gemini API', '產生 Adrift Intelligence 生活洞察。']
+  ['AI 推論', '正式站使用 Gemini；本地 Ollama 路徑獨立驗證。']
 ];
 
 const userFlowCoreBranches = [
@@ -223,7 +230,7 @@ const userFlowBranches = [
   {
     title: 'Adrift Intelligence',
     subtitle: '把日記整理成生活洞察',
-    items: ['檢查日記數量', '產生智慧洞察', '產生建議']
+    items: ['查看統計', '回顧記憶', '開啟來源']
   }
 ];
 
@@ -362,18 +369,18 @@ const systemTreeModules = [
     title: 'Adrift Intelligence',
     tone: 'blue',
     items: [
-      { title: 'Gemini API' },
-      { title: '情緒與地點洞察' },
-      { title: '行為模式 / 智慧建議' }
+      { title: 'Gemini 正式服務' },
+      { title: 'Insights 統計' },
+      { title: 'Memory Chat 引用' }
     ]
   },
   {
     title: '通知提示',
     tone: 'amber',
     items: [
-      { title: '通知 dropdown' },
-      { title: 'Toast / inline message' },
-      { title: '即時狀態回饋' }
+      { title: '邀請 / 接受' },
+      { title: '日記共鳴' },
+      { title: '未讀與安全導覽' }
     ]
   },
   {
@@ -387,31 +394,11 @@ const systemTreeModules = [
   }
 ];
 
-const futureRoadmap = [
-  {
-    phase: '短期',
-    title: '降低真實情境的記錄門檻',
-    text: '持續優化網站功能，加入照片與語音輸入，讓移動中也能快速留下記憶。',
-    icon: <Compass size={22} />
-  },
-  {
-    phase: '中期',
-    title: '行動端雙系統 App',
-    text: '設計 iOS 與 Android 行動應用，讓定位記錄與回顧體驗更貼近日常使用。',
-    icon: <Users size={22} />
-  },
-  {
-    phase: '長期',
-    title: '個人化記憶平台',
-    text: '延伸長期情緒地圖、跨裝置備份與更細緻的隱私控管，成為可持續使用的生活記憶系統。',
-    icon: <Brain size={22} />
-  }
-];
 const teamRows = [
-  ['張惠芯', '圖形繪製、文書資料處理、協助手機版程式製作'],
-  ['洪藝文', '圖形繪製、文書資料處理、協助手機版程式製作'],
-  ['王浩宇', '圖形繪製、手機版程式製作'],
-  ['陳恩儒', '電腦版程式製作；網站版整合開發與部署']
+  ['張惠芯', '圖形與文書', '圖形繪製、文書資料處理、協助手機版程式製作'],
+  ['洪藝文', '圖形與文書', '圖形繪製、文書資料處理、協助手機版程式製作'],
+  ['王浩宇', '手機版程式與圖形', '手機版程式製作、圖形繪製'],
+  ['陳恩儒', '電腦版程式', '網站整合開發與部署']
 ];
 
 const governanceRoles = [
@@ -443,7 +430,8 @@ const governancePrinciples = [
 ];
 
 export default function PresentationPage() {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(() => Math.max(0, slides.findIndex(slide => window.location.hash === '#' + slide.id)));
+  const print = new URLSearchParams(window.location.search).get('print') === '1';
   const pageRef = useRef(null);
   const currentSlideRef = useRef(currentSlide);
   const wheelLockRef = useRef(0);
@@ -452,6 +440,7 @@ export default function PresentationPage() {
   const activeGroup = activeSlide.group;
 
   useLayoutEffect(() => {
+    if (print) return;
     const sections = pageRef.current.querySelectorAll('.presentation-slide-track > .presentation-section');
     sections.forEach((section, index) => {
       const active = index === currentSlide;
@@ -462,12 +451,13 @@ export default function PresentationPage() {
       section.setAttribute('aria-label', slides[index].label);
       section.setAttribute('aria-roledescription', '投影片');
     });
-  }, [currentSlide]);
+  }, [currentSlide, print]);
 
   const goToSlide = useCallback((index) => {
     const safeIndex = Math.max(0, Math.min(index, slides.length - 1));
     currentSlideRef.current = safeIndex;
     setCurrentSlide(safeIndex);
+    window.history.replaceState(window.history.state, '', '#' + slides[safeIndex].id);
   }, []);
 
   const goToPreviousSlide = useCallback(() => {
@@ -550,14 +540,14 @@ export default function PresentationPage() {
 
   return (
     <main
-      className="presentation-page"
+      className={print ? 'presentation-page presentation-print' : 'presentation-page'}
       ref={pageRef}
       tabIndex={-1}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       <PresentationAtmosphere />
-      <PresentationNav activeGroup={activeGroup} onSelect={goToGroup} />
+      {!print && <PresentationNav activeGroup={activeGroup} onSelect={goToGroup} />}
 
       <div
         className="presentation-slide-track"
@@ -567,7 +557,7 @@ export default function PresentationPage() {
         <SlideBrand />
         <div className="presentation-section-inner presentation-cover-inner">
           <div className="presentation-cover-copy">
-            <p className="presentation-kicker">資管三B D2 · 專題口試展示</p>
+            <p className="presentation-kicker">資管三B D2 · 第二次專題口試</p>
             <div className="cover-title-lockup">
               <h1 className="cover-title-en">Adrift</h1>
               <h2 className="cover-title-zh">漂流足跡</h2>
@@ -662,25 +652,18 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection id="life-map-ai" eyebrow="Core Feature 04" title="Adrift Intelligence" subtitle="Adrift Intelligence 只協助整理自己的日記與生活軌跡，不做醫療或心理診斷。">
-        <div className="ai-dashboard-preview airy">
-          <div className="ai-summary-card">
-            <Brain size={28} />
-            <h3>Adrift Intelligence 智慧洞察儀表板</h3>
-            <p>根據使用者自己的日記、心情、時間與地點，產生個人化生活洞察。</p>
-          </div>
-          {aiFeatureCards.map(([title, text, icon], index) => (
-            <FeatureCard key={title} title={title} text={text} icon={icon} index={index} compact />
-          ))}
+      <SlideSection id="activity" eyebrow="Core Feature 04" title="動態牆與通知" subtitle="桌面雙欄 Feed 可篩選並共鳴；邀請、接受及共鳴各有通知與已讀狀態。">
+        <div className="presentation-card-grid two presentation-captures">
+          <PresentationCapture image="feed" caption="雙欄 Feed · 好友與公開日記" />
+          <PresentationCapture image="notifications" caption="通知選單 · 未讀、已讀與安全導覽" />
         </div>
-        <p className="presentation-footnote">Adrift Intelligence 僅供自我回顧參考，並非醫療或心理診斷。</p>
       </SlideSection>
 
       <SlideSection id="user-flow" eyebrow="User Flow" title="使用者流程" subtitle="從帳號、地圖日記、好友互動到 Adrift Intelligence，整理 Adrift 使用者的完整操作路徑。">
         <HorizontalUserFlow steps={userFlowBranches} />
       </SlideSection>
 
-      <SlideSection id="architecture" eyebrow="Architecture" title="系統架構" subtitle="以八個主要模組呈現 Adrift 的使用者功能、互動能力、Adrift Intelligence 與管理機制。">
+      <SlideSection id="architecture" eyebrow="Architecture" title="系統架構" subtitle="八個主要模組串起記錄、社群、智慧回顧與治理。">
         <PresentationSystemTree rootTitle="Adrift 漂流足跡" modules={systemTreeModules} compact compactColumns={4} />
       </SlideSection>
 
@@ -748,87 +731,111 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection id="future" eyebrow="Roadmap" title="未來展望" subtitle="持續強化真實性、好友互動、手機版體驗，讓 Adrift 更接近正式產品。">
-        <div className="future-roadmap" aria-label="Adrift 未來規劃">
-          {futureRoadmap.map((item, index) => (
-            <article key={item.phase} className="future-roadmap-card">
-              <div className="future-roadmap-head">
-                <span className="future-roadmap-icon">{item.icon}</span>
-                <span className="future-roadmap-phase">{item.phase}</span>
-              </div>
-              <h3>{item.title}</h3>
-              <p>{item.text}</p>
+      <SlideSection id="life-map-ai" eyebrow="Adrift Intelligence" title="智慧記憶系統" subtitle="把自己的日記整理成可查證的生活回顧，不做醫療或心理診斷。">
+        <div className="ai-dashboard-preview airy">
+          <div className="ai-summary-card">
+            <Brain size={28} />
+            <h3>先看統計，再回到日記</h3>
+            <p>Insights 與 Memory Chat 各有入口；推論失敗不影響日記統計。</p>
+          </div>
+          {aiFeatureCards.map(([title, text, icon]) => (
+            <FeatureCard key={title} title={title} text={text} icon={icon} compact />
+          ))}
+        </div>
+        <p className="presentation-footnote">正式網站使用 Gemini；本地 Agent 已驗證，尚未正式啟用。</p>
+      </SlideSection>
+
+      <SlideSection id="insights-chat" eyebrow="Insights & Memory Chat" title="從統計到有來源的對話" subtitle="Insights 呈現實際記錄；Memory Chat 用問題找日記，再回到原始內容。">
+        <div className="presentation-card-grid two presentation-captures">
+          <PresentationCapture image="insights" caption="Insights · 情緒分布與強度趨勢" />
+          <PresentationCapture image="chat" caption="Memory Chat · 合成日記與模擬回覆" />
+        </div>
+      </SlideSection>
+
+      <SlideSection id="retrieval" eyebrow="Diary Retrieval" title="先找對日記，再生成回覆" subtitle="用共用檢索服務修正查不到日記的問題，並區分沒有日記、沒有符合資料與查詢失敗。">
+        <HorizontalUserFlow steps={retrievalFlow} />
+        <p className="presentation-footnote">不把無記錄當成零情緒，也不把找到來源等同語意推論已驗證。</p>
+      </SlideSection>
+
+      <SlideSection id="ollama" eyebrow="Local Inference" title="Ollama 與 Qwen3.5 4B" subtitle="Ubuntu · RTX 2060 SUPER 8GB · CUDA。把模型、資料流與推論容量留在可控的環境。">
+        <div className="presentation-card-grid three spacious">
+          <FeatureCard icon={<Brain size={22} />} title="90.2 / 100" text="三模型固定評測加權分；不是通用準確率。" />
+          <FeatureCard icon={<Sparkles size={22} />} title="75.9 token/s" text="4K 暖機推論速度；不等於完整 Agent 速度。" />
+          <FeatureCard icon={<Server size={22} />} title="約 3.13 GiB" text="8K 小批試驗的模型 VRAM；非整機峰值。" />
+        </div>
+        <p className="presentation-footnote">本地路徑減少對外部額度的依賴；正式網站仍使用 Gemini。</p>
+      </SlideSection>
+
+      <SlideSection id="gateway" eyebrow="Private AI Gateway" title="私人推論通道" subtitle="家中主機主動建立 SSH 反向通道；Ollama 不開放公網。">
+        <HorizontalUserFlow steps={gatewayFlow} />
+        <p className="presentation-footnote">單一生成、最多兩筆等待，支援逾時、取消及斷線重連。</p>
+      </SlideSection>
+
+      <SlideSection id="agent" eyebrow="Agent Tools & Orchestrator" title="受控工具與多步驟協調" subtitle="後端理解時間與地點追問、安排工具、收集證據，再驗證來源與回答。">
+        <div className="presentation-card-grid four presentation-agent-tools">
+          {agentTools.map(([name, detail]) => (
+            <article key={name} className="presentation-feature-card compact-card">
+              <strong><code>{name}</code></strong>
+              <p>{detail}</p>
             </article>
           ))}
         </div>
-        <p className="future-copy">根據實際使用情境的回饋，我們將 Adrift 定位為「城市記憶系統」：降低記錄門檻，讓長期累積的日記把地圖慢慢變成自己的生活記憶。</p>
+        <div className="presentation-warning-card calm">
+          <strong>最多 5 次工具、1 次模型推論、38 秒總期限</strong>
+          <span>四個工具皆唯讀。模型不直接存取資料庫；後端保留執行事件並核對引用。</span>
+        </div>
       </SlideSection>
 
-      <SlideSection id="team" eyebrow="Team" title="分工表" subtitle="以下為本專題主要分工與網站實作補充。">
-        <div className="team-table">
-          {teamRows.map(([name, work], index) => (
-            <div key={name} className="team-row">
-              <strong>{name}</strong>
-              <span>{work}</span>
-            </div>
+      <SlideSection id="verification" eyebrow="Verification" title="系統驗證與回答品質" subtitle="從地圖記錄到可追溯的智慧回顧：功能通過測試，不等於模型理解已成熟。">
+        <div className="presentation-card-grid three spacious">
+          <FeatureCard icon={<CheckCircle2 size={22} />} title="工程測試" text="Backend 224/224、Web 19/19。涵蓋單元、隔離 MongoDB 與權限／引用驗證。" />
+          <FeatureCard icon={<Layers3 size={22} />} title="原題評測" text="v1 嚴格 3/12；v2.1 要求實際查詢，5/12。評分規則不同，不直接比較。" />
+          <FeatureCard icon={<MessageCircle size={22} />} title="語意與多輪" text="語意 5/20；多輪逐輪 8/9、完整 1/2；獨立小集 7/8 僅為規則通過。" />
+        </div>
+        <p className="presentation-footnote">Phase 4.5 紀錄。狹窄測試集的 100/100 不是語意準確率。{' '}<a href="https://youtu.be/-F5u8ZKhs8A" target="_blank" rel="noreferrer">網頁 Demo</a> · <a href="https://youtu.be/rLQL5o97gPw" target="_blank" rel="noreferrer">歷史手機 Demo</a></p>
+      </SlideSection>
+
+      <SlideSection id="review" eyebrow="Review & Improvements" title="回應評審意見，持續完善 Adrift" subtitle="第一次口試的三類關切，對應第二次口試的具體改善與實作成果。">
+        <div className="future-roadmap">
+          {reviewRows.map(([title, concern, approach, result], index) => (
+            <article key={title} className="future-roadmap-card presentation-review-card">
+              <div className="future-roadmap-head">
+                <span className="future-roadmap-icon">{[<Lock size={22} />, <Compass size={22} />, <Heart size={22} />][index]}</span>
+                <span className="future-roadmap-phase">{String(index + 1).padStart(2, '0')}</span>
+              </div>
+              <h3>{title}</h3>
+              <dl>
+                <div><dt>評審關切</dt><dd>{concern}</dd></div>
+                <div><dt>改善措施</dt><dd>{approach}</dd></div>
+                <div><dt>對應成果</dt><dd>{result}</dd></div>
+              </dl>
+            </article>
           ))}
         </div>
+        <p className="presentation-footnote">來源：第一次口試評審意見及改善策略彙整表。本地 Agent 尚未正式上線。</p>
       </SlideSection>
 
-      <SlideSection id="demo" eyebrow="Demo" title="Demo Website" subtitle="直接進入線上版本，展示地圖日記、好友社交、Adrift Intelligence 與管理功能。">
-        <div className="demo-panel">
-          <div>
-            <h3>https://adrifttw.com</h3>
-            <p>實際展示地圖日記、好友社交、附近動態、Adrift Intelligence。</p>
-          </div>
-          <a className="presentation-cta" href="https://adrifttw.com" target="_blank" rel="noreferrer">
-            前往 Adrift
-          </a>
-        </div>
-        <div className="demo-links-card" aria-label="Demo 影片連結">
-          <div className="demo-links-copy">
-            <strong>觀看操作展示</strong>
-            <span>YouTube Demo</span>
-          </div>
-          <div className="demo-links-actions">
-            <a
-              href="https://youtu.be/rLQL5o97gPw"
-              target="_blank"
-              rel="noreferrer"
-              className="demo-link-button"
-            >
-              <span>手機版</span>
-              <small>Mobile Demo</small>
-            </a>
-            <a
-              href="https://youtu.be/-F5u8ZKhs8A"
-              target="_blank"
-              rel="noreferrer"
-              className="demo-link-button"
-            >
-              <span>網頁版</span>
-              <small>Web Demo</small>
-            </a>
-          </div>
-        </div>
+      <SlideSection id="team" eyebrow="D2 · Team" title="組員分工與自我評分" subtitle="沿用上次簡報的分工紀錄；繳交前由全組複核分工並確認貢獻度與自評。">
+        <table className="team-table presentation-team-table">
+          <thead><tr>{['組員姓名', '主要負責工作', '具體貢獻', '貢獻度', '自我評分（1–10）'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
+          <tbody>
+            {teamRows.map(([name, work, contribution]) => (
+              <tr key={name} className="team-row">
+                <th scope="row">{name}</th>
+                <td>{work}</td><td>{contribution}</td><td>待確認</td><td>待本人評分</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="presentation-footnote">Thank You / Q&A</p>
       </SlideSection>
-
-      <section className="presentation-thanks presentation-section" id="thank-you" data-slide-index="19">
-        <SlideBrand />
-        <div className="presentation-section-inner presentation-thanks-inner">
-          <p>Thank you for listening</p>
-          <h2>Adrift 漂流足跡</h2>
-          <span>讓每一段記憶，回到它發生的地方。</span>
-          <small>資管三B D2 · adrifttw.com</small>
-        </div>
-      </section>
       </div>
 
-      <PresentationControls
+      {!print && <PresentationControls
         activeIndex={currentSlide}
         onGoToPrevious={goToPreviousSlide}
         onGoToNext={goToNextSlide}
-      />
+      />}
     </main>
   );
 }
@@ -839,6 +846,15 @@ function SlideBrand() {
       <img src="/adrift-icon.png" alt="" />
       <span>Adrift</span>
     </div>
+  );
+}
+
+function PresentationCapture({ image, caption }) {
+  return (
+    <figure className="presentation-feature-card presentation-capture">
+      <img src={'/presentation/' + image + '.png'} alt={caption} />
+      <figcaption>{caption}<small>本機實際介面 · 合成示範資料</small></figcaption>
+    </figure>
   );
 }
 

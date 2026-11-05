@@ -177,11 +177,12 @@ export function validateMemoryFilters(value = {}) {
   };
   if (value.ranges != null && (!Array.isArray(value.ranges) || value.ranges.length < 1 || value.ranges.length > 2)) throw inputError();
   if (value.place != null && (typeof value.place !== 'string' || value.place.length > 120)) throw inputError();
+  if (value.city != null && (typeof value.city !== 'string' || value.city.length > 120)) throw inputError();
   if (value.mood != null && ![...moods.map(([type]) => type), 'other'].includes(value.mood)) throw inputError();
   if (value.terms !== undefined && (!Array.isArray(value.terms) || value.terms.length > 8 || value.terms.some(term => typeof term !== 'string' || term.length > 100))) throw inputError();
   if (value.placeMode !== undefined && !['location', 'mentioned'].includes(value.placeMode)) throw inputError();
   return { range: value.range != null ? readRange(value.range) : null, ranges: value.ranges?.map(readRange) || null,
-    place: value.place?.trim() || null, mood: value.mood || null, terms: value.terms || [], placeMode: value.placeMode || 'location',
+    place: value.place?.trim() || null, city: value.city?.trim() || null, mood: value.mood || null, terms: value.terms || [], placeMode: value.placeMode || 'location',
     asOf: value.asOf !== undefined ? readDate(value.asOf) : new Date() };
 }
 
@@ -194,10 +195,17 @@ export function buildMemoryMatch(userId, plan) {
   else if (plan.range) match.createdAt = { ...dates(plan.range), $lte: new Date(Math.min(plan.range.endInclusive ? plan.range.end : plan.asOf, plan.asOf)) };
   if (plan.mood) match['mood.type'] = plan.mood;
   if (plan.terms.length) (match.$and ||= []).push({ $or: ['title', 'text', 'location.placeName'].map(field => ({ [field]: { $regex: plan.terms.map(escapeRegex).join('|'), $options: 'i' } })) });
+  const placePattern = value => {
+    const normalized = value.replaceAll('台', '臺').replace(/市$/, '');
+    const alias = Object.entries(cityAliases).find(([english, chinese]) => normalized.toLowerCase() === english || normalized === chinese);
+    const literal = escapeRegex(value.replaceAll('台', '臺')).replaceAll('臺', '[台臺]');
+    return { $regex: alias ? `(?:${escapeRegex(alias[1]).replaceAll('臺', '[台臺]')}|${alias[0] === 'taipei' ? '(?<!New\\s)' : ''}\\b${alias[0]}\\b)` : literal, $options: 'i' };
+  };
   if (plan.place) {
-    const pattern = { $regex: escapeRegex(plan.place.replaceAll('台', '臺')).replaceAll('臺', '[台臺]'), $options: 'i' };
+    const pattern = placePattern(plan.place);
     if (plan.placeMode === 'mentioned') (match.$and ||= []).push({ $or: ['title', 'text'].map(field => ({ [field]: pattern })) });
     else match['location.placeName'] = pattern;
   }
+  if (plan.city) (match.$and ||= []).push({ 'location.placeName': placePattern(plan.city) });
   return match;
 }

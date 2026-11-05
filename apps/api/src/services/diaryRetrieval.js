@@ -19,7 +19,7 @@ function ownerId(value) {
 
 async function read(operation) {
   try { return await operation(); }
-  catch (error) { if (error instanceof AiServiceError) throw error; throw new AiServiceError('retrieval', 503); }
+  catch (error) { if (error instanceof AiServiceError) throw error; if (error.code === 50) throw new AiServiceError('timeout', 504); throw new AiServiceError('retrieval', 503); }
 }
 
 export function diarySource(diary) {
@@ -100,7 +100,32 @@ function intensityMean(moods) {
   return count ? moods.reduce((sum, mood) => sum + (mood.averageIntensity || 0) * (mood.intensityCount || 0), 0) / count : null;
 }
 
-export async function getEmotionStatistics(Diary, userId, query = {}, { includeSamples = false } = {}) {
+export function diaryPeriodStart(value, groupBy) {
+  const day = new Date(new Date(value).getTime() + 8 * 3600000);
+  return groupBy === 'week' ? localDate(day.getUTCFullYear(), day.getUTCMonth() + 1, day.getUTCDate() - (day.getUTCDay() + 6) % 7)
+    : localDate(day.getUTCFullYear(), day.getUTCMonth() + 1);
+}
+
+function periodCoverage(rows, plan, groupBy) {
+  const byStart = new Map(rows.map(row => [new Date(row._id).getTime(), row]));
+  const last = diaryPeriodStart(new Date(Math.min(plan.asOf, plan.range?.end || plan.asOf) - (plan.range && !plan.range.endInclusive && plan.range.end <= plan.asOf ? 1 : 0)), groupBy);
+  const first = plan.range?.start || rows.at(-1)?._id;
+  if (!first) return { periods: [], periodsLimited: false };
+  const periods = []; let cursor = last;
+  for (; cursor >= diaryPeriodStart(first, groupBy) && periods.length < 120;) {
+    const row = byStart.get(cursor.getTime());
+    const end = groupBy === 'week' ? new Date(cursor.getTime() + 7 * 86400000)
+      : diaryPeriodStart(new Date(cursor.getTime() + 32 * 86400000), 'month');
+    periods.push({ start: cursor, end, count: row?.count || 0, moods: (row?.moods || []).sort((a, b) => a.type.localeCompare(b.type)), intensityCount: row?.intensityCount || 0,
+      averageIntensity: row?.intensityCount ? row.intensityTotal / row.intensityCount : null,
+      evidenceStatus: !row?.count ? 'NO_RECORDS' : row.count < 3 ? 'INSUFFICIENT_EVIDENCE' : 'AVAILABLE' });
+    cursor = groupBy === 'week' ? new Date(cursor.getTime() - 7 * 86400000) : diaryPeriodStart(new Date(cursor.getTime() - 1), 'month');
+  }
+  return { periods: periods.reverse(), periodsLimited: cursor >= diaryPeriodStart(first, groupBy) };
+}
+
+export async function getEmotionStatistics(Diary, userId, query = {}, { includeSamples = false, periodGroup } = {}) {
+  if (periodGroup !== undefined && !['week', 'month'].includes(periodGroup)) throw invalid();
   const user = ownerId(userId), plan = validateMemoryFilters(query);
   const { user: ignored, ...filter } = buildMemoryMatch(user, plan);
   const within = (...stages) => [{ $match: filter }, ...stages];
@@ -117,6 +142,10 @@ export async function getEmotionStatistics(Diary, userId, query = {}, { includeS
       monthly: within({ $group: { _id: { month, mood: '$mood.type' }, count: { $sum: 1 }, intensityTotal: { $sum: diaryIntensity }, intensityCount } },
         { $group: { _id: '$_id.month', count: { $sum: '$count' }, intensityTotal: { $sum: '$intensityTotal' }, intensityCount: { $sum: '$intensityCount' }, moods: { $push: { type: '$_id.mood', count: '$count' } } } },
         { $sort: { _id: -1 } }, { $limit: 25 }),
+      ...(periodGroup ? { periods: within(
+        { $group: { _id: { start: { $dateTrunc: { date: '$createdAt', unit: periodGroup, timezone: 'Asia/Taipei', ...(periodGroup === 'week' ? { startOfWeek: 'monday' } : {}) } }, mood: '$mood.type' }, count: { $sum: 1 }, intensityTotal: { $sum: diaryIntensity }, intensityCount } },
+        { $group: { _id: '$_id.start', count: { $sum: '$count' }, intensityTotal: { $sum: '$intensityTotal' }, intensityCount: { $sum: '$intensityCount' }, moods: { $push: { type: '$_id.mood', count: '$count' } } } },
+        { $sort: { _id: -1 } }, { $limit: 121 }) } : {}),
       daily: within({ $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Taipei' } }, count: { $sum: 1 }, averageIntensity: { $avg: diaryIntensity }, intensityCount } }, { $sort: { _id: 1 } }, { $limit: 3661 }),
       places: within({ $sort: { createdAt: -1, _id: -1 } },
         { $group: { _id: { place: '$location.placeName', mood: '$mood.type' }, count: { $sum: 1 }, diaryId: { $first: '$_id' }, latestAt: { $first: '$createdAt' } } },
@@ -142,6 +171,17 @@ export async function getEmotionStatistics(Diary, userId, query = {}, { includeS
     latest: item.latest.sort((a, b) => new Date(b.latestAt) - new Date(a.latestAt))[0]
   })).sort((a, b) => b.count - a.count || a._id.localeCompare(b._id));
   const total = result.total[0]?.count || 0, accountTotal = result.accountTotal[0]?.count || 0;
+  const cities = new Map();
+  const cityNames = ['臺北', '新北', '桃園', '臺中', '臺南', '高雄', '基隆', '新竹', '苗栗', '彰化', '南投', '雲林', '嘉義', '屏東', '宜蘭', '花蓮', '臺東', '澎湖', '金門', '連江'];
+  const english = { taipei: '臺北', taichung: '臺中', tainan: '臺南', kaohsiung: '高雄' };
+  for (const place of namedPlaces) {
+    const city = cityNames.find(name => place._id.startsWith(name)) || (/\bNew\s+Taipei\b/i.test(place._id) ? '新北' : Object.entries(english).find(([name]) => new RegExp(`\\b${name}\\b`, 'i').test(place._id))?.[1]);
+    if (!city) continue;
+    const target = cities.get(city) || { city, count: 0, moods: [] };
+    target.count += place.count;
+    for (const mood of place.moods) { const row = target.moods.find(row => row.type === mood.type); if (row) row.count += mood.count; else target.moods.push({ ...mood }); }
+    cities.set(city, target);
+  }
   const comparisons = (plan.ranges || []).map((range, index) => {
     const moods = result[`comparison${index}`] || [], total = moods.reduce((sum, mood) => sum + mood.count, 0);
     return { range, total, moods, averageIntensity: intensityMean(moods), status: !total ? 'NO_MATCHES' : total < 3 ? 'INSUFFICIENT_EVIDENCE' : 'AVAILABLE' };
@@ -149,8 +189,10 @@ export async function getEmotionStatistics(Diary, userId, query = {}, { includeS
   return { accountTotal, total, moods: result.moods, monthly, daily: (result.daily || []).slice(0, 3660).map(({ _id, ...day }) => ({ date: _id, ...day })), dailyLimited: (result.daily || []).length > 3660,
     averageIntensity: intensityMean(result.moods),
     placeCount: namedPlaces.length, places: namedPlaces.slice(0, 10),
+    cityDistribution: { cities: [...cities.values()].sort((a, b) => b.count - a.count || a.city.localeCompare(b.city)), unclassifiedCount: total - [...cities.values()].reduce((sum, row) => sum + row.count, 0) },
     status: !accountTotal ? 'NO_DIARIES' : !total ? 'NO_MATCHES' : total < 3 || comparisons.some(period => period.status !== 'AVAILABLE') ? 'INSUFFICIENT_EVIDENCE' : 'AVAILABLE',
     monthlyLimited: result.monthly.length > 24 || result.monthly.some(row => row._id < monthly[0]?.month) || Boolean(plan.range && monthFormatter.format(plan.range.start) < monthly[0]?.month),
     comparisons,
+    ...(periodGroup ? periodCoverage(result.periods || [], plan, periodGroup) : {}),
     ...(includeSamples ? { candidates: result.diaries || [], temporal: result.temporal || [], moodSamples: result.moodSamples || [] } : {}) };
 }

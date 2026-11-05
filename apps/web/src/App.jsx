@@ -146,7 +146,7 @@ export default function App() {
   const isSettingsPage = currentPath === '/settings/account' || currentPath === '/settings';
   const isAiPage = currentPath === '/ai/life-map';
   const isAdminPage = currentPath === '/admin' || currentPath === '/admin/dashboard';
-  const isPresentationPage = currentPath === '/p' || currentPath === '/p/';
+  const isPresentationPage = ['/p', '/p/', '/presentation', '/presentation/'].includes(currentPath);
   const isPresentationDownloadPage = currentPath === '/pd' || currentPath === '/pd/';
   const isLandingPage = !user && currentPath === '/';
   const isAboutPage = currentPath === '/about' || currentPath === '/about/';

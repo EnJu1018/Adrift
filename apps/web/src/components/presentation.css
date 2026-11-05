@@ -1,0 +1,55 @@
+.presentation-page .presentation-capture { margin: 0; min-width: 0; }
+.presentation-capture img { display: block; width: 100%; height: min(44vh, 420px); object-fit: contain; border-radius: 8px; }
+.presentation-capture figcaption { margin-top: 12px; color: var(--text-secondary); }
+.presentation-capture figcaption small { display: block; margin-top: 4px; }
+
+.presentation-agent-tools code { overflow-wrap: anywhere; font-size: 1.08rem; }
+.presentation-agent-tools .presentation-feature-card { min-height: 0; }
+#verification .presentation-footnote a { color: var(--text-primary); text-underline-offset: .2em; }
+
+.presentation-review-card dl { display: grid; gap: 14px; margin: 0; }
+.presentation-review-card dt { color: var(--text-heading); font-size: 1rem; font-weight: 750; }
+.presentation-review-card dd { margin: 3px 0 0; color: var(--text-secondary); font-size: 1.13rem; line-height: 1.45; }
+
+.presentation-page .presentation-team-table { display: table; width: 100%; border-collapse: separate; border-spacing: 0 9px; table-layout: fixed; }
+.presentation-team-table .team-row { display: table-row; }
+.presentation-team-table :is(th, td) { padding: 14px 13px; text-align: left; font-size: 1.12rem; line-height: 1.45; overflow-wrap: anywhere; }
+.presentation-team-table thead th { color: var(--text-heading); }
+.presentation-team-table th:first-child { width: 14%; }
+.presentation-team-table th:nth-child(2) { width: 22%; }
+.presentation-team-table th:nth-child(4) { width: 11%; }
+.presentation-team-table th:nth-child(5) { width: 17%; }
+.presentation-team-table td:nth-last-child(-n+2) { color: var(--text-secondary); }
+
+@media (max-width: 680px) {
+  .presentation-team-table :is(th, td) { padding: 9px 4px; font-size: .875rem; }
+}
+
+@media (min-width: 981px) and (max-height: 820px) {
+  .presentation-page .presentation-section { padding-bottom: 78px; }
+  .presentation-page .presentation-section-inner { gap: 18px; }
+  .presentation-page .presentation-cover-copy { gap: 12px; }
+  .presentation-page .presentation-advisors { margin-top: 14px; }
+  .presentation-page .presentation-member-grid span { min-height: 50px; }
+  .presentation-page .presentation-map-visual { min-height: 340px; }
+  #map-diary .presentation-feature-card { min-height: 0; padding: 18px; }
+  #authenticity .presentation-warning-card { padding-block: 14px; }
+  #architecture .presentation-system-tree { gap: 6px; padding-top: 4px; }
+  #architecture .system-module { gap: 4px; padding-block: 6px; }
+  #architecture .system-feature-chip { min-height: 30px; padding-block: 2px; }
+  #architecture .module-node { min-height: 32px; }
+  #architecture .root-node { min-height: 42px; }
+  #ux .presentation-section-inner { gap: 10px; }
+  #ux .ux-principle-hero { min-height: 398px; padding-block: 18px; }
+  #ux .ux-principle-card { min-height: 182px; padding-block: 16px; }
+  .presentation-capture img { height: 37vh; }
+  #review .presentation-section-inner { gap: 12px; }
+  .presentation-page .presentation-review-card { padding: 20px; gap: 12px; }
+  .presentation-review-card dl { gap: 9px; }
+  #review .presentation-footnote { padding-block: 8px; }
+}
+
+@media print {
+  body:has(.presentation-print) :is(.app-frame, .app-layout) { height: auto; max-height: none; overflow: visible; }
+  .presentation-print { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

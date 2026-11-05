@@ -75,7 +75,9 @@ test('retrieval always scopes to server user and escapes literal search text', (
   const match = buildMemoryMatch(a, plan);
   assert.equal(match.user, a);
   assert.equal(match['mood.type'], 'joy');
-  assert.equal(match['location.placeName'].$regex, '[台臺]北');
+  const place = new RegExp(match['location.placeName'].$regex, match['location.placeName'].$options);
+  assert.ok(place.test('台北') && place.test('臺北') && place.test('Taipei'));
+  assert.equal(place.test('New Taipei'), false);
   const literal = buildMemoryMatch(a, { terms: ['.*'], place: null });
   assert.equal(literal.$and[0].$or[0].title.$regex, '\\.\\*');
 });

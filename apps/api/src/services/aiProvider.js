@@ -23,6 +23,11 @@ export function createAiProvider({ env = process.env, gemini = generateGeminiJso
     return client;
   }
   return {
+    // Explicit local-only capability; never routes private tool context to a cloud fallback.
+    chatTools(input) {
+      if (selected() !== 'ollama') throw new AiServiceError('configuration', 503);
+      return local().chat(input);
+    },
     async generateJson(input) {
       if (selected() === 'gemini') return gemini(input);
       const result = await local().chat({ messages: [{ role: 'system', content: input.instruction }, { role: 'user', content: JSON.stringify(input.data) }],

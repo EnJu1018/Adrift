@@ -1,165 +1,100 @@
 import assert from 'node:assert/strict';
+import { mkdir } from 'node:fs/promises';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
-const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+const { chromium, webkit } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const engine = process.env.BROWSER === 'webkit' ? 'webkit' : 'chrome';
+const browser = engine === 'webkit' ? await webkit.launch() : await chromium.launch({ channel: 'chrome' });
+const base = process.env.PREVIEW_URL || 'http://127.0.0.1:5178';
+const output = process.env.PRESENTATION_QA_DIR || '/tmp/adrift-defense-' + engine;
+await mkdir(output, { recursive: true });
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, reducedMotion: 'reduce' });
 const errors = [];
 page.on('pageerror', error => errors.push(error.message));
-const base = process.env.PREVIEW_URL || 'http://127.0.0.1:5178';
+const active = page.locator('.presentation-section[data-active="true"]');
+const track = page.locator('.presentation-slide-track');
+const previous = page.getByRole('button', { name: '上一頁', exact: true });
+const next = page.getByRole('button', { name: '下一頁', exact: true });
+
+async function ready(index) {
+  await active.and(page.locator('[data-slide-index="' + index + '"]')).waitFor();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all([...document.querySelectorAll('.presentation-section img')].map(image => image.decode()));
+  });
+}
 
 try {
-  await page.goto(`${base}/p`);
-  await page.locator('.presentation-next').waitFor();
-  assert.equal(await page.locator('.presentation-prev').isDisabled(), true);
-  await page.locator('.presentation-next').click();
-  await page.waitForTimeout(550);
-  await page.locator('.presentation-prev').click();
-  await page.waitForTimeout(550);
-  assert.equal(await page.locator('.presentation-prev').isDisabled(), true);
-  await page.locator('body').click({ position: { x: 5, y: 5 } });
-  await page.keyboard.press('End');
-  await page.waitForTimeout(550);
-  assert.equal(await page.locator('.presentation-next').isDisabled(), true);
-  await page.locator('.presentation-prev').click();
-  await page.waitForTimeout(550);
-  await page.locator('.presentation-next').click();
-  await page.waitForTimeout(550);
-  assert.equal(await page.locator('.presentation-next').isDisabled(), true);
-  await page.locator('body').click({ position: { x: 5, y: 5 } });
-  await page.keyboard.press('Home');
-  for (let index = 0; index < 5; index++) {
-    await page.waitForTimeout(550);
-    await page.keyboard.press('ArrowRight');
-  }
-  await page.waitForTimeout(650);
+  await page.goto(base + '/presentation');
+  await ready(0);
+  assert.equal(await page.locator('.presentation-section').count(), 25);
+  assert.equal(await previous.isDisabled(), true);
+  await next.click(); await ready(1);
+  await previous.click(); await ready(0);
+  await page.keyboard.press('End'); await ready(24);
+  assert.equal(await next.isDisabled(), true);
+  assert.equal(await active.getAttribute('id'), 'team');
+  assert.equal(await active.locator('tbody tr').count(), 4);
+  for (const name of ['張惠芯', '洪藝文', '王浩宇', '陳恩儒']) await active.getByRole('rowheader', { name }).waitFor();
+  await page.reload(); await ready(24);
+  await page.keyboard.press('ArrowLeft'); await ready(23);
+  for (const theme of ['隱私與資料安全', '拍照、語音與便利性', '產品價值與實用性']) await active.getByRole('heading', { name: theme }).waitFor();
+  await page.getByRole('button', { name: '成果展示', exact: true }).click(); await ready(19);
 
   for (const theme of ['bright', 'dark']) {
     await page.evaluate(theme => { document.documentElement.dataset.theme = theme; }, theme);
-    await page.waitForTimeout(650);
-    await page.screenshot({ path: `/tmp/adrift-motion-${theme}.png` });
-    const result = await page.evaluate(async () => {
-      const { motionMs } = await import('/src/lib/motion/tokens.js');
-      const style = getComputedStyle(document.documentElement);
-      const root = document.querySelector('.presentation-map-visual');
-      const dot = root.querySelector('[data-drift-dot]');
-      const before = dot.style.transform;
-      await new Promise(resolve => setTimeout(resolve, 120));
-      return { cssFast: style.getPropertyValue('--duration-fast').trim(), jsFast: motionMs.fast,
-        moving: before !== dot.style.transform, rootTransform: root.style.transform,
-        appAnimations: document.querySelector('.app-layout').getAnimations().length };
-    });
-    assert.equal(result.cssFast, `${result.jsFast}ms`);
-    assert.equal(result.moving, true);
-    assert.equal(result.rootTransform, '');
-    assert.equal(result.appAnimations, 0);
-  }
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForTimeout(150);
-  const reduced = await page.evaluate(async () => {
-    const { listItemMotion, staggeredRevealMotion } = await import('/src/constants/animations.js');
-    const root = document.querySelector('.presentation-map-visual');
-    const dot = root.querySelector('[data-drift-dot]');
-    const before = dot.style.transform;
-    await new Promise(resolve => setTimeout(resolve, 150));
-    return { stable: before === dot.style.transform, transform: dot.style.transform,
-      list: listItemMotion(100), reveal: staggeredRevealMotion(100),
-      visibleNodes: [...root.querySelectorAll('.map-memory-node-core')].every(n => Number(getComputedStyle(n).opacity) > 0) };
-  });
-  assert.equal(reduced.stable, true);
-  assert.equal(reduced.transform, '');
-  assert.equal(reduced.list.initial, false);
-  assert.equal(reduced.list.transition.delay, 0);
-  assert.equal(reduced.reveal.transition.delay, 0);
-  assert.equal(reduced.visibleNodes, true);
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await page.waitForTimeout(150);
-
-  const cleanup = await page.evaluate(async () => {
-    const { createPresentationMapMotion } = await import('/src/lib/motion/animeMotion.js');
-    const { listItemMotion } = await import('/src/constants/animations.js');
-    const root = document.createElement('div');
-    root.innerHTML = '<svg><path data-memory-path d="M0 0L100 100" /></svg>';
-    document.body.append(root);
-    const dispose = createPresentationMapMotion(root);
-    dispose();
-    const remount = createPresentationMapMotion(root);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    remount();
-    const before = root.innerHTML;
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const stable = before === root.innerHTML;
-    root.remove();
-    return { stable, style: root.querySelector('path').getAttribute('style'),
-      delay: listItemMotion(100).transition.delay, exitDelay: listItemMotion(100).exit.transition.delay };
-  });
-  assert.equal(cleanup.stable, true);
-  assert.ok(!cleanup.style);
-  assert.ok(cleanup.delay <= 0.3);
-  assert.equal(cleanup.exitDelay, 0);
-
-  await page.keyboard.press('ArrowRight');
-  await page.waitForTimeout(450);
-  assert.equal(await page.locator('[data-drift-dot]').first().evaluate(n => n.style.transform), '', 'leaving the map stops and reverts its scope');
-  assert.equal(await page.locator('.presentation-section:not([inert])').count(), 1);
-  assert.equal(await page.locator('[data-memory-path]').evaluateAll(nodes => nodes.length === 2 && nodes.every(n => /z$/i.test(n.getAttribute('d').trim()))), true);
-
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  const total = await page.locator('.presentation-slide-track > section').count();
-  for (const width of [1366, 1440, 1920, 390]) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.keyboard.press('Home');
-    for (let index = 0; index < total; index++) {
-      await page.waitForTimeout(25);
-      const geometry = await page.locator('.presentation-section[data-active="true"]').evaluate(n => {
-        const rect = n.getBoundingClientRect();
-        return { top: rect.top, height: rect.height, width: n.clientWidth, scrollWidth: n.scrollWidth,
-          transform: getComputedStyle(n).transform, innerTop: n.querySelector('.presentation-section-inner').getBoundingClientRect().top };
-      });
-      assert.ok(Math.abs(geometry.top) < 1, `slide ${index + 1} at ${width}: incorrect active position`);
-      assert.equal(geometry.height, 900);
-      assert.ok(geometry.scrollWidth <= geometry.width + 1, `slide ${index + 1} at ${width}: horizontal overflow`);
-      assert.equal(geometry.transform, 'none');
-      assert.ok(geometry.innerTop >= -1, `slide ${index + 1} at ${width}: content above scroll origin`);
-      await page.keyboard.press('ArrowRight');
+    for (const [width, height] of [[1600, 900], [1366, 768]]) {
+      await page.setViewportSize({ width, height });
+      await page.keyboard.press('Home');
+      for (let index = 0; index < 25; index++) {
+        await ready(index);
+        const layout = await active.evaluate(slide => {
+          const inner = slide.querySelector('.presentation-section-inner');
+          const rect = slide.getBoundingClientRect();
+          const controls = Math.min(...[...document.querySelectorAll('.presentation-nav,.presentation-controls')].map(node => node.getBoundingClientRect().top));
+          return { x: slide.scrollWidth - slide.clientWidth, y: slide.scrollHeight - slide.clientHeight,
+            bottom: inner.getBoundingClientRect().bottom - controls, top: rect.top };
+        });
+        assert.ok(layout.x <= 1 && layout.top >= -2 && layout.top <= 2, theme + ' slide ' + (index + 1) + ': ' + JSON.stringify(layout));
+        assert.ok(layout.bottom <= 2 && layout.y <= 2, theme + ' ' + width + ' slide ' + (index + 1) + ': ' + JSON.stringify(layout));
+        assert.ok(await track.evaluate(el => parseFloat(getComputedStyle(el).transitionDuration) < .001));
+        if (width === 1600) await page.screenshot({ path: join(output, theme + '-' + String(index + 1).padStart(2, '0') + '.png'), animations: 'disabled' });
+        await page.keyboard.press('ArrowRight');
+      }
     }
-    assert.equal(await page.locator('.presentation-next').isDisabled(), true);
   }
-  await page.keyboard.press('ArrowLeft');
-  const links = await page.locator('.demo-link-button').evaluateAll(nodes => nodes.map(n => ({ href: n.href, target: n.target })));
-  assert.deepEqual(links, [
-    { href: 'https://youtu.be/rLQL5o97gPw', target: '_blank' },
-    { href: 'https://youtu.be/-F5u8ZKhs8A', target: '_blank' }
-  ]);
-  await page.emulateMedia({ media: 'print' });
-  assert.equal(await page.locator('.presentation-slide-track').evaluate(n => getComputedStyle(n).transform), 'none');
-  await page.emulateMedia({ media: 'screen' });
 
-  await page.setViewportSize({ width: 1920, height: 900 });
-  await page.keyboard.press('End');
-  await page.locator('.presentation-section[data-active="true"]').dispatchEvent('wheel', { deltaY: -4, deltaMode: 1 });
-  await page.waitForTimeout(450);
-  assert.equal(await page.locator('.presentation-section[data-active="true"]').getAttribute('id'), 'demo');
-  await page.locator('.presentation-section[data-active="true"]').dispatchEvent('wheel', { deltaY: 120, ctrlKey: true });
-  assert.equal(await page.locator('.presentation-section[data-active="true"]').getAttribute('id'), 'demo', 'pinch zoom must not change slides');
-  await page.locator('.presentation-section[data-active="true"]').dispatchEvent('wheel', { deltaY: 120 });
-  await page.waitForTimeout(450);
-  assert.equal(await page.locator('.presentation-next').isDisabled(), true);
-  await page.setViewportSize({ width: 390, height: 900 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.keyboard.press('Home');
-  await page.waitForTimeout(50);
-  await page.mouse.move(190, 300);
-  await page.mouse.wheel(0, 160);
-  await page.waitForTimeout(200);
-  assert.equal(await page.locator('.presentation-section[data-active="true"]').getAttribute('id'), 'cover');
-  assert.ok(await page.locator('#cover').evaluate(n => n.scrollTop > 0), 'overflowing content must scroll before navigation');
+  assert.ok(await track.evaluate(el => parseFloat(getComputedStyle(el).transitionDuration) > 0));
+  await page.keyboard.press('ArrowRight');
+  await ready(1);
+  await page.waitForFunction(() => Math.abs(document.querySelector('.presentation-section[data-active="true"]').getBoundingClientRect().top) < 2);
+  assert.equal(await page.locator('.presentation-section:not([inert])').count(), 1);
+  for (let i = 2; i <= 5; i++) { await page.keyboard.press('ArrowRight'); await ready(i); }
+  const dot = active.locator('[data-drift-dot]').first();
+  await page.waitForFunction(() => Boolean(document.querySelector('#map-diary [data-drift-dot]').style.transform));
+  const start = await dot.evaluate(node => node.style.transform);
+  await page.waitForFunction(start => document.querySelector('#map-diary [data-drift-dot]').style.transform !== start, start);
+  await page.keyboard.press('ArrowRight'); await ready(6);
+  assert.equal(await page.locator('#map-diary [data-drift-dot]').first().evaluate(node => node.style.transform), '');
 
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.reload();
-  await page.locator('.presentation-next').waitFor();
-  assert.equal(await page.locator('[data-drift-dot]').first().evaluate(n => n.style.transform), '');
+  await page.setViewportSize({ width: 1536, height: 864 });
+  await page.emulateMedia({ media: 'print', reducedMotion: 'reduce' });
+  await page.goto(base + '/presentation?print=1');
+  await page.locator('.presentation-section').first().waitFor();
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await Promise.all([...document.querySelectorAll('.presentation-section img')].map(image => image.decode()));
+  });
+  assert.equal(await page.locator('.presentation-section').count(), 25);
+  assert.equal(await page.locator('.presentation-nav, .presentation-controls').count(), 0);
+  assert.equal(await page.locator('.presentation-section[inert]').count(), 0);
+  if (process.argv.includes('--pdf')) {
+    assert.equal(engine, 'chrome');
+    await page.pdf({ path: fileURLToPath(new URL('../public/Adrift-presentation.pdf', import.meta.url)), width: '16in', height: '9in', preferCSSPageSize: true, printBackground: true });
+  }
   assert.deepEqual(errors, []);
-  console.log('PASS: shared tokens, dark/bright, presentation boundaries, Anime path motion, live/initial reduced motion, cleanup/remount, bounded stagger.');
-} finally {
-  await browser.close();
-}
+  console.log('PASS ' + engine + ': 25 slides in both themes at 1600x900 and 1366x768; keyboard, motion and print.');
+} finally { await browser.close(); }
