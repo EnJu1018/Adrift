@@ -742,7 +742,6 @@ export default function PresentationPage() {
             <FeatureCard key={title} title={title} text={text} icon={icon} compact />
           ))}
         </div>
-        <p className="presentation-footnote">正式網站使用 Gemini；本地 Agent 已驗證，尚未正式啟用。</p>
       </SlideSection>
 
       <SlideSection id="insights-chat" eyebrow="Insights & Memory Chat" title="從統計到有來源的對話" subtitle="Insights 呈現實際記錄；Memory Chat 用問題找日記，再回到原始內容。">
