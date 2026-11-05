@@ -49,7 +49,8 @@ const slides = [
   { id: 'agent', label: 'Agent 工具與協調', group: '成果展示' },
   { id: 'verification', label: '系統驗證', group: '成果展示' },
   { id: 'review', label: '評審意見與改善策略', group: '成果展示' },
-  { id: 'team', label: '組員分工與自我評分', group: '成果展示' }
+  { id: 'team', label: '組員分工與自我評分', group: '成果展示' },
+  { id: 'demo', label: 'Demo Website', group: '成果展示' }
 ];
 
 const navGroups = [...new Set(slides.map(slide => slide.group))].map(label => ({ label }));
@@ -832,6 +833,34 @@ export default function PresentationPage() {
             </tbody>
           </table>
         </SlideSection>
+
+
+        <SlideSection
+            id="demo"
+            eyebrow="Live Demo"
+            title="Demo Website"
+            subtitle="實際體驗 Adrift 漂流足跡的完整功能。"
+        >
+          <div className="demo-panel">
+            <div>
+              <h3>https://adrifttw.com</h3>
+              <p>
+                實際展示地圖日記、好友社交、
+                附近動態與 Adrift Intelligence。
+              </p>
+            </div>
+
+            <a
+                className="presentation-cta"
+                href="https://adrifttw.com"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+              前往 Adrift
+            </a>
+          </div>
+        </SlideSection>
+
       </div>
 
       {!print && <PresentationControls
