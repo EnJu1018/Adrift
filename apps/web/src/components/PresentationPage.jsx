@@ -50,7 +50,8 @@ const slides = [
   { id: 'verification', label: '系統驗證', group: '設計亮點' },
   { id: 'review', label: '評審意見與改善策略', group: '成果展示' },
   { id: 'team', label: '組員分工與自我評分', group: '成果展示' },
-  { id: 'demo', label: 'Demo Website', group: '成果展示' }
+  { id: 'demo', label: 'Demo Website', group: '成果展示' },
+  { id: 'demo-video', label: 'Demo Video', group: '成果展示' }
 ];
 
 const navGroups = [...new Set(slides.map(slide => slide.group))].map(label => ({ label }));
@@ -858,6 +859,63 @@ export default function PresentationPage() {
             >
               前往 Adrift
             </a>
+          </div>
+        </SlideSection>
+
+        <SlideSection
+            id="demo-video"
+            eyebrow="Product Showcase"
+            title="Demo Video"
+            subtitle="Adrift 漂流足跡 · 系統操作展示"
+        >
+          <div className="presentation-video-grid">
+
+            <div className="presentation-feature-card">
+              <h3>Web Application</h3>
+              <p>網頁版 · 功能操作展示</p>
+
+              <div className="presentation-video-frame">
+                <iframe
+                    src="https://www.youtube.com/embed/-F5u8ZKhs8A"
+                    title="Adrift Web Demo"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    loading="lazy"
+                />
+              </div>
+
+              <a
+                  href="https://youtu.be/-F5u8ZKhs8A"
+                  target="_blank"
+                  rel="noopener noreferrer"
+              >
+                在 YouTube 觀看
+              </a>
+            </div>
+
+            <div className="presentation-feature-card">
+              <h3>Mobile Application</h3>
+              <p>手機版 · 操作流程展示</p>
+
+              <div className="presentation-video-frame">
+                <iframe
+                    src="https://www.youtube.com/embed/rLQL5o97gPw"
+                    title="Adrift Mobile Demo"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    loading="lazy"
+                />
+              </div>
+
+              <a
+                  href="https://youtu.be/rLQL5o97gPw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+              >
+                在 YouTube 觀看
+              </a>
+            </div>
+
           </div>
         </SlideSection>
 
