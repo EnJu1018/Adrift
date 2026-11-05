@@ -395,10 +395,10 @@ const systemTreeModules = [
 ];
 
 const teamRows = [
-  ['張惠芯', '圖形與文書', '圖形繪製、文書資料處理、協助手機版程式製作'],
-  ['洪藝文', '圖形與文書', '圖形繪製、文書資料處理、協助手機版程式製作'],
-  ['王浩宇', '手機版程式與圖形', '手機版程式製作、圖形繪製'],
-  ['陳恩儒', '電腦版程式', '網站整合開發與部署']
+  ['張惠芯', '圖形與文書', '圖形繪製、文書資料處理、協助手機版程式製作', '100', 10],
+  ['洪藝文', '圖形與文書', '圖形繪製、文書資料處理、協助手機版程式製作', '100', 10],
+  ['王浩宇', '手機版程式與圖形', '手機版程式製作、圖形繪製', '100', 10],
+  ['陳恩儒', '電腦版程式', '網站整合開發與部署', '100', 10]
 ];
 
 const governanceRoles = [
@@ -753,7 +753,6 @@ export default function PresentationPage() {
 
       <SlideSection id="retrieval" eyebrow="Diary Retrieval" title="先找對日記，再生成回覆" subtitle="用共用檢索服務修正查不到日記的問題，並區分沒有日記、沒有符合資料與查詢失敗。">
         <HorizontalUserFlow steps={retrievalFlow} />
-        <p className="presentation-footnote">不把無記錄當成零情緒，也不把找到來源等同語意推論已驗證。</p>
       </SlideSection>
 
       <SlideSection id="ollama" eyebrow="Local Inference" title="Ollama 與 Qwen3.5 4B" subtitle="Ubuntu · RTX 2060 SUPER 8GB · CUDA。把模型、資料流與推論容量留在可控的環境。">
@@ -762,12 +761,10 @@ export default function PresentationPage() {
           <FeatureCard icon={<Sparkles size={22} />} title="75.9 token/s" text="4K 暖機推論速度；不等於完整 Agent 速度。" />
           <FeatureCard icon={<Server size={22} />} title="約 3.13 GiB" text="8K 小批試驗的模型 VRAM；非整機峰值。" />
         </div>
-        <p className="presentation-footnote">本地路徑減少對外部額度的依賴；正式網站仍使用 Gemini。</p>
       </SlideSection>
 
       <SlideSection id="gateway" eyebrow="Private AI Gateway" title="私人推論通道" subtitle="家中主機主動建立 SSH 反向通道；Ollama 不開放公網。">
         <HorizontalUserFlow steps={gatewayFlow} />
-        <p className="presentation-footnote">單一生成、最多兩筆等待，支援逾時、取消及斷線重連。</p>
       </SlideSection>
 
       <SlideSection id="agent" eyebrow="Agent Tools & Orchestrator" title="受控工具與多步驟協調" subtitle="後端理解時間與地點追問、安排工具、收集證據，再驗證來源與回答。">
@@ -791,7 +788,6 @@ export default function PresentationPage() {
           <FeatureCard icon={<Layers3 size={22} />} title="原題評測" text="v1 嚴格 3/12；v2.1 要求實際查詢，5/12。評分規則不同，不直接比較。" />
           <FeatureCard icon={<MessageCircle size={22} />} title="語意與多輪" text="語意 5/20；多輪逐輪 8/9、完整 1/2；獨立小集 7/8 僅為規則通過。" />
         </div>
-        <p className="presentation-footnote">Phase 4.5 紀錄。狹窄測試集的 100/100 不是語意準確率。{' '}<a href="https://youtu.be/-F5u8ZKhs8A" target="_blank" rel="noreferrer">網頁 Demo</a> · <a href="https://youtu.be/rLQL5o97gPw" target="_blank" rel="noreferrer">歷史手機 Demo</a></p>
       </SlideSection>
 
       <SlideSection id="review" eyebrow="Review & Improvements" title="回應評審意見，持續完善 Adrift" subtitle="第一次口試的三類關切，對應第二次口試的具體改善與實作成果。">
@@ -811,23 +807,31 @@ export default function PresentationPage() {
             </article>
           ))}
         </div>
-        <p className="presentation-footnote">來源：第一次口試評審意見及改善策略彙整表。本地 Agent 尚未正式上線。</p>
       </SlideSection>
 
-      <SlideSection id="team" eyebrow="D2 · Team" title="組員分工與自我評分" subtitle="沿用上次簡報的分工紀錄；繳交前由全組複核分工並確認貢獻度與自評。">
-        <table className="team-table presentation-team-table">
-          <thead><tr>{['組員姓名', '主要負責工作', '具體貢獻', '貢獻度', '自我評分（1–10）'].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
-          <tbody>
-            {teamRows.map(([name, work, contribution]) => (
-              <tr key={name} className="team-row">
-                <th scope="row">{name}</th>
-                <td>{work}</td><td>{contribution}</td><td>待確認</td><td>待本人評分</td>
-              </tr>
+        <SlideSection id="team" eyebrow="D2 · Team" title="組員分工與自我評分">
+          <table className="team-table presentation-team-table">
+            <thead>
+            <tr>
+              {['組員姓名', '主要負責工作', '具體貢獻', '貢獻度', '自我評分（1–10）'].map(label => (
+                  <th key={label} scope="col">{label}</th>
+              ))}
+            </tr>
+            </thead>
+
+            <tbody>
+            {teamRows.map(([name, work, contribution, percentage, score]) => (
+                <tr key={name} className="team-row">
+                  <th scope="row">{name}</th>
+                  <td>{work}</td>
+                  <td>{contribution}</td>
+                  <td>{percentage}</td>
+                  <td>{score}</td>
+                </tr>
             ))}
-          </tbody>
-        </table>
-        <p className="presentation-footnote">Thank You / Q&A</p>
-      </SlideSection>
+            </tbody>
+          </table>
+        </SlideSection>
       </div>
 
       {!print && <PresentationControls
