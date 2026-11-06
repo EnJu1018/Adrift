@@ -568,7 +568,7 @@ export default function PresentationPage() {
               A map-based social diary where emotions drift across the world.
             </p>
             <p className="presentation-lead">結合地圖、日記、情緒、社交與 Adrift Intelligence 的互動式生活記錄平台。</p>
-            <p className="presentation-advisors">張怡君老師、張瑋珊老師 共同指導</p>
+            <p className="presentation-advisors">張怡君老師、吳建興老師 共同指導</p>
             <div className="presentation-member-grid">
               {memberList.map(([name, id]) => (
                 <span key={id}>{name} <strong>{id}</strong></span>
