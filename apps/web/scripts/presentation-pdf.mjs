@@ -54,7 +54,15 @@ try {
   });
   const layout = await deck.evaluate(element => {
     const track = element.querySelector('.presentation-slide-track');
+    const incompatibleEffects = [element, ...element.querySelectorAll('*')].some(node =>
+      [null, '::before', '::after'].some(pseudo => {
+        const style = getComputedStyle(node, pseudo);
+        if (pseudo && (style.content === 'none' || style.content === 'normal')) return false;
+        return [style.boxShadow, style.textShadow, style.filter, style.backdropFilter]
+          .some(value => value !== 'none');
+      }));
     return {
+      incompatibleEffects,
       transform: getComputedStyle(track).transform,
       slides: [...track.children].map(slide => {
         const rect = slide.getBoundingClientRect();
@@ -64,6 +72,7 @@ try {
       })
     };
   });
+  assert.equal(layout.incompatibleEffects, false, 'Print styles must not emit soft shadow masks.');
   assert.equal(layout.transform, 'none');
   assert.ok(layout.slides.length > 0 && new Set(layout.slides.map(slide => slide.id)).size === layout.slides.length);
   for (const [index, slide] of layout.slides.entries()) {

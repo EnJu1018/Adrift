@@ -96,6 +96,21 @@
     break-inside: avoid;
   }
   .presentation-print :is(.presentation-atmosphere, .presentation-slide-brand) { animation: none !important; }
+
+  /* PDFKit can render Chromium's soft shadow masks as solid rectangles. */
+  @layer presentation-print-compatibility {
+    .presentation-print,
+    .presentation-print *,
+    .presentation-print *::before,
+    .presentation-print *::after,
+    .presentation-print::before,
+    .presentation-print::after {
+      box-shadow: none !important;
+      text-shadow: none !important;
+      filter: none !important;
+      backdrop-filter: none !important;
+    }
+  }
 }
 
 .presentation-video-grid {
