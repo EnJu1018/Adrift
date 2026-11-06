@@ -27,6 +27,7 @@ import './presentation.css';
 const slides = [
   { id: 'cover', label: '封面', group: '封面' },
   { id: 'motivation', label: '專題動機', group: '專題概念' },
+  { id: 'difference', label: '差異化', group: '專題概念' },
   { id: 'problem', label: '問題分析', group: '專題概念' },
   { id: 'goal', label: '專案目標', group: '專題概念' },
   { id: 'overview', label: '系統總覽', group: '系統功能' },
@@ -39,7 +40,6 @@ const slides = [
   { id: 'frontend-tech', label: '前端技術', group: '系統架構' },
   { id: 'backend-tech', label: '後端技術', group: '系統架構' },
   { id: 'ux', label: 'UX 設計', group: '設計亮點' },
-  { id: 'difference', label: '差異化', group: '設計亮點' },
   { id: 'admin-role', label: '權限管理', group: '設計亮點' },
   { id: 'life-map-ai', label: 'Adrift Intelligence', group: '設計亮點' },
   { id: 'insights-chat', label: '洞察與記憶對話', group: '設計亮點' },
@@ -488,10 +488,11 @@ export default function PresentationPage() {
   }, [goToSlide]);
 
   useEffect(() => {
+    if (print) return;
     const page = pageRef.current;
     page.addEventListener('wheel', handleWheel, { passive: false });
     return () => page.removeEventListener('wheel', handleWheel);
-  }, [handleWheel]);
+  }, [handleWheel, print]);
 
   const handleTouchStart = useCallback((event) => {
     const section = event.target.closest?.('.presentation-section');
@@ -509,6 +510,7 @@ export default function PresentationPage() {
   }, [goToSlide]);
 
   useEffect(() => {
+    if (print) return;
     function handleKeys(event) {
       const tagName = event.target?.tagName?.toLowerCase();
       const isTextEditing = tagName === 'input' || tagName === 'textarea' || tagName === 'select' || event.target?.isContentEditable;
@@ -538,7 +540,7 @@ export default function PresentationPage() {
 
     document.addEventListener('keydown', handleKeys, true);
     return () => document.removeEventListener('keydown', handleKeys, true);
-  }, [goToNextSlide, goToPreviousSlide, goToSlide]);
+  }, [goToNextSlide, goToPreviousSlide, goToSlide, print]);
 
   return (
     <main
@@ -553,7 +555,7 @@ export default function PresentationPage() {
 
       <div
         className="presentation-slide-track"
-        style={{ transform: `translate3d(0, -${currentSlide * 100}vh, 0)` }}
+        style={print ? undefined : { transform: `translate3d(0, -${currentSlide * 100}vh, 0)` }}
       >
       <section className="presentation-cover presentation-section" id="cover" data-slide-index="0">
         <SlideBrand />
@@ -599,6 +601,15 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
+      <SlideSection id="difference" eyebrow="Positioning" title="Adrift 與一般日記 App 的差異" subtitle="不是單純文字紀錄，也不是公開曝光社群，而是以真實地點承載情緒與故事。">
+        <div className="comparison-grid">
+          <CompareCard title="傳統日記 App" text="以文字紀錄為主，地點通常只是附加資訊。" />
+          <CompareCard title="Instagram 類社群" text="偏向公開曝光與照片分享，社交壓力較高。" />
+          <CompareCard title="Google Maps Timeline" text="記錄移動軌跡，但不記錄當下心情與故事。" />
+          <CompareCard title="Adrift" highlight text="以地圖為核心，結合日記、情緒、好友、權限與 Adrift Intelligence，讓記憶回到真實地點。" />
+        </div>
+      </SlideSection>
+
       <SlideSection id="problem" eyebrow="Problem Analysis" title="現有日記工具的不足" subtitle="文字能記錄事件，但常常缺少能喚回記憶的脈絡。">
         <div className="presentation-card-grid three spacious problem-analysis-grid">
           {problemCards.map(([title, text, icon], index) => (
@@ -616,34 +627,46 @@ export default function PresentationPage() {
       </SlideSection>
 
       <SlideSection id="overview" eyebrow="System Overview" title="系統總覽" subtitle="帳號、地圖日記、好友關係與 Adrift Intelligence，組成完整的定位式日記平台。">
-        <div className="presentation-card-grid four spacious">
+        <div className="presentation-feature-layout presentation-evidence">
+          <PresentationCapture image="settings" caption="帳號設定 · 個人資料與使用者 ID" />
+          <div className="presentation-card-grid two presentation-evidence-copy">
           {overviewCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
           ))}
-        </div>
-      </SlideSection>
-
-      <SlideSection id="map-diary" eyebrow="Core Feature 01" title="地圖日記" subtitle="以地圖作為主介面，讓使用者在真實地點留下日記、照片與心情。">
-        <div className="presentation-feature-layout">
-          <PresentationMapVisual active={activeSlide.id === 'map-diary'} />
-          <div className="presentation-card-grid two">
-            {mapDiaryCards.map(([title, text, icon], index) => (
-              <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
-            ))}
           </div>
         </div>
       </SlideSection>
 
+      <SlideSection id="map-diary" eyebrow="Core Feature 01" title="地圖日記" subtitle="以地圖作為主介面，讓使用者在真實地點留下日記、照片與心情。">
+        <div className="presentation-card-grid three presentation-map-evidence">
+          <PresentationMapVisual active={!print && activeSlide.id === 'map-diary'} />
+          <PresentationCapture image="map-detail" caption="互動地圖 · 展開重疊標點" />
+          <PresentationCapture image="compose" caption="新增日記 · 心情、照片與分享範圍" />
+        </div>
+          <div className="presentation-card-grid four presentation-evidence-copy">
+            {mapDiaryCards.map(([title, text, icon], index) => (
+              <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
+            ))}
+          </div>
+      </SlideSection>
+
       <SlideSection id="friends" eyebrow="Core Feature 02" title="好友社交" subtitle="好友功能不是曝光導向，而是讓使用者選擇能一起分享記憶的人。">
-        <div className="presentation-card-grid four spacious">
+        <div className="presentation-feature-layout presentation-evidence">
+          <PresentationCapture image="friends" caption="Social Hub · 好友列表與管理" />
+          <div className="presentation-card-grid two presentation-evidence-copy">
           {socialCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
           ))}
+          </div>
         </div>
       </SlideSection>
 
       <SlideSection id="authenticity" eyebrow="Core Feature 03" title="真實性限制" subtitle="Adrift 不是任意修改的日記系統，而是保留當下、當地、當時心情。">
-        <div className="presentation-card-grid four spacious">
+        <div className="presentation-card-grid two presentation-inline-evidence">
+            <PresentationCapture image="edit" caption="編輯日記 · 時間與地點檢查" />
+            <PresentationCapture image="privacy" caption="分享範圍 · 私人、好友、公開" />
+        </div>
+        <div className="presentation-card-grid four presentation-evidence-copy">
           {authenticityCards.map(([title, text, icon], index) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} index={index} />
           ))}
@@ -701,18 +724,11 @@ export default function PresentationPage() {
         </div>
       </SlideSection>
 
-      <SlideSection id="difference" eyebrow="Positioning" title="Adrift 與一般日記 App 的差異" subtitle="不是單純文字紀錄，也不是公開曝光社群，而是以真實地點承載情緒與故事。">
-        <div className="comparison-grid">
-          <CompareCard title="傳統日記 App" text="以文字紀錄為主，地點通常只是附加資訊。" />
-          <CompareCard title="Instagram 類社群" text="偏向公開曝光與照片分享，社交壓力較高。" />
-          <CompareCard title="Google Maps Timeline" text="記錄移動軌跡，但不記錄當下心情與故事。" />
-          <CompareCard title="Adrift" highlight text="以地圖為核心，結合日記、情緒、好友、權限與 Adrift Intelligence，讓記憶回到真實地點。" />
-        </div>
-      </SlideSection>
-
       <SlideSection id="admin-role" eyebrow="Governance" title="管理員與權限設計" subtitle="以 user、admin、owner 三層角色，區分一般使用、平台管理與最高維護權限。">
         <div className="governance-layout">
-          <div className="governance-role-row">
+          <div className="presentation-feature-layout presentation-evidence presentation-governance-evidence">
+            <PresentationCapture image="admin" caption="管理後台 · 總覽與可見性分布" />
+            <div className="governance-role-row">
             {governanceRoles.map((item, index) => (
               <article key={item.role} className="governance-role-card">
                 <div className="governance-role-icon">{item.icon}</div>
@@ -721,6 +737,7 @@ export default function PresentationPage() {
                 <p>{item.text}</p>
               </article>
             ))}
+            </div>
           </div>
 
           <div className="governance-principle-strip" aria-label="權限設計原則">
@@ -739,6 +756,8 @@ export default function PresentationPage() {
             <Brain size={28} />
             <h3>先看統計，再回到日記</h3>
             <p>Insights 與 Memory Chat 各有入口；推論失敗不影響日記統計。</p>
+            <img className="presentation-metrics-capture" src="/presentation/insight-metrics.png" alt="Insights 統計：記憶數量、常見心情、記錄地點（合成示範資料）" />
+            <small>本機實際介面 · 合成示範資料</small>
           </div>
           {aiFeatureCards.map(([title, text, icon]) => (
             <FeatureCard key={title} title={title} text={text} icon={icon} compact />
@@ -874,7 +893,7 @@ export default function PresentationPage() {
               <h3>Web Application</h3>
               <p>網頁版 · 功能操作展示</p>
 
-              <div className="presentation-video-frame">
+              {!print && activeSlide.id === 'demo-video' && <div className="presentation-video-frame">
                 <iframe
                     src="https://www.youtube.com/embed/-F5u8ZKhs8A"
                     title="Adrift Web Demo"
@@ -882,7 +901,7 @@ export default function PresentationPage() {
                     allowFullScreen
                     loading="lazy"
                 />
-              </div>
+              </div>}
 
               <a
                   href="https://youtu.be/-F5u8ZKhs8A"
@@ -897,7 +916,7 @@ export default function PresentationPage() {
               <h3>Mobile Application</h3>
               <p>手機版 · 操作流程展示</p>
 
-              <div className="presentation-video-frame">
+              {!print && activeSlide.id === 'demo-video' && <div className="presentation-video-frame">
                 <iframe
                     src="https://www.youtube.com/embed/rLQL5o97gPw"
                     title="Adrift Mobile Demo"
@@ -905,7 +924,7 @@ export default function PresentationPage() {
                     allowFullScreen
                     loading="lazy"
                 />
-              </div>
+              </div>}
 
               <a
                   href="https://youtu.be/rLQL5o97gPw"

@@ -1385,14 +1385,18 @@ export default function App() {
 }
 
 function PresentationPdfDownload() {
+  const [downloadUrl] = useState(() => PRESENTATION_PDF_PATH + '?download=' + Date.now());
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     const link = document.createElement('a');
-    link.href = PRESENTATION_PDF_PATH;
+    link.href = downloadUrl;
     link.download = 'Adrift-presentation.pdf';
     document.body.appendChild(link);
     link.click();
     link.remove();
-  }, []);
+  }, [downloadUrl]);
 
   return (
     <section className="presentation-download-page">
@@ -1401,7 +1405,7 @@ function PresentationPdfDownload() {
         <p className="eyebrow">Presentation PDF</p>
         <h1>正在下載簡報 PDF</h1>
         <p>如果瀏覽器沒有自動開始下載，請點擊下方按鈕。</p>
-        <a className="primary-button" href={PRESENTATION_PDF_PATH} download="Adrift-presentation.pdf">
+        <a className="primary-button" href={downloadUrl} download="Adrift-presentation.pdf">
           下載簡報 PDF
         </a>
       </div>

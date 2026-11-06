@@ -23,7 +23,7 @@ const entries = [
   mood: { type, intensity }, visibility: i === 3 ? 'friends' : 'public', imageUrl: photos[i] || '',
   user: { _id: user.id, ...user }, author: i < 2 ? friends[i] : { _id: user.id, name: user.name, userCode: user.userCode },
   location: { type: 'Point', coordinates: i === 2 ? [120.5787, 24.2264] : [120.5787 - i * .002, 24.2264 + i * .0012], placeName },
-  createdAt: new Date(Date.now() - (i + 1) * 86400000).toISOString(), reactionCounts: { understand: i + 1 }, editCount: 0 }));
+  createdAt: new Date(Date.now() - (i === 2 ? 300000 : (i + 1) * 86400000)).toISOString(), canEdit: i === 2, reactionCounts: { understand: i + 1 }, editCount: 0 }));
 const notices = ['friend_request', 'friend_accepted', 'diary_reaction'].map((type, i) => ({ _id: `notice-${i}`, type, actor: friends[i], targetId: entries[0]._id, readAt: null, createdAt: entries[i].createdAt }));
 const overview = { days: 30, count: 4, placeCount: 3, start: new Date(Date.now() - 30 * 86400000).toISOString(), end: new Date().toISOString(),
   moods: ['calm', 'joy', 'anxious'].map((type, i) => ({ type, count: i === 0 ? 2 : 1 })),
@@ -60,18 +60,24 @@ async function capture(name, selector) {
 }
 try {
   await visit('/feed', '.mf-card');
-  await page.waitForFunction(() => Array.from(document.querySelectorAll('.mf-photo img')).some(img => img.naturalWidth > 0), { timeout: 15000 }).catch(() => {});
-  await capture('feed', '.memory-feed');
+  await page.waitForFunction(() => Array.from(document.querySelectorAll('.mf-photo img')).slice(0, 2).every(img => img.naturalWidth > 0), { timeout: 15000 }).catch(() => {});
+  await page.addStyleTag({ content: '.mf-card:nth-of-type(n+3) { display: none; }' });
+  await capture('feed', '.mf-list');
   await page.getByRole('button', { name: /通知.*未讀/ }).click();
   await page.locator('.notice-item').first().waitFor();
   await capture('notifications', '.notifications-dropdown');
-  await visit('/friends', '.hub-directory'); await capture('friends', '.friends-hub');
-  await visit('/settings', '.account-center'); await capture('settings', '.account-center');
-  await visit('/admin', '.admin-overview-card'); await capture('admin', '.admin-console');
-  await visit('/ai/life-map', '.intel-mood-row'); await capture('insights', '.intelligence-page');
+  await visit('/friends', '.hub-directory'); await capture('friends', '.hub-directory');
+  await visit('/settings', '.settings-row-list'); await capture('settings', '.settings-row-list');
+  await visit('/admin', '.admin-overview-card');
+  await page.addStyleTag({ content: '.admin-recent-grid { display: none; }' });
+  await capture('admin', '.admin-overview-card');
+  await visit('/ai/life-map', '.intel-mood-row'); await capture('insights', '.intel-chart-grid');
+  await capture('insight-metrics', '.intel-metrics');
   await page.getByRole('tab', { name: /Memory Chat|記憶對話/ }).click();
   const input = page.locator('#intelligence-chat textarea'); await input.fill('在靜宜大學的日記裡，我記下了哪些心情？'); await input.press('Enter');
-  await page.getByText(/散步時比較平靜/).waitFor(); await capture('chat', '.intelligence-page');
+  await page.getByText(/散步時比較平靜/).waitFor();
+  await page.addStyleTag({ content: '.memory-chat-transcript { flex: none; min-height: 0; height: auto; max-height: none; }' });
+  await capture('chat', '.memory-chat-transcript');
   await page.setViewportSize({ width: 1840, height: 900 });
   await visit('/', '.mapboxgl-canvas');
   await page.getByRole('button', { name: '定位目前位置', exact: true }).click();
@@ -87,6 +93,13 @@ try {
   const stack = page.getByRole('button', { name: '2 篇日記', exact: true }).first();
   await stack.click();
   await capture('map-detail', '.mapboxgl-map');
+  await page.getByRole('button', { name: /把報告說完/ }).first().click();
+  await page.locator('.diary-side-panel.has-diary').getByRole('button', { name: /編輯/ }).click();
+  await page.getByRole('dialog', { name: '編輯日記' }).waitFor();
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
+  await capture('edit', '.edit-authenticity-box');
+  await page.evaluate(() => { document.documentElement.dataset.theme = 'bright'; });
+  await page.getByRole('dialog', { name: '編輯日記' }).getByRole('button', { name: 'Close' }).click();
   await page.setViewportSize({ width: 1440, height: 1300 });
   await page.getByRole('button', { name: /新增日記|留下記憶/ }).first().click();
   await page.getByRole('dialog', { name: '新增日記' }).waitFor();
@@ -95,4 +108,5 @@ try {
   // Remove the scroll cap for the slide capture; the production modal is unchanged.
   await page.addStyleTag({ content: '.diary-modal { max-height: none !important; }' });
   await capture('compose', '.diary-modal');
+  await capture('privacy', '.visibility-privacy-note');
 } finally { await browser.close(); }

@@ -1,7 +1,32 @@
+.presentation-page { --presentation-subtitle-size: 1.5rem; }
+.presentation-page .presentation-section-heading > span { font-size: var(--presentation-subtitle-size); }
+.presentation-page .presentation-section-heading h2 { font-size: calc(2 * var(--presentation-subtitle-size)); }
+
 .presentation-page .presentation-capture { margin: 0; min-width: 0; }
 .presentation-capture img { display: block; width: 100%; height: min(44vh, 420px); object-fit: contain; border-radius: 8px; }
 .presentation-capture figcaption { margin-top: 12px; color: var(--text-secondary); }
 .presentation-capture figcaption small { display: block; margin-top: 4px; }
+.presentation-evidence { align-items: center; }
+.presentation-page .presentation-evidence-copy { gap: 16px; }
+.presentation-page .presentation-evidence-copy .presentation-feature-card { padding: 18px; min-height: 0; gap: 8px; }
+.presentation-page :is(.presentation-inline-evidence, .presentation-map-evidence) .presentation-capture { padding: 14px; min-height: 0; }
+.presentation-inline-evidence .presentation-capture img { height: min(17vh, 140px); }
+.presentation-page .presentation-inline-evidence .presentation-capture { gap: 0; }
+.presentation-page .presentation-map-evidence .presentation-map-visual { min-height: 0; height: 100%; }
+.presentation-map-evidence .presentation-capture img { height: min(27vh, 225px); }
+#map-diary .presentation-section-inner { gap: 20px; }
+#authenticity .presentation-section-inner { gap: 12px; }
+#authenticity .presentation-warning-card { padding: 12px 18px; }
+.presentation-governance-evidence .presentation-capture img { height: min(29vh, 245px); }
+.presentation-governance-evidence .governance-role-card { padding: 18px; min-height: 0; }
+#admin-role .governance-layout { gap: 22px; }
+.presentation-metrics-capture { display: block; width: 100%; height: auto; border-radius: 8px; margin-block: 6px; }
+#life-map-ai .ai-summary-card { grid-template-rows: auto auto auto; }
+
+@media (min-width: 981px) {
+  .presentation-page .presentation-map-evidence { grid-template-columns: .95fr 1.25fr .8fr; }
+  .presentation-page .presentation-governance-evidence { grid-template-columns: .85fr 1.5fr; }
+}
 
 .presentation-agent-tools code { overflow-wrap: anywhere; font-size: 1.08rem; }
 .presentation-agent-tools .presentation-feature-card { min-height: 0; }
@@ -22,6 +47,7 @@
 .presentation-team-table td:nth-last-child(-n+2) { color: var(--text-secondary); }
 
 @media (max-width: 680px) {
+  .presentation-page { --presentation-subtitle-size: 1.15rem; }
   .presentation-team-table :is(th, td) { padding: 9px 4px; font-size: .875rem; }
 }
 
@@ -33,7 +59,8 @@
   .presentation-page .presentation-member-grid span { min-height: 50px; }
   .presentation-page .presentation-map-visual { min-height: 340px; }
   #map-diary .presentation-feature-card { min-height: 0; padding: 18px; }
-  #authenticity .presentation-warning-card { padding-block: 14px; }
+  #authenticity .presentation-section-inner { gap: 8px; }
+  #authenticity .presentation-warning-card { padding-block: 8px; }
   #architecture .presentation-system-tree { gap: 6px; padding-top: 4px; }
   #architecture .system-module { gap: 4px; padding-block: 6px; }
   #architecture .system-feature-chip { min-height: 30px; padding-block: 2px; }
@@ -43,6 +70,13 @@
   #ux .ux-principle-hero { min-height: 398px; padding-block: 18px; }
   #ux .ux-principle-card { min-height: 182px; padding-block: 16px; }
   .presentation-capture img { height: 37vh; }
+  #map-diary .presentation-section-inner { gap: 11px; }
+  #map-diary .presentation-evidence-copy .presentation-feature-card,
+  #authenticity .presentation-evidence-copy .presentation-feature-card { padding-block: 12px; }
+  .presentation-map-evidence .presentation-capture img { height: 21vh; }
+  .presentation-inline-evidence .presentation-capture img { height: 14vh; }
+  .presentation-governance-evidence .presentation-capture img { height: 24vh; }
+  .presentation-page .presentation-video-frame { max-height: 33vh; }
   #review .presentation-section-inner { gap: 12px; }
   .presentation-page .presentation-review-card { padding: 20px; gap: 12px; }
   .presentation-review-card dl { gap: 9px; }
@@ -51,7 +85,17 @@
 
 @media print {
   body:has(.presentation-print) :is(.app-frame, .app-layout) { height: auto; max-height: none; overflow: visible; }
-  .presentation-print { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .presentation-print { width: 16in; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  :root .presentation-page.presentation-print { background-size: 100% 9in !important; background-repeat: repeat-y !important; }
+  .presentation-print .presentation-slide-track { display: block; transform: none !important; transition: none !important; }
+  .presentation-print .presentation-slide-track > .presentation-section {
+    height: 9in !important;
+    min-height: 9in !important;
+    max-height: 9in !important;
+    overflow: clip !important;
+    break-inside: avoid;
+  }
+  .presentation-print :is(.presentation-atmosphere, .presentation-slide-brand) { animation: none !important; }
 }
 
 .presentation-video-grid {

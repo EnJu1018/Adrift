@@ -118,7 +118,7 @@ try {
     assert.equal(await page.locator('link[rel="canonical"]').getAttribute('href'), 'https://adrifttw.com/about');
     await page.goto(base + '/p'); await page.locator('.presentation-page').waitFor();
     await page.keyboard.press('End');
-    await page.locator('#team[data-active="true"]').waitFor();
+    await page.locator('#demo-video[data-active="true"]').waitFor();
     await page.keyboard.press('Home');
     await page.locator('#cover[data-active="true"]').waitFor();
     assert.equal(await page.locator('.mobile-gate').count(), 0);
