@@ -41,6 +41,9 @@ try {
   await previous.click(); await ready(0);
   await page.keyboard.press('End'); await ready(26);
   assert.equal(await next.isDisabled(), true);
+  assert.equal(await active.locator('iframe').count(), 1);
+  assert.equal(await active.locator('iframe').getAttribute('src'), 'https://www.youtube.com/embed/ZLTcKkOiAQ8');
+  assert.equal(await active.locator('a[href="https://youtu.be/ZLTcKkOiAQ8"]').count(), 1);
   await page.keyboard.press('ArrowLeft'); await ready(25);
   await page.keyboard.press('ArrowLeft'); await ready(24);
   assert.equal(await active.getAttribute('id'), 'team');
@@ -106,6 +109,7 @@ try {
   assert.equal(await page.locator('.presentation-nav, .presentation-controls').count(), 0);
   assert.equal(await page.locator('.presentation-section[inert]').count(), 0);
   assert.equal(await page.locator('iframe').count(), 0);
+  assert.equal(await page.locator('#demo-video .presentation-video-poster img').count(), 1);
   assert.equal(await track.evaluate(el => getComputedStyle(el).transform), 'none');
   assert.deepEqual(errors, []);
   console.log('PASS ' + engine + ': ' + order.length + ' slides, both themes at 1536x864 and 1366x768; keyboard, motion and print.');

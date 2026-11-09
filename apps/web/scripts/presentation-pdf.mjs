@@ -3,23 +3,26 @@ import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import { exportPresentationPptx } from './presentation-pptx.mjs';
 
 const root = new URL('../', import.meta.url);
 const output = new URL('public/Adrift-presentation.pdf', root);
+const pptxOutput = new URL('public/Adrift-presentation.pptx', root);
 const stamp = new URL('presentation-pdf.json', import.meta.url);
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 const inputs = ['PresentationPage.jsx', 'presentationSlides.js', 'presentation.css']
   .map(file => 'src/components/' + file);
 inputs.push('public/adrift-icon.png', ...(
   await readdir(new URL('public/presentation/', root))
-).filter(file => file.endsWith('.png')).sort().map(file => 'public/presentation/' + file));
+).filter(file => /\.(png|jpe?g|webp)$/.test(file)).sort().map(file => 'public/presentation/' + file));
 const source = sha256((await Promise.all(inputs.map(async file => file + ':' + sha256(await readFile(new URL(file, root)))))).join('\n'));
 
 if (process.argv.includes('--check')) {
   try {
-    assert.deepEqual(JSON.parse(await readFile(stamp, 'utf8')), { source, pdf: sha256(await readFile(output)) });
+    const saved = JSON.parse(await readFile(stamp, 'utf8'));
+    assert.deepEqual(saved, { source, pdf: sha256(await readFile(output)), pptx: { source, hash: sha256(await readFile(pptxOutput)) } });
   } catch {
-    console.error('Presentation PDF is stale. Run npm run presentation:pdf before building.');
+    console.error('Presentation downloads are stale. Run npm run presentation:export before building.');
     process.exit(1);
   }
   process.exit(0);
@@ -40,7 +43,7 @@ try {
   await server.listen();
   const origin = new URL(server.resolvedUrls.local[0]).origin;
   browser = await chromium.launch(existsSync(chromium.executablePath()) ? {} : { channel: 'chrome' });
-  const page = await browser.newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
+  const page = await browser.newPage({ viewport: { width, height }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', route => new URL(route.request().url()).origin === origin ? route.continue() : route.abort());
@@ -82,8 +85,15 @@ try {
   assert.deepEqual(errors, []);
   assert.equal(await deck.locator('iframe, .presentation-nav, .presentation-controls, [inert]').count(), 0);
   const pdf = await page.pdf({ width: '16in', height: '9in', preferCSSPageSize: true, printBackground: true });
+  let pptx;
+  if (process.argv.includes('--pptx')) {
+    await exportPresentationPptx({ deck, output: pptxOutput, width, height });
+    pptx = { source, hash: sha256(await readFile(pptxOutput)) };
+  } else {
+    try { pptx = JSON.parse(await readFile(stamp, 'utf8')).pptx; } catch { /* Initial PDF-only export. */ }
+  }
   await writeFile(output, pdf);
-  await writeFile(stamp, JSON.stringify({ source, pdf: sha256(pdf) }, null, 2) + '\n');
+  await writeFile(stamp, JSON.stringify({ source, pdf: sha256(pdf), ...(pptx && { pptx }) }, null, 2) + '\n');
   console.log('Exported ' + layout.slides.length + ' slides to ' + fileURLToPath(output));
 } finally {
   try { await browser?.close(); } finally { await server.close(); }

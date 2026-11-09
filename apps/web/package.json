@@ -8,6 +8,7 @@
     "prebuild": "node scripts/presentation-pdf.mjs --check",
     "build": "vite build",
     "presentation:pdf": "node scripts/presentation-pdf.mjs",
+    "presentation:export": "node scripts/presentation-pdf.mjs --pptx",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 # Adrift 漂流足跡｜第二次畢業專題口試
 
-網頁簡報使用既有的 `/p`（亦可從 `/presentation` 開啟），PDF 下載沿用 `/pd`。口試敘事：生活記錄 → 城市記憶 → 資料整合 → AI 取證 → 智慧回顧。建議先以具體操作說明產品，再把主要報告時間留給第 17–24 頁。
+網頁簡報使用既有的 `/p`（亦可從 `/presentation` 開啟），`/pd` 提供 PDF 與 PPTX 兩種格式，點選後才下載。口試敘事：生活記錄 → 城市記憶 → 資料整合 → AI 取證 → 智慧回顧。建議先以具體操作說明產品，再把主要報告時間留給第 17–24 頁。
 
 ## 逐頁大綱與講者備註
 
@@ -74,10 +74,14 @@
 - `PresentationPage.jsx`、`presentationSlides.js`、`presentation.css`：使用 Git 版原有的背景、字體、章節導覽、動畫、卡片、分工列及架構圖；只補內容、新版面所需的樣式與 PDF 輸出。共用 `styles.css` 未修改。
 - `apps/web/public/presentation/`：Chrome 擷取的實際元件。Mapbox 底圖在本機載入；日記、帳號、角色、通知與統計均為合成資料。Chat 回覆為 fixture，非模型推論；Feed 的 [森林](https://images.unsplash.com/photo-1441974231531-c6227db76b6e) 與 [咖啡](https://images.unsplash.com/photo-1509042239860-f550ce710b93) 圖片是示意照，不是所述地點。未使用正式使用者資料。
 - `apps/web/tests/presentation-capture.mjs`：以本機 API fixtures 重擷取畫面。需要 Chrome、Playwright 與可渲染 Mapbox 的本機設定。
-- `apps/web/tests/motion-browser.mjs`：逐頁擷取、尺寸和控制測試；`--pdf` 以 Chrome 重新產生 `apps/web/public/Adrift-presentation.pdf`。WebKit 驗證使用 `BROWSER=webkit`，不是原生 Safari。
+- `apps/web/tests/motion-browser.mjs`：逐頁擷取、尺寸和控制測試，含單一 Demo 影片與列印封面。WebKit 驗證使用 `BROWSER=webkit`，不是原生 Safari。
 - `apps/web/tests/device-support-browser.mjs`：更新投影片辨識 selector，桌面與行動裝置政策不變。
 
-從專案根目錄執行 `npm run presentation:pdf`。匯出會自動啟動本機 Vite；若沒有 Chrome，可用 `npx playwright install chromium`。使用與網頁相同的 React 元件，等待字型及圖片載入，再以 16×9 吋、無邊界產生 `apps/web/public/Adrift-presentation.pdf`。瀏覽器建置會核對簡報來源、PNG 與 PDF 的雜湊；若不符，先重跑匯出。若調整了共用樣式且影響投影片，也應重跑匯出。 `/pd` 以每次進入頁面時產生的新下載 URL 避免沿用舊快取。
+從專案根目錄執行 `npm run presentation:export` 同步產生 PDF 與 PPTX，輸出至 `apps/web/public/Adrift-presentation.pdf` 及 `Adrift-presentation.pptx`。PPTX 匯出需要本機的 `@oai/artifact-tool` 套件；若套件位於外部目錄，以 `PRESENTATION_RUNTIME_MODULES` 指定其套件搜尋目錄，不需要在正式 VPS 安裝。匯出會自動啟動本機 Vite；若沒有 Chrome，可用 `npx playwright install chromium`。兩種格式都使用相同的 React 列印頁面，等待字型及圖片載入，保持 16:9 與一致頁序。PPTX 以 3072×1728 圖片保留版面，附原頁文字的講者備註及可點擊連結，不提供逐字編輯。PDF 仍保留可選取文字。`npm run presentation:pdf` 可單獨更新 PDF，但若簡報來源有變動，仍須同步重建 PPTX 才能通過建置檢查。
+
+Web 建置會核對簡報來源、圖片與兩種下載檔的雜湊；若不符，先重跑完整匯出。若調整了共用樣式且影響投影片，也應重跑匯出。`/pd` 每次進入頁面會使用新的下載 URL，避免沿用舊快取。`apps/web/tests/presentation-download-browser.mjs` 檢查兩種格式、鍵盤操作、亮暗主題、下載內容一致性與預覽入口。
+
+第 27 頁只保留 [Adrift Demo](https://youtu.be/ZLTcKkOiAQ8)。網頁使用 YouTube 播放器；PDF／PPTX 使用該影片的實際 YouTube 封面及連結，離線檔案不內嵌影片。封面來源：`https://i.ytimg.com/vi/ZLTcKkOiAQ8/maxresdefault.jpg`。
 
 瀏覽器驗收使用 `node apps/web/tests/motion-browser.mjs`，可設 `PREVIEW_URL`、`BROWSER=webkit` 或 `PLAYWRIGHT_MODULE`。驗收圖不進 Git。
 

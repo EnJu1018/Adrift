@@ -887,47 +887,25 @@ export default function PresentationPage() {
             title="Demo Video"
             subtitle="Adrift 漂流足跡 · 系統操作展示"
         >
-          <div className="presentation-video-grid">
+          <div className="presentation-video-grid presentation-video-single">
 
             <div className="presentation-feature-card">
-              <h3>Web Application</h3>
-              <p>網頁版 · 功能操作展示</p>
-
               {!print && activeSlide.id === 'demo-video' && <div className="presentation-video-frame">
                 <iframe
-                    src="https://www.youtube.com/embed/-F5u8ZKhs8A"
-                    title="Adrift Web Demo"
+                    src="https://www.youtube.com/embed/ZLTcKkOiAQ8"
+                    title="Adrift Demo"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                     loading="lazy"
                 />
               </div>}
 
-              <a
-                  href="https://youtu.be/-F5u8ZKhs8A"
-                  target="_blank"
-                  rel="noopener noreferrer"
-              >
-                在 YouTube 觀看
-              </a>
-            </div>
-
-            <div className="presentation-feature-card">
-              <h3>Mobile Application</h3>
-              <p>手機版 · 操作流程展示</p>
-
-              {!print && activeSlide.id === 'demo-video' && <div className="presentation-video-frame">
-                <iframe
-                    src="https://www.youtube.com/embed/rLQL5o97gPw"
-                    title="Adrift Mobile Demo"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    loading="lazy"
-                />
-              </div>}
+              {print && <a className="presentation-video-poster" href="https://youtu.be/ZLTcKkOiAQ8">
+                <img src="/presentation/demo-video.jpg" alt="Adrift Demo 影片封面" />
+              </a>}
 
               <a
-                  href="https://youtu.be/rLQL5o97gPw"
+                  href="https://youtu.be/ZLTcKkOiAQ8"
                   target="_blank"
                   rel="noopener noreferrer"
               >

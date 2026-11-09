@@ -14459,6 +14459,25 @@ input.mood-intensity-slider {
   line-height: 1.65;
 }
 
+.presentation-download-formats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  margin-block: 10px;
+}
+
+.presentation-download-formats a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+}
+
+.presentation-download-card .presentation-download-note { font-size: 14px; }
+.presentation-download-preview { color: var(--text-secondary); text-underline-offset: 4px; }
+
 .motion-number {
   display: inline-grid;
   place-items: center;

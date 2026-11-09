@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion';
-import { Activity, Bell, Brain, Check, Copy, Home, LogOut, MapPin, Settings, Shield, UserRound, Users } from 'lucide-react';
+import { Activity, Bell, Brain, Check, Copy, Download, FileText, Home, LogOut, MapPin, Presentation, Settings, Shield, UserRound, Users } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, clearStoredAuth, getDiaryEventsUrl, getStoredAuth, saveAuth } from './api/client.js';
 import AccountSettings from './components/AccountSettings.jsx';
@@ -37,7 +37,6 @@ const exploreRadiusOptions = [
 ];
 
 const THEME_KEY = 'adrift-theme';
-const PRESENTATION_PDF_PATH = '/Adrift-presentation.pdf';
 const themes = ['dark', 'bright'];
 
 function getInitialTheme() {
@@ -1050,7 +1049,7 @@ export default function App() {
         className={`app-layout ${user ? 'authenticated' : ''} ${!user && isAuthPage ? 'auth-mode' : ''} ${!user && !isAuthPage && !isPublicStandalonePage ? 'guest' : ''} ${isLandingPage ? 'landing-mode' : ''} ${isPublicInfoPage || isFeaturePage ? 'public-info-mode' : ''} ${isFriendsPage ? 'friends-mode' : ''} ${isFeedPage ? 'feed-mode' : ''} ${isSettingsPage ? 'settings-mode' : ''} ${isAiPage ? 'ai-mode' : ''} ${isAdminPage ? 'admin-mode' : ''} ${isPresentationPage ? 'presentation-mode' : ''} ${isPresentationDownloadPage ? 'presentation-download-mode' : ''}`}
       >
         {isPresentationDownloadPage ? (
-          <PresentationPdfDownload />
+          <PresentationDownload />
         ) : isPresentationPage ? (
           <PresentationPage />
         ) : isLandingPage ? (
@@ -1384,30 +1383,25 @@ export default function App() {
   );
 }
 
-function PresentationPdfDownload() {
-  const [downloadUrl] = useState(() => PRESENTATION_PDF_PATH + '?download=' + Date.now());
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = 'Adrift-presentation.pdf';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }, [downloadUrl]);
+function PresentationDownload() {
+  const [revision] = useState(() => Date.now());
 
   return (
     <section className="presentation-download-page">
       <div className="presentation-download-card">
         <img src="/adrift-icon.png" alt="" aria-hidden="true" />
-        <p className="eyebrow">Presentation PDF</p>
-        <h1>正在下載簡報 PDF</h1>
-        <p>如果瀏覽器沒有自動開始下載，請點擊下方按鈕。</p>
-        <a className="primary-button" href={downloadUrl} download="Adrift-presentation.pdf">
-          下載簡報 PDF
-        </a>
+        <p className="eyebrow">Adrift Presentation</p>
+        <h1>下載口試簡報</h1>
+        <div className="presentation-download-formats">
+          <a className="primary-button" href={'/Adrift-presentation.pdf?download=' + revision} download="Adrift-presentation.pdf">
+            <FileText size={20} aria-hidden="true" /> PDF <Download size={18} aria-hidden="true" />
+          </a>
+          <a className="secondary-button" href={'/Adrift-presentation.pptx?download=' + revision} download="Adrift-presentation.pptx">
+            <Presentation size={20} aria-hidden="true" /> PPTX <Download size={18} aria-hidden="true" />
+          </a>
+        </div>
+        <p className="presentation-download-note">PPTX 為版面保留版，投影片內容以圖片呈現。</p>
+        <a className="presentation-download-preview" href="/p">線上瀏覽簡報</a>
       </div>
     </section>
   );
