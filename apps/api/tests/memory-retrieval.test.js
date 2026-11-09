@@ -36,7 +36,7 @@ before(async () => {
 after(async () => { if (uri) { await mongoose.connection.dropDatabase(); await mongoose.disconnect(); } });
 const retrieve = (question, user = owner, history = []) => retrieveMemories(Diary, user, planMemoryQuestion(question, history, now));
 const reply = options => answerMemoryQuestion({ message: '回顧我的日記', history: [], userId: owner, Diary, reserve: async () => {}, now, ...options });
-const generate = async request => ({ answer: `日記記錄了實際的生活片段。[1]`, citations: [request.data.diaries[0].id] });
+const generate = async request => ({ paragraphs: [{ text: '日記記錄了實際的生活片段。', citations: [request.data.diaries[0].id] }] });
 
 integration('fifty owned records across a year include every visibility and full-month statistics, not question-keyword matches', async () => {
   const result = await retrieve('幫我深入回顧最近一年的心情變化');
@@ -132,9 +132,9 @@ integration('retrieval errors and model errors never masquerade as empty results
     assert.doesNotMatch(JSON.stringify(error.evidence), /生活片段|content|text/); return true;
   });
 });
-integration('citations outside retrieved owner evidence and missing inline source numbers fail closed', async () => {
+integration('citations outside retrieved owner evidence and paragraphs without sources fail closed', async () => {
   const privateOther = await Diary.findOne({ user: other }).lean();
-  for (const result of [{ answer: '不允許。[1]', citations: [String(privateOther._id)] }, { answer: '沒有引用編號。', citations: [String(created[0]._id)] }]) {
+  for (const result of [{ paragraphs: [{ text: '不允許。', citations: [String(privateOther._id)] }] }, { paragraphs: [{ text: '沒有引用資料。', citations: [] }] }]) {
     await assert.rejects(reply({ generate: async () => result }), error => error.category === 'invalid_citation');
   }
 });

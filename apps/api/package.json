@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "check:runtime": "node --input-type=module -e \"await import('./src/routes/ai.js')\"",
     "seed:owner": "node scripts/seedOwner.js"
   },
   "dependencies": {

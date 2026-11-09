@@ -176,7 +176,7 @@ integration('editing or deleting a source while generating invalidates the answe
           assert.ok(selected);
           if (change === 'edit') await Diary.updateOne({ _id: diary._id }, { $set: { text: '內容已經更改。' } });
           else await Diary.deleteOne({ _id: diary._id });
-          return { answer: '這篇日記記錄了片段。[1]', citations: [request.data.diaries[0].id, selected.id] };
+          return { paragraphs: [{ text: '這篇日記記錄了片段。', citations: [request.data.diaries[0].id, selected.id] }] };
         } }), error => error.category === 'stale_evidence' && error.status === 409);
     } finally { await Diary.deleteOne({ _id: diary._id }); }
   }
@@ -232,7 +232,7 @@ integration('JWT to real MongoDB to both AI endpoints uses only the authenticate
       assert.doesNotMatch(JSON.stringify(data), /OTHER ACCOUNT SECRET|passwordHash|coordinates/);
       assert.equal(feature === 'insights' ? data.statistics.total : data.evidence.matchedCount, 50);
       return feature === 'insights' ? { summary: '回顧真實片段。', moodTrend: { description: '記錄片段。', dominantMood: 'calm' }, locationInsights: [], behaviorPatterns: [], suggestions: [] }
-        : { answer: '回顧真實片段。[1]', citations: [data.diaries[0].id] };
+        : { paragraphs: [{ text: '回顧真實片段。', citations: [data.diaries[0].id] }] };
     } }));
     server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
     baseUrl = `http://127.0.0.1:${server.address().port}/ai`;

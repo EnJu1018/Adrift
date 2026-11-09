@@ -28,7 +28,7 @@ before(async () => {
   app.use(express.json());
   app.use('/api/ai', createAiRouter({ DiaryModel: Diary,
     reserve: async () => { reserveCalls++; },
-    generate: async () => { generateCalls++; return { answer: '根據你的日記。[1]', citations: [diaryId] }; }
+    generate: async () => { generateCalls++; return { paragraphs: [{ text: '根據你的日記。', citations: [diaryId] }] }; }
   }));
   server = app.listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));

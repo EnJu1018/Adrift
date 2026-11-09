@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { answerMemoryQuestion, buildMemoryMatch, parseMemoryRange, planMemoryQuestion, retrieveMemories, validateChatInput } from '../src/services/memoryChat.js';
+import { answerMemoryQuestion, buildMemoryMatch, parseMemoryRange, planMemoryQuestion, retrieveMemories, validateChatInput, validateMemoryAnswer } from '../src/services/memoryChat.js';
 import { generateGeminiJson } from '../src/services/gemini.js';
 import { reserveAiUsage } from '../src/services/aiLimits.js';
 import { diaryQuery } from './fixtures/diaryQuery.js';
@@ -92,7 +92,8 @@ test('own real context only, minimal data, quoted diary instructions remain data
       assert.ok(!JSON.stringify(request.data).includes('Never disclose'));
       assert.ok(!JSON.stringify(request.data).includes('coordinates'));
       assert.match(request.instruction, /不可信資料/);
-      return { answer: '你曾在臺北和朋友散步。[1]', citations: [diaries[0]._id] };
+      assert.deepEqual(request.schema.properties.paragraphs.items.properties.citations.items.enum, [diaries[0]._id]);
+      return { paragraphs: [{ text: '你曾在臺北和朋友散步。', citations: [diaries[0]._id] }] };
     }
   });
   assert.equal(calls, 1);
@@ -103,11 +104,35 @@ test('own real context only, minimal data, quoted diary instructions remain data
     generate: async request => {
       assert.equal(request.data.diaries[0].content, malicious.text);
       assert.ok(!request.instruction.includes(malicious.text), 'diary content never enters system instructions');
-      return { answer: '這篇紀錄沒有足夠的生活事件可整理。[1]', citations: [malicious._id] };
+      return { paragraphs: [{ text: '這篇紀錄沒有足夠的生活事件可整理。', citations: [malicious._id] }] };
     }
   });
   await assert.rejects(answerMemoryQuestion({ message: '回顧我的日記', history: [], userId: a, Diary: store(), reserve: async () => {},
-    generate: async () => ({ answer: 'Fake reference', citations: [diaries[1]._id] }) }), error => error.category === 'invalid_citation');
+    generate: async () => ({ paragraphs: [{ text: 'Fake reference', citations: [diaries[1]._id] }] }) }), error => error.category === 'invalid_citation');
+});
+
+test('paragraph citation IDs determine numbering, regardless of sample/subset order', () => {
+  const sources = [{ id: 'first' }, { id: 'second' }, { id: 'third' }];
+  const result = validateMemoryAnswer({ paragraphs: [
+    { text: '只談第三則記錄。', citations: ['third', 'third'] },
+    { text: '再比較第一則。', citations: ['first', 'third'] }
+  ] }, sources);
+  assert.deepEqual(result.ids, ['third', 'first']);
+  assert.equal(result.answer, '只談第三則記錄。[1]\n\n再比較第一則。[2][1]');
+});
+
+test('untrusted model output cannot introduce foreign IDs, fake inline numbers or uncited claims', () => {
+  for (const paragraph of [
+    { text: '捏造內容。', citations: ['foreign'] },
+    { text: '捏造內容。', citations: ['1'] },
+    { text: '未引用的事件。', citations: [] },
+    { text: '錯誤的編號[3]', citations: ['owned'] },
+    { text: '錯誤的編號【1】', citations: ['owned'] }
+  ]) assert.throws(() => validateMemoryAnswer({ paragraphs: [paragraph] }, [{ id: 'owned' }]), error => error.category === 'invalid_citation');
+  for (const result of [null, {}, { paragraphs: [] }, { paragraphs: [{ text: '', citations: ['owned'] }] },
+    { paragraphs: [{ text: 'x'.repeat(5001), citations: ['owned'] }] }]) {
+    assert.throws(() => validateMemoryAnswer(result, [{ id: 'owned' }]), error => error.category === 'invalid_response');
+  }
 });
 
 test('off-topic and empty retrieval never reserve quota or call the model', async () => {

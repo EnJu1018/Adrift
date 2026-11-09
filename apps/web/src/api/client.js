@@ -1,3 +1,5 @@
+import { apiError, readApiPayload } from './errors.js';
+
 export const API_URL = resolveApiUrl(import.meta.env.VITE_API_URL);
 const TOKEN_KEY = 'adrift_token';
 const USER_KEY = 'adrift_user';
@@ -89,27 +91,17 @@ async function request(path, { timeoutMs, ...options } = {}) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetchWithDeadline(`${API_URL}${path}`, {
+  const { response, payload } = await fetchWithDeadline(`${API_URL}${path}`, {
     ...options,
     headers
   }, timeoutMs);
-
-  let payload = null;
-
-  try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
 
   if (!path.startsWith('/auth/') && token !== localStorage.getItem(TOKEN_KEY)) {
     throw new DOMException('登入狀態已變更，請重新操作。', 'AbortError');
   }
 
   if (!response.ok || payload?.success === false) {
-    const error = new Error(payload?.message || response.statusText || 'Request failed');
-    error.status = response.status;
-    error.payload = payload;
+    const error = apiError({ status: response.status, payload, requestId: response.headers.get('x-request-id'), retryAfter: response.headers.get('retry-after') });
 
     if (response.status === 401 && !path.startsWith('/auth/') && token === localStorage.getItem(TOKEN_KEY)) {
       clearStoredAuth();
@@ -119,13 +111,7 @@ async function request(path, { timeoutMs, ...options } = {}) {
     throw error;
   }
 
-  if (!payload || typeof payload !== 'object') {
-    return {
-      success: response.ok,
-      message: '',
-      data: null
-    };
-  }
+  if (!payload) throw apiError({ status: 502, code: 'invalid_response', requestId: response.headers.get('x-request-id') });
 
   return payload;
 }
@@ -136,11 +122,14 @@ async function fetchWithDeadline(url, options, timeoutMs = 30000) {
   options.signal?.addEventListener('abort', cancel, { once: true });
   if (options.signal?.aborted) cancel();
   const timer = setTimeout(cancel, timeoutMs);
+  let response;
   try {
-    return await fetch(url, { ...options, signal: controller.signal });
+    response = await fetch(url, { ...options, signal: controller.signal });
+    const payload = await readApiPayload(response);
+    return { response, payload };
   } catch (error) {
-    if (controller.signal.aborted && !options.signal?.aborted) throw new Error('連線逾時，請稍後重試。');
-    throw error;
+    if (options.signal?.aborted) throw new DOMException('操作已取消。', 'AbortError');
+    throw apiError({ code: controller.signal.aborted ? 'timeout' : 'network', requestId: response?.headers.get('x-request-id') });
   } finally {
     clearTimeout(timer);
     options.signal?.removeEventListener('abort', cancel);

@@ -30,7 +30,7 @@ export default function ChatMessage({ item, busy, opening, unavailable, onRetry,
   return <article className={`memory-chat-message ${item.role} motion-fade-in`}>
     <span className="sr-only">{item.role === 'user' ? '你' : 'Adrift'}</span>
     {item.status === 'pending' ? <p className="memory-chat-thinking"><span className="button-spinner" aria-hidden="true" />正在尋找你的記憶…</p>
-      : item.status === 'error' ? <div className="memory-chat-error"><p role="alert">{item.error}</p><button type="button" className="intel-text-button motion-soft-press" onClick={() => onRetry(item.question, item.id)} disabled={busy}><RefreshCw size={15} />重試</button></div>
+      : item.status === 'error' ? <div className="memory-chat-error"><div><p role="alert">{item.error}</p>{item.requestId && <small>追蹤編號：{item.requestId}</small>}</div><button type="button" className="intel-text-button motion-soft-press" onClick={() => onRetry(item.question, item.id)} disabled={busy}><RefreshCw size={15} />重試</button></div>
         : item.role === 'user' ? <p className="memory-chat-user-text">{item.content}</p> : <MemoryAnswer text={item.content} />}
     {evidence && Number.isInteger(evidence.matchedCount) && evidence.matchedCount > 0 && <div className="memory-chat-evidence">
       <p>本次找到 {evidence.matchedCount} 篇記錄 · 閱讀 {evidence.sampledCount} 篇內文片段</p>

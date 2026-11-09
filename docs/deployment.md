@@ -28,9 +28,15 @@ cached safely.
 
 ## API
 
+Install API dependencies before restarting the backend. A web-only install does
+not install packages introduced by backend changes (for example `ajv`). Check
+imports first; do not restart a healthy older process against missing packages.
+
 ```bash
+cd /var/www/Adrift
+npm ci --workspace apps/api --include=dev
+npm --workspace apps/api run check:runtime
 cd apps/api
-npm install
 npm run start
 ```
 

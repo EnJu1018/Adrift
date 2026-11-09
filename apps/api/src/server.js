@@ -55,7 +55,8 @@ app.use(
 
       callback(new Error(`CORS blocked origin: ${origin}`));
     },
-    credentials: true
+    credentials: true,
+    exposedHeaders: ['X-Request-ID', 'Retry-After']
   })
 );
 // Query strings may contain event-stream credentials; never write them to logs.

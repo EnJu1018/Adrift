@@ -28,7 +28,7 @@ before(async () => {
     generated.push(request);
     if (wait && request.feature === 'insights') await new Promise(resolve => { release = resolve; });
     if (fail?.feature === request.feature) throw new AiServiceError(fail.category, fail.status, fail.providerStatus);
-    return request.feature === 'insights' ? valid : { answer: '你的日記記錄了平靜。[1]', citations: [diaryId] };
+    return request.feature === 'insights' ? valid : { paragraphs: [{ text: '你的日記記錄了平靜。', citations: [diaryId] }] };
   } }));
   server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}/ai`;
